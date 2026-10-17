@@ -1,0 +1,15 @@
+{
+  "name": "shohmot",
+  "version": "2.0.0",
+  "description": "Live game counter for Chess.com and Lichess accounts",
+  "main": "server.js",
+  "private": true,
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "ISC"
+}
