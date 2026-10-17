@@ -29,8 +29,19 @@
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* private mode */ } },
   };
 
+  const DEFAULT_ACCOUNTS = [
+    { platform: 'chesscom', username: 'shaxzod_e' },
+    { platform: 'chesscom', username: 'kindofinterestedinchess' },
+    { platform: 'lichess', username: 'shaxzod_e' },
+  ];
+  const SYNC_MS = 60000;
+  let myAccounts = store.get('shohmot-accounts', DEFAULT_ACCOUNTS);
   let state = null;
   let connection = 'connecting';
+  let syncing = false;
+  let lastSyncAt = null;
+  let nextSyncAt = Date.now();
+  let syncTimer = null;
   let day = startOfDay(Date.now()); // the day being shown
   let ratedOnly = store.get('shohmot-rated', false);
   let gamesFilter = 'all';
@@ -268,7 +279,7 @@
   function renderSheet() {
     $('#sheet-list').innerHTML = state.accounts.map((a) => `
       <li>
-        <span class="name">${esc(a.username)}<small>${PLATFORM[a.platform]}, ${nf.format(a.games.length)} games synced</small></span>
+        <span class="name">${esc(a.username)}<small>${PLATFORM[a.platform]}, ${plural(a.games.length, 'game', 'games')} in the last 26 weeks</small></span>
         <button class="btn" type="button" data-remove="${esc(a.id)}">Remove</button>
       </li>`).join('') || '<li>No accounts yet.</li>';
   }
@@ -276,21 +287,18 @@
   function renderStatus() {
     const el = $('#status');
     const text = $('#status-text');
-    const btn = $('#sync-now');
+    $('#sync-now').disabled = syncing;
+    if (syncing) { el.dataset.state = 'syncing'; text.textContent = 'Syncing…'; return; }
+    const next = Math.max(0, Math.round((nextSyncAt - Date.now()) / 1000));
     if (connection === 'offline') {
       el.dataset.state = 'offline';
-      text.textContent = 'Can’t reach the server. Retrying…';
-      btn.disabled = true;
+      text.textContent = `Can’t reach the server. Retrying in ${next}s`;
       return;
     }
-    if (!state) { el.dataset.state = 'connecting'; text.textContent = 'Connecting'; return; }
-    btn.disabled = state.syncing;
-    if (state.syncing) { el.dataset.state = 'syncing'; text.textContent = 'Syncing…'; return; }
+    if (!lastSyncAt) { el.dataset.state = 'connecting'; text.textContent = 'Connecting'; return; }
     el.dataset.state = 'live';
-    if (!state.lastSyncAt) { text.textContent = 'Waiting for first sync'; return; }
-    const s = Math.max(0, Math.round((Date.now() - state.lastSyncAt) / 1000));
-    const next = Math.max(0, Math.round((state.nextSyncAt - Date.now()) / 1000));
-    text.textContent = `Synced ${s < 5 ? 'just now' : s < 60 ? `${s}s ago` : ago(state.lastSyncAt)}, next in ${next}s`;
+    const s = Math.max(0, Math.round((Date.now() - lastSyncAt) / 1000));
+    text.textContent = `Synced ${s < 5 ? 'just now' : s < 60 ? `${s}s ago` : ago(lastSyncAt)}, next in ${next}s`;
   }
 
   function syncControls() {
@@ -316,31 +324,47 @@
     toastTimer = setTimeout(() => { el.hidden = true; }, 6000);
   }
 
-  // ---------- live connection ----------
-  function connect() {
-    const es = new EventSource('/api/events');
-    es.addEventListener('state', (e) => {
-      connection = 'live';
-      const data = JSON.parse(e.data);
-      const added = data.added || [];
-      state = data;
-      render();
-      if (added.length) {
-        const parts = added.map((x) => {
-          const a = state.accounts.find((acc) => acc.id === x.id);
-          return a ? `${x.count} on ${a.username} (${PLATFORM[a.platform]})` : `${x.count}`;
-        });
-        const n = added.reduce((s, x) => s + x.count, 0);
-        toast(`${n} new ${n === 1 ? 'game' : 'games'}: ${parts.join(', ')}`);
+  // ---------- sync: ask the server for fresh data every minute ----------
+  function saveAccounts() { store.set('shohmot-accounts', myAccounts); }
+  async function sync(fresh = false) {
+    if (syncing) return;
+    syncing = true;
+    clearTimeout(syncTimer);
+    renderStatus();
+    try {
+      let accounts = [];
+      if (myAccounts.length) {
+        const q = myAccounts.map((a) => `${a.platform}:${a.username}`).join(',');
+        const res = await fetch(`/api/state?accounts=${encodeURIComponent(q)}${fresh ? `&fresh=${Date.now()}` : ''}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        accounts = (await res.json()).accounts;
       }
-    });
-    es.addEventListener('status', (e) => {
-      if (!state) return;
-      Object.assign(state, JSON.parse(e.data));
+      const now = Date.now();
+      const next = accounts.map((a) => ({ ...a, lastSyncAt: now, lastError: a.error ? { message: a.error } : null }));
+      // Tell the user about games that weren't there on the last sync.
+      const added = [];
+      if (state) {
+        for (const a of next) {
+          const prev = state.accounts.find((x) => x.id === a.id);
+          if (!prev || !prev.games.length) continue;
+          const seen = new Set(prev.games.map((g) => g.id));
+          const n = a.games.filter((g) => !seen.has(g.id)).length;
+          if (n) added.push(`${n} on ${a.username} (${PLATFORM[a.platform]})`);
+        }
+      }
+      state = { accounts: next };
+      connection = 'live';
+      lastSyncAt = now;
+      render();
+      if (added.length) toast(`New games: ${added.join(', ')}`);
+    } catch {
+      connection = 'offline';
+    } finally {
+      syncing = false;
+      nextSyncAt = Date.now() + SYNC_MS;
+      syncTimer = setTimeout(() => sync(), SYNC_MS);
       renderStatus();
-    });
-    es.onopen = () => { connection = 'live'; renderStatus(); };
-    es.onerror = () => { connection = 'offline'; renderStatus(); };
+    }
   }
 
   // ---------- events ----------
@@ -364,9 +388,9 @@
     syncControls();
     renderGames();
   });
-  $('#sync-now').addEventListener('click', async () => {
-    $('#sync-now').disabled = true;
-    try { await fetch('/api/sync', { method: 'POST' }); } catch { /* status shows offline */ }
+  $('#sync-now').addEventListener('click', () => sync(true));
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && (!lastSyncAt || Date.now() - lastSyncAt > SYNC_MS)) sync();
   });
 
   const dialog = $('#accounts-dialog');
@@ -378,9 +402,11 @@
     const btn = e.target.closest('[data-remove]');
     if (!btn) return;
     const a = state.accounts.find((x) => x.id === btn.dataset.remove);
-    if (!a || !confirm(`Remove ${a.username} (${PLATFORM[a.platform]})? Its synced games are deleted from this app, not from ${PLATFORM[a.platform]}.`)) return;
-    btn.disabled = true;
-    await fetch(`/api/accounts/${encodeURIComponent(a.id)}`, { method: 'DELETE' });
+    if (!a || !confirm(`Remove ${a.username} (${PLATFORM[a.platform]}) from this page?`)) return;
+    myAccounts = myAccounts.filter((x) => `${x.platform}:${x.username.toLowerCase()}` !== a.id);
+    saveAccounts();
+    state.accounts = state.accounts.filter((x) => x.id !== a.id);
+    render();
   });
   $('#add-form').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -391,15 +417,20 @@
     btn.disabled = true;
     btn.textContent = 'Checking…';
     try {
-      const res = await fetch('/api/accounts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ platform: form.platform.value, username: form.username.value.trim() }),
-      });
+      const platform = form.platform.value;
+      const username = form.username.value.trim();
+      if (myAccounts.some((x) => x.platform === platform && x.username.toLowerCase() === username.toLowerCase())) {
+        err.textContent = 'That account is already on the list.';
+        return;
+      }
+      const res = await fetch(`/api/check?platform=${platform}&username=${encodeURIComponent(username)}`);
       const body = await res.json().catch(() => ({}));
       if (!res.ok) { err.textContent = body.error || 'Could not add that account.'; return; }
+      myAccounts.push({ platform, username: body.username });
+      saveAccounts();
       form.username.value = '';
-      toast('Account added. Syncing its games now.');
+      toast('Account added. Loading its games now.');
+      sync(true);
     } catch {
       err.textContent = 'Can’t reach the server. Check that it’s running.';
     } finally {
@@ -441,5 +472,5 @@
 
   syncControls();
   render();
-  connect();
+  sync();
 })();

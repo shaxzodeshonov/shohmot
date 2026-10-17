@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert');
 const { parseChesscomGame, parseLichessGame, parseNdjson, archiveMonthEnd, normSpeed } = require('../src/parse');
-const { mergeGames } = require('../src/sync');
+const { parseAccounts } = require('../src/handlers');
 
 test('chess.com: finds our side case-insensitively and maps results', () => {
   const base = {
@@ -49,9 +49,10 @@ test('archive month end is the first of the next month, UTC', () => {
   assert.equal(archiveMonthEnd('https://api.chess.com/pub/player/x/games/2025/12'), Date.UTC(2026, 0, 1));
 });
 
-test('merging dedupes by id, keeps order and counts only new games', () => {
-  const data = { games: [{ id: 'a', end: 1 }, { id: 'b', end: 3 }] };
-  const added = mergeGames(data, [{ id: 'b', end: 3 }, { id: 'c', end: 2 }, null]);
-  assert.equal(added, 1);
-  assert.deepEqual(data.games.map((g) => g.id), ['a', 'c', 'b']);
+test('account list from the query string is validated and deduped', () => {
+  assert.deepEqual(parseAccounts('chesscom:Shaxzod_e,lichess:shaxzod_e,chesscom:shaxzod_E,bad:x,lichess:no spaces'), [
+    { platform: 'chesscom', username: 'Shaxzod_e' },
+    { platform: 'lichess', username: 'shaxzod_e' },
+  ]);
+  assert.equal(parseAccounts(null).length, 3);
 });
