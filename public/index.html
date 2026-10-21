@@ -20,17 +20,11 @@
     <div class="bar-actions">
       <p class="status" id="status" aria-live="polite"><span class="status-dot"></span><span id="status-text">Connecting</span></p>
       <button class="btn" id="sync-now" type="button">Sync now</button>
-      <button class="btn" id="open-accounts" type="button">Edit accounts</button>
+      <button class="btn" id="open-accounts" type="button">Accounts</button>
     </div>
   </header>
 
-  <section class="welcome" id="welcome" aria-labelledby="welcome-title" hidden>
-    <h1 class="welcome-title" id="welcome-title">How many games did you play today?</h1>
-    <p class="welcome-sub">Tell Shohmot where you play. It finds your games on Chess.com and Lichess and shows, for every account, how many bullet, blitz, rapid and daily games you played today and how many you lost.</p>
-    <div class="setup" id="welcome-setup"></div>
-  </section>
-
-  <main id="dashboard" hidden>
+  <main id="dashboard">
     <section class="hero" aria-labelledby="headline">
       <div class="day-nav">
         <button class="step" id="day-prev" type="button" aria-label="Previous day">
@@ -81,15 +75,49 @@
   <div class="tip" id="tip" role="tooltip" hidden></div>
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <dialog class="sheet" id="accounts-dialog" aria-labelledby="sheet-title">
-    <div class="sheet-head">
-      <h2 id="sheet-title">Your accounts</h2>
-      <button class="btn" type="button" data-close>Cancel</button>
-    </div>
-    <div class="setup" id="edit-setup"></div>
+  <dialog class="pop" id="pop" aria-labelledby="pop-title">
+    <form class="pop-card" id="pop-form" novalidate>
+      <div class="pop-head">
+        <h2 id="pop-title">Add your chess account</h2>
+        <button type="button" class="pop-x" id="pop-close" aria-label="Close">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <ul class="pop-saved" id="pop-saved" aria-label="Accounts you added"></ul>
+      <div class="pop-row" id="pop-row">
+        <label class="pop-name">
+          <span class="sr-only">Username</span>
+          <input id="pop-user" type="text" placeholder="Username" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="30" aria-describedby="pop-status">
+        </label>
+        <label class="pop-site">
+          <span class="sr-only">Site</span>
+          <select id="pop-site">
+            <option value="chesscom">Chess.com</option>
+            <option value="lichess">Lichess</option>
+          </select>
+        </label>
+        <button type="submit" class="pop-add" id="pop-add" aria-label="Add account">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+      <p class="pop-status" id="pop-status" aria-live="polite"></p>
+      <div class="pop-confirm" id="pop-confirm" role="alertdialog" aria-labelledby="pop-confirm-text" hidden>
+        <p id="pop-confirm-text"></p>
+        <div class="pop-confirm-actions">
+          <button type="button" class="btn btn-solid" data-act="save">Save</button>
+          <button type="button" class="btn" data-act="discard">Discard</button>
+        </div>
+      </div>
+      <div class="pop-foot">
+        <button type="button" class="pop-plus" id="pop-plus">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+          Add another account
+        </button>
+      </div>
+    </form>
   </dialog>
 
-  <script src="setup.js"></script>
+  <script src="popup.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

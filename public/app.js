@@ -115,9 +115,9 @@
   function render() {
     renderDay();
     if (!state) {
-      // Waiting for the first answer from the server.
-      $('#headline').textContent = 'Finding your games…';
-      $('#hero-sub').textContent = 'The first look can take a few seconds.';
+      // Waiting for the first answer from the server, or for the first account.
+      $('#headline').textContent = myAccounts.length ? 'Finding your games…' : 'Add an account to see today’s games.';
+      $('#hero-sub').textContent = myAccounts.length ? 'The first look can take a few seconds.' : '';
       $('#split').hidden = true;
       $('#rows').innerHTML = '';
       $('#grid-head').innerHTML = '';
@@ -310,26 +310,16 @@
     text.textContent = `Synced ${s < 5 ? 'just now' : s < 60 ? `${s}s ago` : ago(lastSyncAt)}, next in ${next}s`;
   }
 
-  // New visitors (no accounts yet) see the welcome setup instead of the dashboard.
-  function showView() {
-    const has = myAccounts.length > 0;
-    $('#welcome').hidden = has;
-    $('#dashboard').hidden = !has;
-    $('#bar').querySelector('.bar-actions').hidden = !has;
-    if (!has) {
-      window.mountSetup($('#welcome-setup'), { submitLabel: 'Show my games', max: MAX_ACCOUNTS, onDone: useAccounts });
-    }
-  }
+  // Saving a new account list: load its games right away (behind the pop-up).
   function useAccounts(list) {
     myAccounts = list.map(({ platform, username }) => ({ platform, username }));
     saveAccounts();
     state = null;
     lastSyncAt = null;
     connection = 'connecting';
-    showView();
+    $('#sync-now').hidden = !myAccounts.length;
     render();
-    scrollTo(0, 0);
-    sync(true);
+    if (myAccounts.length) sync(true);
   }
 
   function syncControls() {
@@ -434,19 +424,10 @@
     if (document.visibilityState === 'visible' && (!lastSyncAt || Date.now() - lastSyncAt > SYNC_MS)) sync();
   });
 
-  const dialog = $('#accounts-dialog');
+  const popup = window.createAccountPopup({ getAccounts: () => myAccounts, onChange: useAccounts, max: MAX_ACCOUNTS });
   $('#open-accounts').addEventListener('click', () => {
-    const avatars = new Map((state ? state.accounts : []).map((a) => [a.id, a.profile && a.profile.avatar]));
-    window.mountSetup($('#edit-setup'), {
-      accounts: myAccounts.map((a) => ({ ...a, avatar: avatars.get(`${a.platform}:${a.username.toLowerCase()}`) || null })),
-      submitLabel: 'Save accounts',
-      max: MAX_ACCOUNTS,
-      onDone: (list) => { dialog.close(); useAccounts(list); },
-    });
-    dialog.showModal();
-  });
-  dialog.addEventListener('click', (e) => {
-    if (e.target === dialog || e.target.closest('[data-close]')) dialog.close();
+    if (state) for (const a of state.accounts) popup.remember(a.platform, a.username, a.profile && a.profile.avatar);
+    popup.open();
   });
 
   $('#board').addEventListener('click', (e) => {
@@ -481,7 +462,8 @@
   setInterval(() => { if (state && isToday()) { renderRows(); renderGames(); } }, 30000);
 
   syncControls();
-  showView();
+  $('#sync-now').hidden = !myAccounts.length;
   render();
-  if (myAccounts.length) sync();
+  // First visit: nothing saved yet, so ask for an account straight away.
+  if (myAccounts.length) sync(); else popup.open();
 })();
