@@ -54,5 +54,6 @@ test('account list from the query string is validated and deduped', () => {
     { platform: 'chesscom', username: 'Shaxzod_e' },
     { platform: 'lichess', username: 'shaxzod_e' },
   ]);
-  assert.equal(parseAccounts(null).length, 3);
+  assert.equal(parseAccounts(null).length, 0);
+  assert.equal(parseAccounts('lichess:a1,lichess:b2,lichess:c3,lichess:d4,lichess:e5').length, 4);
 });

@@ -87,12 +87,14 @@ function errorMessage(platform, err) {
 const cache = new Map();
 const CACHE_MS = 45000;
 
-async function fetchAccount(platform, username, { fresh = false } = {}) {
+// `days` limits how far back to look; a short window answers much faster.
+async function fetchAccount(platform, username, { fresh = false, days = WINDOW_DAYS } = {}) {
   const id = `${platform}:${username.toLowerCase()}`;
-  const hit = cache.get(id);
+  const key = `${id}:${days}`;
+  const hit = cache.get(key);
   if (!fresh && hit && Date.now() - hit.at < CACHE_MS) return hit.value;
 
-  const since = Date.now() - WINDOW_DAYS * DAY;
+  const since = Date.now() - days * DAY;
   let value;
   try {
     const data = platform === 'lichess' ? await fetchLichess(username, since) : await fetchChesscom(username, since);
@@ -104,20 +106,25 @@ async function fetchAccount(platform, username, { fresh = false } = {}) {
     value = { id, platform, username, profile: null, games: [], error: errorMessage(platform, err) };
     return value;
   }
-  cache.set(id, { at: Date.now(), value });
+  cache.set(key, { at: Date.now(), value });
   return value;
 }
 
-async function accountExists(platform, username) {
+// Looks a username up so the setup form can show who it found.
+// Returns { username, avatar } with the site's own spelling, or null if there's no such player.
+async function lookupAccount(platform, username) {
   const u = encodeURIComponent(username.toLowerCase());
   const url = platform === 'lichess' ? `https://lichess.org/api/user/${u}` : `https://api.chess.com/pub/player/${u}`;
+  let profile;
   try {
-    await get(url);
-    return true;
+    profile = await get(url).then((r) => r.json());
   } catch (err) {
-    if (err.status === 404) return false;
+    if (err.status === 404) return null;
     throw err;
   }
+  // Lichess answers closed accounts with { disabled: true }.
+  if (profile.disabled) return null;
+  return { username: profile.username || username, avatar: profile.avatar || null };
 }
 
-module.exports = { fetchAccount, accountExists, WINDOW_DAYS };
+module.exports = { fetchAccount, lookupAccount, WINDOW_DAYS };

@@ -29,13 +29,20 @@
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* private mode */ } },
   };
 
-  const DEFAULT_ACCOUNTS = [
-    { platform: 'chesscom', username: 'shaxzod_e' },
-    { platform: 'chesscom', username: 'kindofinterestedinchess' },
-    { platform: 'lichess', username: 'shaxzod_e' },
-  ];
   const SYNC_MS = 60000;
-  let myAccounts = store.get('shohmot-accounts', DEFAULT_ACCOUNTS);
+  const MAX_ACCOUNTS = 4;
+  let myAccounts = store.get('shohmot-accounts', []);
+  // A link like /?accounts=chesscom:name,lichess:name opens straight onto those accounts.
+  const linked = new URLSearchParams(location.search).get('accounts');
+  if (linked) {
+    const fromLink = linked.split(',').map((p) => p.split(':')).filter(([pf, u]) => PLATFORM[pf] && /^[A-Za-z0-9_-]{2,30}$/.test(u || ''))
+      .slice(0, MAX_ACCOUNTS).map(([platform, username]) => ({ platform, username }));
+    if (fromLink.length) {
+      myAccounts = fromLink;
+      store.set('shohmot-accounts', myAccounts);
+    }
+    history.replaceState(null, '', location.pathname);
+  }
   let state = null;
   let connection = 'connecting';
   let syncing = false;
@@ -107,12 +114,20 @@
   // ---------- render ----------
   function render() {
     renderDay();
-    if (!state) return;
+    if (!state) {
+      // Waiting for the first answer from the server.
+      $('#headline').textContent = 'Finding your games…';
+      $('#hero-sub').textContent = 'The first look can take a few seconds.';
+      $('#split').hidden = true;
+      $('#rows').innerHTML = '';
+      $('#grid-head').innerHTML = '';
+      $('#games').innerHTML = '';
+      return;
+    }
     renderHero();
     renderRows();
     renderGames();
     renderBoard();
-    renderSheet();
     renderStatus();
   }
 
@@ -276,13 +291,7 @@
     $('#board-hint').textContent = `You played on ${played} days in the last ${WEEKS} weeks. Click a day to open it.`;
   }
 
-  function renderSheet() {
-    $('#sheet-list').innerHTML = state.accounts.map((a) => `
-      <li>
-        <span class="name">${esc(a.username)}<small>${PLATFORM[a.platform]}, ${plural(a.games.length, 'game', 'games')} in the last 26 weeks</small></span>
-        <button class="btn" type="button" data-remove="${esc(a.id)}">Remove</button>
-      </li>`).join('') || '<li>No accounts yet.</li>';
-  }
+
 
   function renderStatus() {
     const el = $('#status');
@@ -299,6 +308,28 @@
     el.dataset.state = 'live';
     const s = Math.max(0, Math.round((Date.now() - lastSyncAt) / 1000));
     text.textContent = `Synced ${s < 5 ? 'just now' : s < 60 ? `${s}s ago` : ago(lastSyncAt)}, next in ${next}s`;
+  }
+
+  // New visitors (no accounts yet) see the welcome setup instead of the dashboard.
+  function showView() {
+    const has = myAccounts.length > 0;
+    $('#welcome').hidden = has;
+    $('#dashboard').hidden = !has;
+    $('#bar').querySelector('.bar-actions').hidden = !has;
+    if (!has) {
+      window.mountSetup($('#welcome-setup'), { submitLabel: 'Show my games', max: MAX_ACCOUNTS, onDone: useAccounts });
+    }
+  }
+  function useAccounts(list) {
+    myAccounts = list.map(({ platform, username }) => ({ platform, username }));
+    saveAccounts();
+    state = null;
+    lastSyncAt = null;
+    connection = 'connecting';
+    showView();
+    render();
+    scrollTo(0, 0);
+    sync(true);
   }
 
   function syncControls() {
@@ -326,19 +357,27 @@
 
   // ---------- sync: ask the server for fresh data every minute ----------
   function saveAccounts() { store.set('shohmot-accounts', myAccounts); }
+  let syncAgain = false;
+  // With nothing on screen yet, first ask for just the last two days (fast),
+  // then fetch the full 26 weeks for the calendar right after.
   async function sync(fresh = false) {
-    if (syncing) return;
+    const quick = !state;
+    // If the account list changed mid-sync, run again right after.
+    if (syncing) { syncAgain = true; return; }
     syncing = true;
     clearTimeout(syncTimer);
     renderStatus();
     try {
+      const wanted = JSON.stringify(myAccounts);
       let accounts = [];
       if (myAccounts.length) {
         const q = myAccounts.map((a) => `${a.platform}:${a.username}`).join(',');
-        const res = await fetch(`/api/state?accounts=${encodeURIComponent(q)}${fresh ? `&fresh=${Date.now()}` : ''}`);
+        const res = await fetch(`/api/state?accounts=${encodeURIComponent(q)}${quick ? '&days=2' : ''}${fresh ? `&fresh=${Date.now()}` : ''}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         accounts = (await res.json()).accounts;
       }
+      // The account list changed while we were waiting; drop this answer.
+      if (wanted !== JSON.stringify(myAccounts)) { syncAgain = true; return; }
       const now = Date.now();
       const next = accounts.map((a) => ({ ...a, lastSyncAt: now, lastError: a.error ? { message: a.error } : null }));
       // Tell the user about games that weren't there on the last sync.
@@ -348,7 +387,8 @@
           const prev = state.accounts.find((x) => x.id === a.id);
           if (!prev || !prev.games.length) continue;
           const seen = new Set(prev.games.map((g) => g.id));
-          const n = a.games.filter((g) => !seen.has(g.id)).length;
+          const latest = prev.games[prev.games.length - 1].end;
+          const n = a.games.filter((g) => !seen.has(g.id) && g.end > latest).length;
           if (n) added.push(`${n} on ${a.username} (${PLATFORM[a.platform]})`);
         }
       }
@@ -361,6 +401,7 @@
       connection = 'offline';
     } finally {
       syncing = false;
+      if (syncAgain) { syncAgain = false; setTimeout(() => sync(true)); } else if (quick && state) setTimeout(() => sync());
       nextSyncAt = Date.now() + SYNC_MS;
       syncTimer = setTimeout(() => sync(), SYNC_MS);
       renderStatus();
@@ -394,49 +435,18 @@
   });
 
   const dialog = $('#accounts-dialog');
-  $('#open-accounts').addEventListener('click', () => { $('#add-error').textContent = ''; dialog.showModal(); });
+  $('#open-accounts').addEventListener('click', () => {
+    const avatars = new Map((state ? state.accounts : []).map((a) => [a.id, a.profile && a.profile.avatar]));
+    window.mountSetup($('#edit-setup'), {
+      accounts: myAccounts.map((a) => ({ ...a, avatar: avatars.get(`${a.platform}:${a.username.toLowerCase()}`) || null })),
+      submitLabel: 'Save accounts',
+      max: MAX_ACCOUNTS,
+      onDone: (list) => { dialog.close(); useAccounts(list); },
+    });
+    dialog.showModal();
+  });
   dialog.addEventListener('click', (e) => {
     if (e.target === dialog || e.target.closest('[data-close]')) dialog.close();
-  });
-  $('#sheet-list').addEventListener('click', async (e) => {
-    const btn = e.target.closest('[data-remove]');
-    if (!btn) return;
-    const a = state.accounts.find((x) => x.id === btn.dataset.remove);
-    if (!a || !confirm(`Remove ${a.username} (${PLATFORM[a.platform]}) from this page?`)) return;
-    myAccounts = myAccounts.filter((x) => `${x.platform}:${x.username.toLowerCase()}` !== a.id);
-    saveAccounts();
-    state.accounts = state.accounts.filter((x) => x.id !== a.id);
-    render();
-  });
-  $('#add-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const form = e.target;
-    const btn = $('button[type="submit"]', form);
-    const err = $('#add-error');
-    err.textContent = '';
-    btn.disabled = true;
-    btn.textContent = 'Checking…';
-    try {
-      const platform = form.platform.value;
-      const username = form.username.value.trim();
-      if (myAccounts.some((x) => x.platform === platform && x.username.toLowerCase() === username.toLowerCase())) {
-        err.textContent = 'That account is already on the list.';
-        return;
-      }
-      const res = await fetch(`/api/check?platform=${platform}&username=${encodeURIComponent(username)}`);
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) { err.textContent = body.error || 'Could not add that account.'; return; }
-      myAccounts.push({ platform, username: body.username });
-      saveAccounts();
-      form.username.value = '';
-      toast('Account added. Loading its games now.');
-      sync(true);
-    } catch {
-      err.textContent = 'Can’t reach the server. Check that it’s running.';
-    } finally {
-      btn.disabled = false;
-      btn.textContent = 'Add account';
-    }
   });
 
   $('#board').addEventListener('click', (e) => {
@@ -471,6 +481,7 @@
   setInterval(() => { if (state && isToday()) { renderRows(); renderGames(); } }, 30000);
 
   syncControls();
+  showView();
   render();
-  sync();
+  if (myAccounts.length) sync();
 })();
