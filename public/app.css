@@ -150,7 +150,7 @@ a.who-name:hover { text-decoration: underline; text-underline-offset: 3px; }
 .toggle button[aria-pressed="true"] { background: var(--sage); color: var(--sage-ink); }
 
 .games { list-style: none; margin: 0; padding: 0; max-height: 460px; overflow-y: auto; }
-.game { display: grid; grid-template-columns: 54px minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 11px 2px; border-bottom: 1px solid var(--line); }
+.game { display: grid; grid-template-columns: 54px minmax(0, 1fr) auto auto; gap: 14px; align-items: center; padding: 11px 2px; border-bottom: 1px solid var(--line); }
 .res { font-weight: 700; font-size: 13px; padding: 3px 0; text-align: center; border-radius: 6px; }
 .res.win { background: rgb(166 201 122 / .14); color: var(--win); }
 .res.draw { background: rgb(201 182 143 / .12); color: var(--draw); }
@@ -163,6 +163,8 @@ a.who-name:hover { text-decoration: underline; text-underline-offset: 3px; }
 .opp-meta { font-size: 13px; color: var(--faint); }
 .opp-meta i { font-style: normal; font-weight: 600; color: var(--c); }
 .when { font-size: 13px; color: var(--faint); white-space: nowrap; }
+.review-link { font-size: 13px; font-weight: 700; color: var(--sage); text-decoration: none; border: 1px solid var(--line-2); border-radius: 999px; padding: 3px 11px; }
+.review-link:hover { background: var(--raise); border-color: var(--sage); }
 .empty { padding: 26px 2px; color: var(--muted); }
 
 .board-wrap { overflow-x: auto; padding: 16px 0 4px; }

@@ -238,7 +238,15 @@
           <span class="opp-meta"><i style="--c:var(--${g.speed})">${SPEED_NAME[g.speed]}</i> on ${esc(a.username)}, ${PLATFORM[a.platform]}${g.rated ? '' : ', casual'}</span>
         </span>
         <span class="when" title="${esc(new Date(g.end).toLocaleString())}">${isToday() ? ago(g.end) : timeFmt.format(g.end)}</span>
+        ${reviewLink(g, a)}
       </li>`).join('') || `<li class="empty">${gamesFilter === 'loss' ? `No losses ${dayWord()}.` : `No games ${dayWord()}.`}</li>`;
+  }
+
+  // Stockfish review, for standard chess only.
+  function reviewLink(g, a) {
+    if (g.variant !== 'chess' && g.variant !== 'standard') return '<span></span>';
+    const qs = new URLSearchParams({ p: a.platform, u: a.username, id: g.id, t: String(g.end) });
+    return `<a class="review-link" href="review.html?${esc(qs.toString())}">Review</a>`;
   }
 
   let boardDays = new Map();

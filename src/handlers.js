@@ -1,5 +1,5 @@
 // Request handlers shared by the Vercel functions in api/ and the local server.
-const { fetchAccount, lookupAccount, WINDOW_DAYS } = require('./games');
+const { fetchAccount, lookupAccount, fetchGamePgn, WINDOW_DAYS } = require('./games');
 
 const USERNAME_RE = /^[A-Za-z0-9_-]{2,30}$/;
 const PLATFORMS = ['chesscom', 'lichess'];
@@ -54,4 +54,29 @@ async function check(req, res) {
   send(res, 200, { ok: true, platform, ...found }, 'public, s-maxage=3600');
 }
 
-module.exports = { state, check, parseAccounts };
+// GET /api/game?platform=chesscom&username=name&id=<uuid>&end=<ms>
+// Lichess ids are 8 characters; Chess.com uses the game's uuid.
+const GAME_ID_RE = /^([A-Za-z0-9]{8}|[0-9a-f-]{36})$/;
+async function game(req, res) {
+  const url = new URL(req.url, 'http://localhost');
+  const platform = url.searchParams.get('platform');
+  const username = (url.searchParams.get('username') || '').trim();
+  const id = url.searchParams.get('id') || '';
+  const end = Number(url.searchParams.get('end')) || Date.now();
+  if (!PLATFORMS.includes(platform) || !USERNAME_RE.test(username) || !GAME_ID_RE.test(id)) {
+    return send(res, 400, { error: 'That game link looks broken.' });
+  }
+  const site = platform === 'lichess' ? 'Lichess' : 'Chess.com';
+  let found;
+  try {
+    found = await fetchGamePgn(platform, username, id, end);
+  } catch (err) {
+    if (err.status === 404) return send(res, 404, { error: `${site} has no such game.` });
+    return send(res, 502, { error: `Could not reach ${site}. Try again in a moment.` });
+  }
+  if (!found || !found.pgn) return send(res, 404, { error: `${site} has no such game.` });
+  // A finished game never changes, so the CDN can keep it for a day.
+  send(res, 200, { platform, id, ...found }, 'public, s-maxage=86400');
+}
+
+module.exports = { state, check, game, parseAccounts };

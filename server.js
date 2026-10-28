@@ -12,36 +12,43 @@ const TYPES = {
   '.html': 'text/html; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
+  '.mjs': 'text/javascript; charset=utf-8',
+  '.json': 'application/json; charset=utf-8',
   '.svg': 'image/svg+xml',
+  '.wasm': 'application/wasm',
 };
 
-function serveStatic(res, pathname) {
+function serveStatic(req, res, pathname) {
   const rel = pathname === '/' ? 'index.html' : decodeURIComponent(pathname).replace(/^\/+/, '');
   const file = path.resolve(PUBLIC, rel);
   if (!file.startsWith(PUBLIC + path.sep)) {
     res.writeHead(403);
     return res.end('Forbidden');
   }
-  fs.readFile(file, (err, buf) => {
-    if (err) {
+  fs.stat(file, (err, st) => {
+    if (err || !st.isFile()) {
       res.writeHead(404, { 'Content-Type': 'text/plain' });
       return res.end('Not found');
     }
-    res.writeHead(200, { 'Content-Type': TYPES[path.extname(file)] || 'application/octet-stream', 'Cache-Control': 'no-cache' });
-    res.end(buf);
+    // Stockfish files have the version in their name, so they never change.
+    const cache = rel.startsWith('vendor/stockfish-') ? 'public, max-age=31536000, immutable' : 'no-cache';
+    res.writeHead(200, { 'Content-Type': TYPES[path.extname(file)] || 'application/octet-stream', 'Content-Length': st.size, 'Cache-Control': cache });
+    if (req.method === 'HEAD') return res.end();
+    fs.createReadStream(file).pipe(res);
   });
 }
 
 http.createServer(async (req, res) => {
   const { pathname } = new URL(req.url, 'http://localhost');
   try {
-    if (req.method !== 'GET') {
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
       res.writeHead(405);
       return res.end();
     }
     if (pathname === '/api/state') return await handlers.state(req, res);
     if (pathname === '/api/check') return await handlers.check(req, res);
-    serveStatic(res, pathname);
+    if (pathname === '/api/game') return await handlers.game(req, res);
+    serveStatic(req, res, pathname);
   } catch (err) {
     console.error(err);
     if (!res.headersSent) {

@@ -4,6 +4,19 @@
   "buildCommand": "",
   "outputDirectory": "public",
   "functions": {
-    "api/*.js": { "maxDuration": 60 }
-  }
+    "api/*.js": {
+      "maxDuration": 60
+    }
+  },
+  "headers": [
+    {
+      "source": "/vendor/stockfish-(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    }
+  ]
 }

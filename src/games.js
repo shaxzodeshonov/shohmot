@@ -127,4 +127,38 @@ async function lookupAccount(platform, username) {
   return { username: profile.username || username, avatar: profile.avatar || null };
 }
 
-module.exports = { fetchAccount, lookupAccount, WINDOW_DAYS };
+// The PGN of one finished game, for the review page, plus the site's own
+// accuracy numbers when the game was analysed there ({ white, black } or null).
+// Chess.com has no single-game API, so we look in the monthly archive the game ended in.
+async function fetchGamePgn(platform, username, id, end) {
+  if (platform === 'lichess') {
+    // The export-by-ids endpoint, because the single-game one answers some
+    // games with "Login required".
+    const params = new URLSearchParams({ clocks: 'false', evals: 'false', opening: 'true', accuracy: 'true', pgnInJson: 'true' });
+    const res = await fetch(`https://lichess.org/api/games/export/_ids?${params}`, {
+      method: 'POST',
+      headers: { 'User-Agent': UA, Accept: 'application/x-ndjson', 'Content-Type': 'text/plain' },
+      body: id,
+      signal: AbortSignal.timeout(45000),
+    });
+    if (!res.ok) throw new HttpError(res.status, res.url);
+    const [g] = parseNdjson(await res.text());
+    if (!g) return null;
+    const acc = (c) => (g.players && g.players[c] && g.players[c].analysis ? g.players[c].analysis.accuracy : null);
+    const official = acc('white') != null && acc('black') != null ? { white: acc('white'), black: acc('black') } : null;
+    return { pgn: g.pgn || '', url: `https://lichess.org/${id}`, official };
+  }
+  const base = `https://api.chess.com/pub/player/${encodeURIComponent(username.toLowerCase())}/games`;
+  const d = new Date(end);
+  // A game near a month boundary can sit in either archive.
+  const months = [d, new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() - 1, 15))];
+  for (const m of months) {
+    const month = String(m.getUTCMonth() + 1).padStart(2, '0');
+    const { games = [] } = await get(`${base}/${m.getUTCFullYear()}/${month}`).then((r) => r.json());
+    const g = games.find((x) => x.uuid === id || x.url === id);
+    if (g) return { pgn: g.pgn || '', url: g.url, official: g.accuracies || null };
+  }
+  return null;
+}
+
+module.exports = { fetchAccount, lookupAccount, fetchGamePgn, WINDOW_DAYS };
