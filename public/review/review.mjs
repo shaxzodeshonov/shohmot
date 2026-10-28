@@ -591,24 +591,7 @@ function showError(text) {
 }
 
 // ---------- start ----------
-// Wide screens fit the whole review in the window (see review.css): measure
-// what is stacked around the board and give the board the rest of the height.
-// A few passes, because a smaller board can make the controls wrap.
-function fitBoard() {
-  const grid = $('#grid');
-  if (grid.hidden || !matchMedia('(min-width: 901px)').matches) return;
-  for (let k = 0; k < 4; k++) {
-    const board = $('#board').getBoundingClientRect().height;
-    const bottom = $('main').getBoundingClientRect().bottom + scrollY;
-    const chrome = Math.ceil(bottom - board);
-    if (Math.abs(chrome - (parseFloat(grid.style.getPropertyValue('--chrome')) || 0)) < 2) break;
-    grid.style.setProperty('--chrome', `${chrome}px`);
-  }
-}
-
 function wire() {
-  addEventListener('resize', fitBoard);
-  document.fonts.ready.then(fitBoard);
   document.addEventListener('click', (e) => {
     const t = e.target.closest('[data-ply],[data-go],[data-tab],.jump');
     if (!t) return;
@@ -672,7 +655,7 @@ async function main() {
   // The full engine is the most accurate, but it's a 99 MB download, so phones
   // start on lite unless full was picked before.
   const savedEngine = store.get('shohmot-review-engine');
-  const phone = matchMedia('(max-width: 700px)').matches || (navigator.connection && navigator.connection.saveData);
+  const phone = matchMedia('(max-width: 43.75em)').matches || (navigator.connection && navigator.connection.saveData);
   $('#engine').value = savedEngine || (phone ? 'lite' : 'full');
   $('#engine').addEventListener('change', () => store.set('shohmot-review-engine', $('#engine').value));
 
@@ -711,7 +694,7 @@ async function main() {
   ply = 0;
   renderHead();
   $('#grid').hidden = false;
-  fitBoard();
+  $('#panel-game').hidden = false;
   render();
   analyse();
 }
