@@ -151,6 +151,33 @@ a.btn { text-decoration: none; display: inline-block; }
 .mv[data-l="blunder"], .mv[data-l="mistake"], .mv[data-l="miss"], .mv[data-l="inaccuracy"], .mv[data-l="brilliant"], .mv[data-l="great"] { color: var(--l); }
 .mv .badge { width: 16px; height: 16px; font-size: 9px; }
 
+/* Wide screens: the whole review fits in the window with no page scroll.
+   The board is as big as the height allows (up to 600px); --chrome is
+   everything stacked above and below it (bar, heading, player rows,
+   controls, graph). The side panel takes the board column's height and
+   scrolls inside itself. */
+@media (min-width: 901px) {
+  .review { padding-bottom: 16px; }
+  .rv-head { padding: 14px 0 16px; }
+  .rv-title { font-size: clamp(1.5rem, 1rem + 1vw, 2.1rem); }
+  .rv-title, .rv-meta { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rv-meta { margin-top: 4px; }
+  .rv-grid {
+    --chrome: 390px;
+    --board: clamp(220px, 100dvh - var(--chrome), 600px);
+    grid-template-columns: calc(var(--board) + 34px) minmax(0, 1fr);
+    align-items: stretch;
+  }
+  .cb { flex: none; width: var(--board); }
+  .controls { padding-top: 10px; }
+  .graph { height: 64px; margin-top: 10px; }
+  .rv-right { contain: size; display: flex; flex-direction: column; }
+  .rv-right .tab { flex: 1; min-height: 0; overflow-y: auto; }
+  #tab-moves:not([hidden]) { display: flex; flex-direction: column; overflow: hidden; }
+  .note { flex: none; }
+  .moves { flex: 1; min-height: 0; max-height: none; }
+}
+
 @media (max-width: 900px) {
   .rv-grid { grid-template-columns: minmax(0, 1fr); gap: 28px; }
   .rv-grid .rv-left { max-width: 600px; }
