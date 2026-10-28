@@ -43,7 +43,10 @@ What the review shows, modelled on Chess.com's Game Review:
 - **Move labels**: Brilliant, Great, Best, Excellent, Good, Book, Forced, Inaccuracy, Mistake, Miss, Blunder. They use Chess.com's expected-points thresholds (0.02 / 0.05 / 0.10 / 0.20), plus: Brilliant is a sound sacrifice of 2+ pawns' worth, Great is the only good move, Miss is failing to punish an opponent's mistake.
 - **Best move arrow** and the engine's line for every move that wasn't best, a short reason ("It loses a knight", "It allows mate in 2"), the **eval bar** and the **eval graph** (click to jump).
 - **Opening name** and book moves, from Lichess's [chess-openings](https://github.com/lichess-org/chess-openings) list (CC0). Rebuild `public/openings.json` with `node scripts/build-openings.mjs`.
-- Accuracy **by phase** (opening, middlegame, endgame) and a list of your key moments. Keys: ← → Home End, N for your next mistake, F to flip.
+- Accuracy **by phase** (opening, middlegame, endgame) and a list of your key moments.
+- **Analysis board.** Drag a piece or click it and then its square (dots show the legal moves, a picker handles promotion) to try your own moves. Anything other than the game's next move starts **your line**, shown under the game move it replaces; step through it with ← →, click it to jump in, "Back to the game" to leave and × to remove it. Once the review is done, a **live engine** follows the board and shows its top 3 lines and the best move as a blue arrow; click a move in a line to play the line up to it. The Engine switch turns it off.
+- **Move sounds** for moves, captures, castling, checks and promotions, made with Web Audio (no sound files). The speaker button (or M) mutes them.
+- Keys: ← → Home End, N for your next mistake, F to flip, M for sound, Esc to drop a picked piece.
 
 `/api/game` fetches the game's PGN and the site's own accuracy numbers: Lichess's export-by-ids API (the single-game export asks for a login on some games), or the Chess.com monthly archive the game ended in.
 

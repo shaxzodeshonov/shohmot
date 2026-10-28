@@ -19,6 +19,10 @@
       Shohmot
     </a>
     <div class="bar-actions">
+      <button class="icon-btn" id="sound" type="button" aria-pressed="true" aria-label="Move sounds">
+        <svg class="on" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4zm12.5 3a4.5 4.5 0 0 0-2-3.7v7.4a4.5 4.5 0 0 0 2-3.7zM14.5 4.3v2.1a7 7 0 0 1 0 11.2v2.1a9 9 0 0 0 0-15.4z" fill="currentColor"/></svg>
+        <svg class="off" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4zm12.6 3 2.7-2.7-1.4-1.4-2.7 2.7-2.7-2.7-1.4 1.4 2.7 2.7-2.7 2.7 1.4 1.4 2.7-2.7 2.7 2.7 1.4-1.4z" fill="currentColor"/></svg>
+      </button>
       <label class="depth">
         <span>Engine</span>
         <select id="engine">
@@ -70,6 +74,14 @@
           <svg viewBox="0 0 1000 100" preserveAspectRatio="none" aria-hidden="true"><path class="g-area" id="g-area"/><line class="g-mid" x1="0" y1="50" x2="1000" y2="50"/><line class="g-now" id="g-now" y1="0" y2="100"/></svg>
           <div class="g-dots" id="g-dots"></div>
         </div>
+
+        <section class="lines" id="lines" aria-label="Engine lines" aria-live="off">
+          <div class="lines-h">
+            <button type="button" class="switch" id="live-toggle" aria-pressed="true"><i></i><span>Engine</span></button>
+            <small id="lines-depth"></small>
+          </div>
+          <div class="lines-body" id="lines-body"></div>
+        </section>
 
         <div class="toggle" role="group" aria-label="View" id="tabs">
           <button type="button" data-tab="report" aria-pressed="true">Report</button>

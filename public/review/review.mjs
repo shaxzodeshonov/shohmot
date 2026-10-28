@@ -1,8 +1,12 @@
 // Game review page: loads one game, runs Stockfish over every position and
-// shows accuracy, move labels, best moves and the evaluation graph.
+// shows accuracy, move labels, best moves and the evaluation graph. The board
+// is also an analysis board: pieces can be moved freely to try other moves
+// (a "line" off the game), with a live engine showing the best moves ahead.
 // Opened from the game list as /review.html?p=<platform>&u=<username>&id=<game id>&t=<end ms>
 import { Chess } from '../vendor/chess.mjs';
-import { EnginePool, ENGINES } from './engine.mjs';
+import { EnginePool, LiveEngine, ENGINES } from './engine.mjs';
+import { boardInput } from './board-input.mjs';
+import { play, soundOf, isMuted, setMuted } from './sound.mjs';
 import { cloudEvals } from './cloud.mjs';
 import { LABELS, BAD, ACCURACY, winPercent, moveAccuracy, gameAccuracy, classify, gameRating, phases } from './analysis.mjs';
 
@@ -33,6 +37,22 @@ let ply = 0;        // position shown: 0 = start, n = after the last move
 let flipped = false;
 let tab = 'report';
 let pool = null;
+
+// ---------- exploring ----------
+// One line of moves tried on the board, branching off the game after
+// `from` moves. vply is how far into it the board is (0 = on the game itself).
+let line = null;    // { from, moves: [{ san, uci, from, to, color, captured, fen }] }
+let vply = 0;
+let sel = null;     // picked square
+let targets = [];   // where the picked piece can go: [{ to, capture, promotion }]
+let live = null;    // LiveEngine, once the review is done
+let liveLines = { fen: null, lines: [] };
+let engineOn = store.get('shohmot-review-live') !== false;
+let input = null;   // board pointer handling
+let promoting = false; // the promotion picker is open, so the board must not be redrawn
+
+function curFen() { return vply ? line.moves[vply - 1].fen : game.fens[ply]; }
+function curMove() { return vply ? line.moves[vply - 1] : ply ? game.moves[ply - 1] : null; }
 
 function uciOf(m) { return m.from + m.to + (m.promotion || ''); }
 function epd(fen) { return fen.split(' ').slice(0, 4).join(' '); }
@@ -149,9 +169,12 @@ function whiteWin(i, k) {
 // The score as White sees it, e.g. "+1.3", "-0.4", "M3", "-M2".
 function evalText(i) {
   const r = results[i];
-  if (!r || !r[0]) return '';
-  const s = r[0].score;
-  const sign = game.fens[i].split(' ')[1] === 'w' ? 1 : -1;
+  return r && r[0] ? scoreText(r[0].score, game.fens[i]) : '';
+}
+
+// The same for any score, given the position it is for (scores are for the side to move).
+function scoreText(s, fen) {
+  const sign = fen.split(' ')[1] === 'w' ? 1 : -1;
   if (s.mate != null) {
     if (s.mate === 0) return sign > 0 ? '0-1' : '1-0';
     const m = s.mate * sign;
@@ -217,6 +240,7 @@ async function analyse() {
   const engine = $('#engine').value;
   const mine = ++run;
   if (pool) pool.stop();
+  stopLive();
   pool = null;
   review = null;
   const total = game.fens.length;
@@ -292,7 +316,43 @@ function finish(depth) {
   $('#progress').hidden = true;
   $('#progress').dataset.depth = depth;
   render();
+  follow();
 }
+
+// ---------- live engine ----------
+// It starts once the review is done, so the two don't fight over the CPU.
+function follow() {
+  const chess = new Chess(curFen());
+  if (!engineOn || !review || chess.isGameOver()) return;
+  live ??= new LiveEngine($('#engine').value, (fen, lines) => {
+    if (fen !== curFen()) return;
+    liveLines = { fen, lines };
+    scheduleLive();
+  });
+  live.show(curFen()).catch(() => { stopLive(); });
+}
+
+function stopLive() {
+  if (live) live.stop();
+  live = null;
+  liveLines = { fen: null, lines: [] };
+}
+
+// Engine output comes in bursts; redraw at most every 80 ms.
+let liveFrame = 0;
+function scheduleLive() {
+  if (liveFrame) return;
+  liveFrame = setTimeout(() => {
+    liveFrame = 0;
+    renderLines();
+    renderEvalBar();
+    if (!input || !input.dragging) renderBoard();
+    if (tab === 'moves' && vply) renderNote();
+  }, 80);
+}
+
+// The live lines for the position on the board, if the engine has any yet.
+function liveFor(fen) { return liveLines.fen === fen ? liveLines.lines : []; }
 
 function setProgress(done, total, note = '') {
   $('#progress').hidden = false;
@@ -318,9 +378,12 @@ function squareXY(sq) {
 }
 
 function renderBoard() {
-  const chess = new Chess(game.fens[ply]);
-  const move = ply > 0 ? game.moves[ply - 1] : null;
-  const label = move && review ? review.labels[ply - 1] : null;
+  if (promoting) return;
+  const chess = new Chess(curFen());
+  const move = curMove();
+  // Review labels only belong to the game's own moves.
+  const label = !vply && move && review ? review.labels[ply - 1] : null;
+  const to = new Map(targets.map((t) => [t.to, t]));
   const cells = [];
   for (let y = 0; y < 8; y++) {
     for (let x = 0; x < 8; x++) {
@@ -330,24 +393,30 @@ function renderBoard() {
       const p = chess.get(sq);
       const cls = ['sq', (f + r) % 2 ? 'light' : 'dark'];
       if (move && (sq === move.from || sq === move.to)) cls.push('last');
+      if (sq === sel) cls.push('sel');
       const piece = p ? `<i class="pc" style="background-image:url(pieces/${p.color}${p.type.toUpperCase()}.svg)"></i>` : '';
       const coordF = y === 7 ? `<b class="cf">${FILES[f]}</b>` : '';
       const coordR = x === 0 ? `<b class="cr">${r + 1}</b>` : '';
       const badge = label && sq === move.to ? `<em class="badge" data-l="${label}" title="${LABELS[label].name}">${LABELS[label].mark}</em>` : '';
-      cells.push(`<div class="${cls.join(' ')}"${label && move && (sq === move.from || sq === move.to) ? ` data-l="${label}"` : ''}>${piece}${coordF}${coordR}${badge}</div>`);
+      const hint = to.has(sq) ? `<span class="${p ? 'hint cap' : 'hint'}"></span>` : '';
+      cells.push(`<div class="${cls.join(' ')}" data-sq="${sq}"${label && move && (sq === move.from || sq === move.to) ? ` data-l="${label}"` : ''}>${piece}${coordF}${coordR}${badge}${hint}</div>`);
     }
   }
-  // When the move played wasn't the engine's choice, an arrow shows what was.
-  let arrow = '';
+  // Green: what should have been played instead of a game move that wasn't best.
+  // Blue: the live engine's best move from here.
+  const arrows = [];
   if (label && !['best', 'book', 'forced', 'brilliant', 'great'].includes(label)) {
     const uci = review.info[ply - 1].best;
-    if (uci) arrow = `<svg class="arrow" viewBox="0 0 8 8" aria-hidden="true">${arrowPath(squareXY(uci.slice(0, 2)), squareXY(uci.slice(2, 4)))}</svg>`;
+    if (uci) arrows.push(arrowPath(squareXY(uci.slice(0, 2)), squareXY(uci.slice(2, 4)), 'a-best'));
   }
+  const best = liveFor(curFen())[0];
+  if (engineOn && best && best.pv[0] && !sel) arrows.push(arrowPath(squareXY(best.pv[0].slice(0, 2)), squareXY(best.pv[0].slice(2, 4)), 'a-live'));
+  const arrow = arrows.length ? `<svg class="arrow" viewBox="0 0 8 8" aria-hidden="true">${arrows.join('')}</svg>` : '';
   $('#board').innerHTML = cells.join('') + arrow;
-  $('#board').setAttribute('aria-label', move ? `Position after ${moveNumber(ply - 1)} ${move.san}` : 'Starting position');
+  $('#board').setAttribute('aria-label', move ? `Position after ${moveNumber(vply ? line.from + vply - 1 : ply - 1)} ${move.san}` : 'Starting position');
 }
 
-function arrowPath(a, b) {
+function arrowPath(a, b, cls = '') {
   const x1 = a.x + 0.5, y1 = a.y + 0.5, x2 = b.x + 0.5, y2 = b.y + 0.5;
   const dx = x2 - x1, dy = y2 - y1;
   const len = Math.hypot(dx, dy);
@@ -359,7 +428,7 @@ function arrowPath(a, b) {
     [x1 + px * w, y1 + py * w], [ex + px * w, ey + py * w], [ex + px * hw, ey + py * hw],
     [x2, y2], [ex - px * hw, ey - py * hw], [ex - px * w, ey - py * w], [x1 - px * w, y1 - py * w],
   ];
-  return `<polygon points="${pts.map((p) => p.map((v) => v.toFixed(3)).join(',')).join(' ')}"/>`;
+  return `<polygon class="${cls}" points="${pts.map((p) => p.map((v) => v.toFixed(3)).join(',')).join(' ')}"/>`;
 }
 
 function moveNumber(i) {
@@ -370,14 +439,21 @@ function moveNumber(i) {
   return k % 2 === 0 ? `${num}.` : `${num}…`;
 }
 
+// The eval bar follows the board: the review's score on the game's own
+// moves, the live engine's score anywhere else.
 function renderEvalBar() {
-  const w = whiteWin(ply);
+  const fen = curFen();
+  let score = null;
+  if (!vply && results[ply] && results[ply][0]) score = results[ply][0].score;
+  else if (liveFor(fen)[0]) score = liveFor(fen)[0].score;
+  else if (new Chess(fen).isCheckmate()) score = { mate: 0 };
+  const toMove = fen.split(' ')[1];
+  const w = score ? (toMove === 'w' ? winPercent(score) : 100 - winPercent(score)) : null;
   const bar = $('#evalbar');
   bar.classList.toggle('flipped', flipped);
   bar.querySelector('i').style.height = `${w == null ? 50 : w}%`;
-  const text = evalText(ply);
   const span = bar.querySelector('span');
-  span.textContent = text.replace(/^\+/, '');
+  span.textContent = score ? scoreText(score, fen).replace(/^\+/, '') : '';
   span.className = w != null && w < 50 ? 'black-ahead' : '';
 }
 
@@ -488,19 +564,43 @@ function quality(acc) {
 
 function renderMoves() {
   const out = [];
+  const n = game.moves.length;
+  // The tried line goes right under the row of the game move it replaces.
+  const after = line ? Math.min(n - 1, line.from + (game.moves[line.from] && game.moves[line.from].color === 'w' ? 1 : 0)) : -1;
   game.moves.forEach((m, i) => {
     const l = review ? review.labels[i] : null;
     const num = m.color === 'w' || i === 0 ? `<span class="num">${moveNumber(i).replace('…', '.')}</span>${m.color === 'b' ? '<span></span>' : ''}` : '';
-    out.push(`${num}<button type="button" class="mv${i + 1 === ply ? ' on' : ''}" data-ply="${i + 1}"${l ? ` data-l="${l}"` : ''}>${esc(m.san)}${l && l !== 'best' && l !== 'excellent' && l !== 'good' ? badge(l) : ''}</button>`);
+    const on = !vply && i + 1 === ply;
+    out.push(`${num}<button type="button" class="mv${on ? ' on' : ''}" data-ply="${i + 1}"${l ? ` data-l="${l}"` : ''}>${esc(m.san)}${l && l !== 'best' && l !== 'excellent' && l !== 'good' ? badge(l) : ''}</button>`);
+    if (i === after) out.push(variationHtml());
   });
+  if (line && after < 0) out.push(variationHtml());
   const list = $('#moves');
   list.innerHTML = `<li>${out.join('')}</li>`;
-  const on = list.querySelector('.mv.on');
+  const on = list.querySelector('.mv.on, .vm.on');
   if (on) on.scrollIntoView({ block: 'nearest' });
+}
+
+function variationHtml() {
+  const bits = line.moves.map((m, k) => {
+    const i = line.from + k;
+    const num = m.color === 'w' || k === 0 ? `<span class="vnum">${moveNumber(i)}</span>` : '';
+    return `${num}<button type="button" class="vm${vply === k + 1 ? ' on' : ''}" data-vply="${k + 1}">${esc(m.san)}</button>`;
+  });
+  return `<div class="var"><span class="var-h">Your line</span>${bits.join(' ')}<button type="button" class="var-x" data-go="drop" title="Remove this line" aria-label="Remove this line">×</button></div>`;
 }
 
 function renderNote() {
   const el = $('#note');
+  if (vply) {
+    const m = curMove();
+    const best = liveFor(curFen())[0];
+    const end = gameOverText(new Chess(curFen()));
+    el.innerHTML = `<p class="note-h" data-l="explore"><span>${moveNumber(line.from + vply - 1)} ${esc(m.san)}</span><small class="ev">${end || (best ? scoreText(best.score, curFen()) : '')}</small></p>
+      <p class="muted">You're trying your own moves from move ${moveNumber(line.from).replace(/[.…]$/, '')} of the game${end ? '.' : '. The engine lines above show where it goes.'}</p>
+      <p><button type="button" class="btn" data-go="game">Back to the game</button></p>`;
+    return;
+  }
   if (ply === 0) {
     el.innerHTML = `<p class="note-h">Starting position</p><p class="muted">${game.opening ? `${esc(game.opening.name)}${game.opening.eco ? ` (${esc(game.opening.eco)})` : ''}. ` : ''}Use ← → to step through the game.</p>`;
     return;
@@ -550,20 +650,170 @@ function lossText(d) {
   return 'a pawn';
 }
 
+function gameOverText(chess) {
+  if (chess.isCheckmate()) return 'Checkmate';
+  if (chess.isStalemate()) return 'Stalemate';
+  if (chess.isDraw()) return 'Draw';
+  return '';
+}
+
+// The engine's top lines for the position on the board, Chess.com style:
+// the score, then the moves it expects. Clicking a move plays the line up to it.
+function renderLines() {
+  $('#live-toggle').setAttribute('aria-pressed', String(engineOn));
+  const body = $('#lines-body');
+  const depth = $('#lines-depth');
+  depth.textContent = '';
+  if (!engineOn) { body.innerHTML = '<p class="muted">Engine lines are off.</p>'; return; }
+  const fen = curFen();
+  const end = gameOverText(new Chess(fen));
+  if (end) { body.innerHTML = `<p class="muted">${end}.</p>`; return; }
+  if (!review) { body.innerHTML = '<p class="muted">Live lines start when the review is done.</p>'; return; }
+  const lines = liveFor(fen);
+  if (!lines.length) { body.innerHTML = '<p class="muted">Thinking…</p>'; return; }
+  depth.textContent = `depth ${lines[0].depth}`;
+  const next = vply ? line.from + vply : ply; // move index of the next move
+  const toMove = fen.split(' ')[1];
+  body.innerHTML = lines.map((l, k) => {
+    const w = toMove === 'w' ? winPercent(l.score) : 100 - winPercent(l.score);
+    const moves = sanLine(fen, l.pv, 12).map((san, j) => {
+      const white = (j % 2 === 0) === (toMove === 'w');
+      const num = white || j === 0 ? `<span class="vnum">${moveNumber(next + j)}</span>` : '';
+      return `${num}<button type="button" class="lm" data-line="${k}" data-n="${j + 1}">${esc(san)}</button>`;
+    }).join(' ');
+    return `<div class="line"><b class="sc${w < 50 ? ' black' : ''}">${scoreText(l.score, fen)}</b><span class="lmoves">${moves}</span></div>`;
+  }).join('');
+}
+
 function render() {
   renderBoard();
   renderEvalBar();
   renderPlayers();
   renderGraph();
+  renderLines();
   if (tab === 'report') renderReport();
   else { renderNote(); renderMoves(); }
   $('#next-bad').disabled = !review;
 }
 
-function go(to) {
-  ply = Math.max(0, Math.min(game.fens.length - 1, to));
+// Every change of position comes through here: draw, sound, follow with the engine.
+function moved(sound) {
+  sel = null;
+  targets = [];
   if (tab !== 'moves') setTab('moves');
-  render();
+  else render();
+  if (sound) play(sound);
+  follow();
+}
+
+// Jump to a game position (leaving any tried line in the move list).
+function go(to) {
+  const before = ply;
+  const wasLine = vply;
+  ply = Math.max(0, Math.min(game.fens.length - 1, to));
+  vply = 0;
+  if (ply === before && !wasLine) return moved(null);
+  moved(ply > before ? soundOf(game.moves[ply - 1]) : 'move');
+}
+
+// One step back or forward along whatever line the board is on.
+function step(d) {
+  if (vply) {
+    const next = Math.max(0, Math.min(line.moves.length, vply + d));
+    if (next === vply) return;
+    vply = next;
+    return moved(d > 0 ? soundOf(curMove()) : 'move');
+  }
+  go(ply + d);
+}
+
+function goLine(k) {
+  ply = line.from;
+  vply = Math.max(0, Math.min(line.moves.length, k));
+  moved(soundOf(curMove()));
+}
+
+// Plays a move on the board (uci), from wherever the board is. The game's own
+// next move just steps forward; anything else starts or extends the tried line.
+function playMove(uci, { quiet = false } = {}) {
+  const chess = new Chess(curFen());
+  const m = playUci(chess, uci);
+  if (!m) return false;
+  const entry = { san: m.san, uci: uciOf(m), from: m.from, to: m.to, color: m.color, captured: m.captured || null, fen: chess.fen() };
+  if (!vply && game.moves[ply] && game.moves[ply].uci === entry.uci) {
+    ply++;
+  } else if (!vply) {
+    line = { from: ply, moves: [entry] };
+    vply = 1;
+  } else if (line.moves[vply] && line.moves[vply].uci === entry.uci) {
+    vply++;
+  } else {
+    line.moves = line.moves.slice(0, vply).concat(entry);
+    vply++;
+  }
+  if (!quiet) moved(soundOf(entry));
+  return true;
+}
+
+// Plays the first n moves of live line k.
+function playLine(k, n) {
+  const l = liveFor(curFen())[k];
+  if (!l) return;
+  let last = null;
+  for (const uci of l.pv.slice(0, n)) {
+    if (!playMove(uci, { quiet: true })) break;
+    last = curMove();
+  }
+  if (last) moved(soundOf(last));
+}
+
+// ---------- moving pieces ----------
+function squareAt(x, y) {
+  const r = $('#board').getBoundingClientRect();
+  const cx = Math.floor(((x - r.left) / r.width) * 8);
+  const cy = Math.floor(((y - r.top) / r.height) * 8);
+  if (cx < 0 || cx > 7 || cy < 0 || cy > 7) return null;
+  return flipped ? FILES[7 - cx] + (cy + 1) : FILES[cx] + (8 - cy);
+}
+
+function pick(sq) {
+  const chess = new Chess(curFen());
+  const p = chess.get(sq);
+  if (!p || p.color !== chess.turn()) return false;
+  sel = sq;
+  targets = chess.moves({ square: sq, verbose: true }).map((m) => ({ to: m.to, promotion: !!m.promotion }));
+  renderBoard();
+  return true;
+}
+
+async function dropOn(from, to) {
+  const t = targets.find((x) => x.to === to);
+  if (!t) return;
+  let promo = '';
+  if (t.promotion) {
+    promo = await askPromotion(new Chess(curFen()).turn(), to);
+    if (!promo) { sel = null; targets = []; renderBoard(); return; }
+  }
+  playMove(from + to + promo);
+}
+
+// A little column of pieces on the promotion square, like on Chess.com.
+function askPromotion(color, to) {
+  return new Promise((resolve) => {
+    const { x, y } = squareXY(to);
+    const box = document.createElement('div');
+    box.className = 'promo';
+    box.style.setProperty('--x', x);
+    box.style.setProperty('--y', y < 4 ? y : y - 3);
+    const order = y < 4 ? ['q', 'n', 'r', 'b'] : ['b', 'r', 'n', 'q'];
+    box.innerHTML = order.map((p) => `<button type="button" data-p="${p}" aria-label="${PIECE_NAME[p]}"><i class="pc" style="background-image:url(pieces/${color}${p.toUpperCase()}.svg)"></i></button>`).join('');
+    const outside = (e) => { if (!box.contains(e.target)) done(null); };
+    const done = (v) => { promoting = false; box.remove(); document.removeEventListener('pointerdown', outside, true); resolve(v); };
+    box.addEventListener('click', (e) => { const b = e.target.closest('[data-p]'); if (b) done(b.dataset.p); });
+    $('#board').append(box);
+    promoting = true;
+    setTimeout(() => document.addEventListener('pointerdown', outside, true));
+  });
 }
 
 function setTab(t) {
@@ -593,13 +843,38 @@ function showError(text) {
 // ---------- start ----------
 function wire() {
   document.addEventListener('click', (e) => {
-    const t = e.target.closest('[data-ply],[data-go],[data-tab],.jump');
-    if (!t) return;
+    const t = e.target.closest('[data-ply],[data-vply],[data-go],[data-tab],[data-line],.jump');
+    if (!t || !game) return;
     if (t.dataset.tab) return setTab(t.dataset.tab);
     if (t.classList.contains('jump')) return nextOfMine((l) => l === t.dataset.l);
     if (t.dataset.ply) return go(Number(t.dataset.ply));
+    if (t.dataset.vply) return goLine(Number(t.dataset.vply));
+    if (t.dataset.line) return playLine(Number(t.dataset.line), Number(t.dataset.n));
     const g = t.dataset.go;
-    go(g === 'start' ? 0 : g === 'end' ? game.fens.length - 1 : ply + (g === 'next' ? 1 : -1));
+    if (g === 'game') return go(line ? line.from : ply);
+    if (g === 'drop') { const back = vply ? line.from : ply; line = null; vply = 0; return go(back); }
+    if (g === 'start') return go(0);
+    if (g === 'end') return go(game.fens.length - 1);
+    step(g === 'next' ? 1 : -1);
+  });
+  $('#live-toggle').addEventListener('click', () => {
+    engineOn = !engineOn;
+    store.set('shohmot-review-live', engineOn);
+    if (engineOn) follow(); else stopLive();
+    render();
+  });
+  const sound = $('#sound');
+  const showSound = () => { sound.setAttribute('aria-pressed', String(!isMuted())); sound.title = isMuted() ? 'Sound off (M)' : 'Sound on (M)'; };
+  sound.addEventListener('click', () => { setMuted(!isMuted()); showSound(); if (!isMuted()) play('move'); });
+  showSound();
+  input = boardInput($('#board'), {
+    squareAt,
+    selected: () => sel,
+    pick: (sq) => !!game && pick(sq),
+    isTarget: (sq) => targets.some((t) => t.to === sq),
+    move: (from, to) => { dropOn(from, to); },
+    clear: () => { if (sel) { sel = null; targets = []; renderBoard(); } },
+    redraw: () => renderBoard(),
   });
   $('#next-bad').addEventListener('click', () => nextOfMine((l) => BAD.has(l)));
   $('#flip').addEventListener('click', () => { flipped = !flipped; render(); });
@@ -611,7 +886,12 @@ function wire() {
   });
   document.addEventListener('keydown', (e) => {
     if (e.target.closest('select, input, textarea') || e.metaKey || e.ctrlKey || e.altKey) return;
-    const keys = { ArrowLeft: () => go(ply - 1), ArrowRight: () => go(ply + 1), Home: () => go(0), End: () => go(game.fens.length - 1), f: () => $('#flip').click(), n: () => $('#next-bad').click() };
+    if (!game) return;
+    const keys = {
+      ArrowLeft: () => step(-1), ArrowRight: () => step(1), Home: () => go(0), End: () => go(game.fens.length - 1),
+      f: () => $('#flip').click(), n: () => $('#next-bad').click(), m: () => $('#sound').click(),
+      Escape: () => { sel = null; targets = []; renderBoard(); },
+    };
     const fn = keys[e.key];
     if (fn) { e.preventDefault(); fn(); }
   });

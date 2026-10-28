@@ -128,6 +128,12 @@ function loadFullWasm(onProgress) {
   return fullWasm;
 }
 
+// The engine script's address, with the full network's blob: URL after "#".
+export async function engineUrl(kind, onDownload = () => {}) {
+  const { url } = ENGINES[kind];
+  return kind === 'full' ? `${url}#${encodeURIComponent(await loadFullWasm(onDownload))}` : url;
+}
+
 function workerCount(kind) {
   const cores = navigator.hardwareConcurrency || 2;
   let n = Math.min(ENGINES[kind].workers, cores - 1);
@@ -148,8 +154,7 @@ export class EnginePool {
   // finishes; onDownload(loaded, total) while the full network downloads.
   async run(jobs, { depth = 16, movetime = 3000, multiPv = 2, onResult, onDownload = () => {} }) {
     const { hash } = ENGINES[this.kind];
-    let { url } = ENGINES[this.kind];
-    if (this.kind === 'full') url += `#${encodeURIComponent(await loadFullWasm(onDownload))}`;
+    const url = await engineUrl(this.kind, onDownload);
     if (this.stopped) return;
     const queue = stretches(jobs.length);
     const worker = async () => {
@@ -170,5 +175,74 @@ export class EnginePool {
     this.stopped = true;
     for (const e of this.engines) e.stop();
     this.engines = [];
+  }
+}
+
+// One engine that follows the board: it searches whatever position is shown
+// (top 3 lines, up to depth 24) and reports as it goes deeper. Asking for a
+// new position stops the current search first; UCI answers a stop with
+// "bestmove", and only then does the next search start.
+export class LiveEngine {
+  constructor(kind, onUpdate) {
+    this.kind = kind;
+    this.onUpdate = onUpdate; // (fen, lines) with lines like parseInfo's
+    this.worker = null;
+    this.ready = null;
+    this.searching = null; // fen being searched
+    this.want = null;      // fen to search next
+    this.lines = [];
+  }
+
+  async start() {
+    this.ready ??= (async () => {
+      this.worker = new Worker(await engineUrl(this.kind));
+      this.worker.onmessage = (e) => this.onLine(String(e.data));
+      await new Promise((resolve) => {
+        this.onReady = resolve;
+        for (const c of ['uci', 'setoption name Hash value 64', 'setoption name MultiPV value 3', 'isready']) this.worker.postMessage(c);
+      });
+    })();
+    return this.ready;
+  }
+
+  async show(fen) {
+    this.want = fen;
+    await this.start();
+    if (this.want !== fen) return;
+    if (this.searching) this.worker.postMessage('stop');
+    else this.go();
+  }
+
+  go() {
+    const fen = this.want;
+    this.want = null;
+    if (!fen) return;
+    this.searching = fen;
+    this.lines = [];
+    this.worker.postMessage(`position fen ${fen}`);
+    this.worker.postMessage('go depth 24');
+  }
+
+  onLine(line) {
+    if (line === 'readyok' && this.onReady) { this.onReady(); this.onReady = null; return; }
+    if (line.startsWith('bestmove')) {
+      this.searching = null;
+      this.go();
+      return;
+    }
+    if (!this.searching || this.want || !line.startsWith('info ') || !line.includes(' multipv ')) return;
+    const [info] = parseInfo([line]);
+    if (!info) return;
+    const k = Number(line.split(' multipv ')[1].split(' ')[0]) - 1;
+    this.lines[k] = info;
+    this.onUpdate(this.searching, this.lines.filter(Boolean));
+  }
+
+  stop() {
+    if (this.worker) this.worker.terminate();
+    this.worker = null;
+    this.ready = null;
+    this.searching = null;
+    this.want = null;
   }
 }
