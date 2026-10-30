@@ -39,21 +39,87 @@
     <section class="rv-board" aria-label="Board">
       <div class="stage">
         <div class="player top" id="player-top"></div>
+        <!-- While setting up a position: the pieces to put on the board. -->
+        <div class="palette top" id="pal-top" role="group" aria-label="Pieces" hidden></div>
         <div class="board-row">
           <div class="evalbar" id="evalbar" aria-hidden="true"><i></i><span></span></div>
           <div class="cb" id="board" role="img"></div>
         </div>
         <div class="player bottom" id="player-bottom"></div>
+        <div class="palette bottom" id="pal-bottom" role="group" aria-label="Pieces" hidden></div>
       </div>
     </section>
 
     <aside class="panel" aria-label="Analysis">
       <header class="panel-head">
-        <h1 class="rv-title">Analysis</h1>
+        <h1 class="rv-title" id="panel-title">Analysis</h1>
         <p class="rv-meta" id="opening">Starting position</p>
       </header>
 
       <div class="panel-game">
+        <!-- Start menu, as on Chess.com's analysis page. -->
+        <section class="home" id="home" aria-label="Start" hidden>
+          <form class="paste" id="paste-form">
+            <textarea id="paste-text" rows="1" spellcheck="false" autocomplete="off" placeholder="Paste a PGN or FEN…" aria-label="PGN or FEN"></textarea>
+            <button class="btn btn-solid paste-go" type="submit">Load</button>
+            <p class="rv-error" id="paste-error" role="alert" hidden></p>
+          </form>
+          <ul class="cards">
+            <li><button type="button" class="card" id="card-setup">
+              <span class="card-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></span>
+              <span><b>Set Up Position</b><small>Put pieces anywhere and see the best move</small></span>
+            </button></li>
+            <li><button type="button" class="card" id="card-new">
+              <span class="card-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="m15 15 5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span>
+              <span><b>New Analysis</b><small>Start with a new board</small></span>
+            </button></li>
+            <li><button type="button" class="card" id="card-sim">
+              <span class="card-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></svg></span>
+              <span><b>Play Stockfish</b><small>Play against Stockfish, or watch it play itself</small></span>
+            </button></li>
+            <li><a class="card" href="/">
+              <span class="card-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.4 6.7 19.4l1.2-6L3.4 9.3l6-.7z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></span>
+              <span><b>Game Review</b><small>Pick one of your games for a full Stockfish review</small></span>
+            </a></li>
+          </ul>
+        </section>
+
+        <!-- Set Up Position: the board becomes an editor. -->
+        <section class="setup" id="setup" aria-label="Set up position" hidden>
+          <label class="setup-row">
+            <span>Who moves</span>
+            <select id="setup-turn">
+              <option value="w">White to move</option>
+              <option value="b">Black to move</option>
+            </select>
+          </label>
+          <fieldset class="setup-castle" id="setup-castle">
+            <legend>Castling</legend>
+            <span class="castle-side"><span class="pl-dot w"></span>White</span>
+            <label><input type="checkbox" data-c="K"> O-O</label>
+            <label><input type="checkbox" data-c="Q"> O-O-O</label>
+            <span class="castle-side"><span class="pl-dot b"></span>Black</span>
+            <label><input type="checkbox" data-c="k"> O-O</label>
+            <label><input type="checkbox" data-c="q"> O-O-O</label>
+          </fieldset>
+          <label class="setup-fen">
+            <span>FEN</span>
+            <input id="setup-fen" type="text" spellcheck="false" autocomplete="off">
+          </label>
+          <div class="setup-btns">
+            <button type="button" class="btn" id="setup-start">Starting position</button>
+            <button type="button" class="btn" id="setup-clear">Clear board</button>
+            <button type="button" class="btn" id="setup-flip">Flip board</button>
+          </div>
+          <p class="setup-help muted">Pick a piece above or below the board, then click squares to put it there. Drag pieces to move them, or off the board to remove them. Right-click empties a square.</p>
+          <p class="rv-error" id="setup-error" role="alert" hidden></p>
+          <div class="setup-actions">
+            <button type="button" class="btn" id="setup-cancel">Cancel</button>
+            <button type="button" class="btn btn-solid" id="setup-go">Analyze</button>
+          </div>
+        </section>
+
+        <div class="view-analysis" id="view-analysis">
         <section class="lines" id="lines" aria-label="Engine lines" aria-live="off">
           <div class="lines-h">
             <button type="button" class="switch" id="live-toggle" aria-pressed="true"><i></i><span>Engine</span></button>
@@ -133,15 +199,24 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16m0 0-3-3m3 3 3-3M17 20V4m0 0-3 3m3-3 3 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </button>
         </div>
+        <!-- Bottom buttons, as on Chess.com: New, Set Up, Play, and more. -->
         <div class="tools">
-          <button class="btn btn-solid sim-open" id="sim-open" type="button" title="Let Stockfish play on from here, against itself or against you">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></svg>
-            Simulate game
+          <button class="tool" id="new" type="button" title="Start again with a new board">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="m15 15 5 5M10.5 8v5M8 10.5h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            New
           </button>
-          <button class="btn" id="new" type="button" title="Clear the board back to the starting position">New</button>
-          <button class="btn" id="load" type="button" title="Paste a PGN or FEN">Load PGN / FEN</button>
-          <button class="btn" id="copy-pgn" type="button">Copy PGN</button>
-          <button class="btn" id="copy-fen" type="button">Copy FEN</button>
+          <button class="tool" id="setup-open" type="button" title="Put pieces anywhere, starting from this position">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+            Set Up
+          </button>
+          <button class="tool" id="sim-open" type="button" title="Play Stockfish from here, or watch it play itself">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></svg>
+            Play
+          </button>
+          <button class="tool tool-more" id="more" type="button" aria-label="More" aria-haspopup="menu" title="More">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="19" cy="12" r="1.8" fill="currentColor"/></svg>
+          </button>
+        </div>
         </div>
       </div>
     </aside>
@@ -150,6 +225,12 @@
   <div class="menu" id="menu" role="menu" hidden>
     <button type="button" role="menuitem" data-act="promote">Make main line</button>
     <button type="button" role="menuitem" data-act="cut">Delete from here</button>
+  </div>
+
+  <div class="menu" id="more-menu" role="menu" hidden>
+    <button type="button" role="menuitem" id="load">Load PGN / FEN</button>
+    <button type="button" role="menuitem" id="copy-pgn">Copy PGN</button>
+    <button type="button" role="menuitem" id="copy-fen">Copy FEN</button>
   </div>
 
   <dialog class="load" id="load-dialog" aria-labelledby="load-h">

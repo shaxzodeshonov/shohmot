@@ -51,13 +51,16 @@ What the review shows, modelled on Chess.com's Game Review:
 
 ## Analysis board
 
-`analysis.html` (the "Analysis board" button on the home page) is a free board for playing out any position, like Chess.com's analysis board:
+`analysis.html` (the "Analysis board" button on the home page) is a free board for playing out any position, laid out like Chess.com's analysis board:
+
+- A fresh board opens on a **start menu**, as on Chess.com: a box to paste a PGN or FEN and Load, then **Set Up Position**, **New Analysis**, **Play Stockfish** and **Game Review**. The first move made on the board opens the analysis.
+- **Set Up Position** (also the "Set up position" button on the home page, and Set Up under the board) turns the board into an editor: pick a piece from the rows above and below the board and click or drag across squares to place it (clicking a square that already has it empties it, the bin removes pieces), drag pieces around, or off the board to remove them, right-click to empty a square, or drag straight from the rows. Choose who moves and the castling rights (only the ones the king and rook allow), paste or copy the FEN, or start from the starting position or an empty board. It says what is wrong with an illegal position (no king, pawns on the back rank, the side not to move in check). **Analyze** opens the position with Stockfish's best move as an arrow and its top 3 lines.
 
 - Move pieces by dragging or clicking. Going back and playing something else keeps both: the new move becomes a **variation**, shown indented under the move it replaces, nested as deep as you like (past three levels, in brackets). Right-click a move to make its line the main line or delete it.
 - A **live Stockfish** (full or lite, from the bar) follows the board: its top 3 lines (click a move to play the line up to it), the best move as a blue arrow and the eval bar.
-- **Simulate game** lets Stockfish play on from the position on the board. Pick who plays each side (You or Stockfish): Stockfish against itself to watch the game unfold (Slow, Normal or Fast), or against you, with your pieces at the bottom, its lines, arrow and eval bar hidden so they don't give moves away, and a Take back button. Six strengths, Beginner to Maximum (Stockfish's Skill Level). The moves go into the move tree like any others. Start / Pause (or Space); stepping through the moves pauses it.
+- **Play** (Play Stockfish) lets Stockfish play on from the position on the board. Pick who plays each side (You or Stockfish): Stockfish against itself to watch the game unfold (Slow, Normal or Fast), or against you, with your pieces at the bottom, its lines, arrow and eval bar hidden so they don't give moves away, and a Take back button. Six strengths, Beginner to Maximum (Stockfish's Skill Level). The moves go into the move tree like any others. Start / Pause (or Space); stepping through the moves pauses it.
 - The opening name, a red glow on a king in check, and the result when the game is over.
-- **Load PGN / FEN** (PGN with variations, comments and annotations, or a FEN), **Copy PGN** (with variations) and **Copy FEN**. **New** clears the board.
+- Under the board, as on Chess.com: **New** (back to the start menu with a new board), **Set Up**, **Play** and **⋯** with **Load PGN / FEN** (PGN with variations, comments and annotations, or a FEN), **Copy PGN** (with variations) and **Copy FEN**.
 - The analysis is kept in the browser, so it's still there after a reload. A link like `analysis.html#pgn=<PGN>&ply=<n>` opens a game at a move; the review page uses it.
 - Keys: ← → step, ↑ / Home to the start, ↓ / End to the end of the line, Space starts or pauses a simulation, F flip, M sound, Esc drops a picked piece.
 

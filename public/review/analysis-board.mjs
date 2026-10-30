@@ -11,6 +11,7 @@ import { LiveEngine, MoveEngine } from './engine.mjs';
 import { boardInput } from './board-input.mjs';
 import { winPercent } from './analysis.mjs';
 import { play as playSound, soundOf, isMuted, setMuted } from './sound.mjs';
+import { SetupEditor } from './setup.mjs';
 import { START, newTree, play, pathTo, lineEnd, onMainLine, cut, promote, numText, moveNo, toPgn, fromPgn, addressOf, nodeAt } from './tree.mjs';
 
 const $ = (s) => document.querySelector(s);
@@ -36,6 +37,11 @@ let promoting = false;
 let live = null;
 let liveLines = { fen: null, lines: [] };
 let engineOn = store.get('shohmot-review-live') !== false;
+// The panel shows one of three things, as on Chess.com: the start menu
+// ('home'), the analysis ('analysis') or the board editor ('setup').
+let view = 'analysis';
+let setupFrom = 'analysis'; // where Cancel in the editor goes back to
+let editor = null;
 
 // ---------- keeping the analysis ----------
 function save() {
@@ -64,7 +70,7 @@ function index() {
 
 // ---------- engine ----------
 function follow() {
-  if (hintsHidden()) { stopLive(); return; }
+  if (view === 'setup' || hintsHidden()) { stopLive(); return; }
   if (!engineOn) return;
   const fen = cur.fen;
   if (new Chess(fen).isGameOver()) { liveLines = { fen: null, lines: [] }; return; }
@@ -157,7 +163,8 @@ function arrowPath(a, b, cls = '') {
 }
 
 function renderBoard() {
-  if (promoting) return;
+  // In the editor the board is the editor's to draw.
+  if (promoting || view === 'setup') return;
   const chess = new Chess(cur.fen);
   const last = cur.parent ? cur : null;
   // The king in check gets a red glow, as on Chess.com.
@@ -199,7 +206,7 @@ function renderEvalBar() {
   if (chess.isCheckmate()) score = { mate: 0 };
   else if (chess.isDraw() || chess.isStalemate()) score = { cp: 0 };
   const toMove = fen.split(' ')[1];
-  const w = score && engineOn && !hintsHidden() ? (toMove === 'w' ? winPercent(score) : 100 - winPercent(score)) : null;
+  const w = score && engineOn && !hintsHidden() && view !== 'setup' ? (toMove === 'w' ? winPercent(score) : 100 - winPercent(score)) : null;
   const bar = $('#evalbar');
   bar.classList.toggle('flipped', flipped);
   bar.querySelector('i').style.height = `${w == null ? 50 : w}%`;
@@ -307,7 +314,38 @@ function renderOpening() {
   el.title = el.textContent;
 }
 
+function renderView() {
+  const editing = view === 'setup';
+  $('#home').hidden = view !== 'home';
+  $('#setup').hidden = !editing;
+  $('#view-analysis').hidden = view !== 'analysis';
+  $('#panel-title').textContent = editing ? 'Set Up Position' : 'Analysis';
+  $('#opening').hidden = editing;
+  // The editor's piece rows take the player rows' place.
+  $('#pal-top').hidden = $('#pal-bottom').hidden = !editing;
+  $('#player-top').hidden = $('#player-bottom').hidden = editing;
+}
+
+// Switches the panel (and, for 'setup', the board) to another view.
+function setView(v) {
+  if (v === view) return;
+  if (view === 'setup') editor.close();
+  if (v === 'setup') {
+    setupFrom = view;
+    if (sim.open) { pauseSim(); sim.open = false; if (mover) mover.stop(); mover = null; }
+    sel = null;
+    targets = [];
+    closeMenus();
+    editor.open(cur.fen, flipped);
+  }
+  view = v;
+  render();
+  follow();
+}
+
 function render() {
+  renderView();
+  if (view === 'setup') { editor.render(); renderEvalBar(); return; }
   renderOpening();
   renderBoard();
   renderEvalBar();
@@ -323,6 +361,8 @@ function render() {
 // 'nav' for jumping around, which pauses a running simulation.
 function show(node, sound, how = 'nav') {
   if (how === 'nav' && sim.running) { sim.running = false; sim.token++; }
+  // The first move made from the start menu opens the analysis.
+  if (view === 'home' && node !== root) view = 'analysis';
   cur = node;
   sel = null;
   targets = [];
@@ -371,7 +411,7 @@ function squareAt(x, y) {
 }
 
 function pick(sq) {
-  if (engineToMove()) return false;
+  if (view === 'setup' || engineToMove()) return false;
   const chess = new Chess(cur.fen);
   const p = chess.get(sq);
   if (!p || p.color !== chess.turn()) return false;
@@ -617,11 +657,35 @@ function openMenu(node, x, y) {
   menu.style.top = `${Math.min(y, innerHeight - r.height - 8)}px`;
 }
 function closeMenu() { $('#menu').hidden = true; menuFor = null; }
+function closeMenus() { closeMenu(); $('#more-menu').hidden = true; }
+
+// The "..." menu opens above its button.
+function openMore() {
+  const menu = $('#more-menu');
+  menu.hidden = false;
+  const b = $('#more').getBoundingClientRect();
+  const r = menu.getBoundingClientRect();
+  menu.style.left = `${Math.max(8, Math.min(b.right - r.width, innerWidth - r.width - 8))}px`;
+  menu.style.top = `${Math.max(8, b.top - r.height - 6)}px`;
+}
+
+// A new, empty board. Asks first if there's analysis to lose.
+function newBoard(to) {
+  if ((root.children.length || root.fen !== START) && !confirm('Clear this analysis and start again from the starting position?')) return false;
+  root = newTree();
+  headers = {};
+  flipped = false;
+  if (view === 'setup') editor.close();
+  view = to;
+  fresh(root);
+  return true;
+}
 
 // ---------- start ----------
 function wire() {
   document.addEventListener('click', (e) => {
     if (!e.target.closest('#menu')) closeMenu();
+    if (!e.target.closest('#more-menu, #more')) $('#more-menu').hidden = true;
     const t = e.target.closest('[data-id],[data-go],[data-line]');
     if (!t) return;
     if (t.dataset.id) {
@@ -695,13 +759,48 @@ function wire() {
   showSound();
   $('#flip').addEventListener('click', () => { flipped = !flipped; render(); save(); });
 
-  $('#new').addEventListener('click', () => {
-    if (root.children.length && !confirm('Clear this analysis and start again from the starting position?')) return;
-    root = newTree();
-    headers = {};
-    flipped = false;
-    fresh(root);
+  // Start menu.
+  $('#card-setup').addEventListener('click', () => setView('setup'));
+  $('#card-new').addEventListener('click', () => newBoard('analysis'));
+  $('#card-sim').addEventListener('click', () => { setView('analysis'); openSim(); });
+  $('#paste-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    try {
+      loadText($('#paste-text').value);
+    } catch (err) {
+      $('#paste-error').textContent = err.message;
+      $('#paste-error').hidden = false;
+      return;
+    }
+    $('#paste-error').hidden = true;
+    $('#paste-text').value = '';
+    view = 'analysis';
+    fresh(cur);
   });
+  // Enter loads; Shift+Enter is a new line.
+  $('#paste-text').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('#paste-form').requestSubmit(); }
+  });
+
+  // Board editor.
+  editor = new SetupEditor({
+    onDone(fen, f) {
+      editor.close();
+      root = newTree(new Chess(fen).fen());
+      headers = {};
+      flipped = f;
+      view = 'analysis';
+      fresh(root);
+    },
+    onCancel() { setView(setupFrom === 'home' ? 'home' : 'analysis'); },
+    onFlip(f) { flipped = f; save(); },
+  });
+
+  // Bottom buttons.
+  $('#new').addEventListener('click', () => newBoard('home'));
+  $('#setup-open').addEventListener('click', () => setView('setup'));
+  $('#more').addEventListener('click', () => ($('#more-menu').hidden ? openMore() : closeMenus()));
+  $('#more-menu').addEventListener('click', () => { $('#more-menu').hidden = true; });
   $('#load').addEventListener('click', () => {
     $('#load-text').value = '';
     $('#load-error').hidden = true;
@@ -717,6 +816,7 @@ function wire() {
       $('#load-error').hidden = false;
       return;
     }
+    view = 'analysis';
     fresh(cur);
   });
   $('#copy-pgn').addEventListener('click', () => copy(toPgn(root, headers), 'PGN'));
@@ -734,6 +834,7 @@ function wire() {
 
   document.addEventListener('keydown', (e) => {
     if (e.target.closest('select, input, textarea, dialog') || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (view === 'setup') return;
     // Space on a focused button already presses it.
     if (e.key === ' ' && e.target.closest('button')) return;
     const keys = {
@@ -744,7 +845,7 @@ function wire() {
       End: () => { const end = lineEnd(cur); if (end !== cur) show(end, soundOf(end)); },
       f: () => $('#flip').click(), m: () => $('#sound').click(),
       ' ': () => { if (sim.open && !$('#sim-go').disabled) $('#sim-go').click(); },
-      Escape: () => { closeMenu(); sel = null; targets = []; renderBoard(); },
+      Escape: () => { closeMenus(); sel = null; targets = []; renderBoard(); },
     };
     const fn = keys[e.key];
     if (fn) { e.preventDefault(); fn(); }
@@ -754,6 +855,11 @@ function wire() {
 function restore() {
   // A game handed over from the review page wins over the saved analysis.
   const hash = new URLSearchParams(location.hash.slice(1));
+  // #setup (the home page's "Set up position") opens the board editor.
+  if (hash.has('setup')) {
+    view = 'setup-next';
+    history.replaceState(null, '', location.pathname);
+  }
   if (hash.get('pgn')) {
     try {
       load(hash.get('pgn'));
@@ -784,6 +890,15 @@ async function main() {
   wire();
   restore();
   index();
+  // A fresh board opens on the start menu, as on Chess.com.
+  const toSetup = view === 'setup-next';
+  view = !root.children.length && root.fen === START ? 'home' : 'analysis';
+  if (toSetup) setView('setup');
+  addEventListener('hashchange', () => {
+    if (location.hash !== '#setup') return;
+    history.replaceState(null, '', location.pathname);
+    setView('setup');
+  });
   render();
   follow();
   save();
