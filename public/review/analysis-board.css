@@ -1,0 +1,55 @@
+/* Analysis board. Builds on review.css (board, panel, engine lines, move
+   buttons); this adds the move tree with its variations, the tools row, the
+   right-click menu on moves and the load box. */
+
+/* The king in check, as on Chess.com: a red glow under the piece. */
+.cb .sq.check::after { content: ''; position: absolute; inset: 0; background: radial-gradient(circle, rgb(230 60 40 / .9) 0%, rgb(230 60 40 / .55) 35%, transparent 72%); }
+
+/* One line, so the panel below doesn't jump as the name changes. */
+#opening { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ---------- move tree ---------- */
+.tree { font-size: 0.9375rem; }
+.tree .empty { font-size: 0.875rem; line-height: 1.5; }
+.tree .mrow { display: grid; grid-template-columns: 2.5rem 1fr 1fr; align-items: center; min-height: 2rem; }
+.tree .mrow:nth-child(even of .mrow) { background: color-mix(in srgb, var(--line) 45%, transparent); border-radius: 0.375rem; }
+.tree .num { padding-left: 0.5rem; }
+.tree .mv.dots { cursor: default; color: var(--faint); }
+.tree .mv.dots:hover { background: none; }
+
+/* Variations: indented under the move they replace, with a line down the left. */
+.vars { margin: 0.125rem 0 0.375rem 1rem; padding-left: 0.625rem; border-left: 0.125rem solid var(--line-2); font-size: 0.875rem; }
+.vars .vars { margin-left: 0.25rem; margin-top: 0.25rem; }
+.vline { line-height: 1.9; padding: 0.0625rem 0; }
+.vline + .vline { border-top: 1px dashed var(--line); }
+.vline .vnum { margin-left: 0.15em; }
+.vm { color: var(--muted); }
+.vm.on { color: var(--ink); }
+.paren { color: var(--faint); font-style: italic; }
+.paren .vm { font-style: italic; }
+
+/* ---------- tools ---------- */
+.tools { flex: none; display: flex; flex-wrap: wrap; gap: 0.375rem; justify-content: center; padding: 0 1.125rem 0.875rem; background: var(--raise); }
+.controls { grid-template-columns: repeat(4, minmax(0, 1fr)) auto; }
+
+/* ---------- right-click menu on a move ---------- */
+.menu { position: fixed; z-index: 60; min-width: 11rem; padding: 0.25rem; background: var(--raise); border: 1px solid var(--line-2); border-radius: 0.5rem; box-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / .5); }
+.menu button { display: block; width: 100%; text-align: left; border: 0; background: none; padding: 0.5rem 0.75rem; border-radius: 0.375rem; font-size: 0.875rem; font-weight: 600; cursor: pointer; }
+.menu button:hover { background: var(--line); }
+.menu button[hidden] { display: none; }
+
+/* ---------- load box ---------- */
+.load { width: min(32rem, calc(100vw - 2rem)); padding: 1.25rem; border: 1px solid var(--line-2); border-radius: 1rem; background: var(--raise); color: var(--ink); }
+.load::backdrop { background: rgb(10 7 5 / .6); }
+.load h2 { font-size: 1.125rem; font-weight: 800; }
+.load p.muted { font-size: 0.875rem; margin-top: 0.25rem; }
+.load textarea { width: 100%; margin-top: 0.75rem; padding: 0.625rem 0.75rem; border: 1px solid var(--line-2); border-radius: 0.5rem; background: var(--bg); color: var(--ink); font: 0.8125rem/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; resize: vertical; }
+.load textarea:focus { outline: 2px solid var(--focus); outline-offset: 1px; }
+.load-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.875rem; }
+
+.toast { position: fixed; left: 50%; bottom: 1.5rem; transform: translateX(-50%); z-index: 70; padding: 0.5rem 1rem; border-radius: 999em; background: var(--sage); color: var(--sage-ink); font-weight: 700; font-size: 0.875rem; box-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / .4); }
+
+@media (max-width: 35em) {
+  .controls { grid-template-columns: repeat(4, minmax(0, 1fr)) auto; }
+  .tools .btn { padding-inline: 0.625rem; }
+}

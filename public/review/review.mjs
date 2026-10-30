@@ -8,6 +8,7 @@ import { EnginePool, LiveEngine, ENGINES } from './engine.mjs';
 import { boardInput } from './board-input.mjs';
 import { play, soundOf, isMuted, setMuted } from './sound.mjs';
 import { cloudEvals } from './cloud.mjs';
+import { newTree, play as playOn, toPgn } from './tree.mjs';
 import { LABELS, BAD, ACCURACY, winPercent, moveAccuracy, gameAccuracy, classify, gameRating, phases } from './analysis.mjs';
 
 const $ = (s) => document.querySelector(s);
@@ -877,6 +878,18 @@ function wire() {
     redraw: () => renderBoard(),
   });
   $('#next-bad').addEventListener('click', () => nextOfMine((l) => BAD.has(l)));
+  // The analysis board gets the game (with any tried line in place of the
+  // rest of it) and opens on the position shown here.
+  $('#to-analysis').addEventListener('click', (e) => {
+    if (!game) return;
+    const moves = vply ? game.moves.slice(0, line.from).concat(line.moves) : game.moves;
+    let n = newTree(game.fens[0]);
+    const root = n;
+    for (const m of moves) n = playOn(n, m.uci) || n;
+    const pgn = toPgn(root, { White: game.headers.White || '?', Black: game.headers.Black || '?' });
+    const at = vply ? line.from + vply : ply;
+    e.currentTarget.href = `analysis.html#${new URLSearchParams({ pgn, ply: at, flip: flipped ? '1' : '0' })}`;
+  });
   $('#flip').addEventListener('click', () => { flipped = !flipped; render(); });
   $('#depth').addEventListener('change', analyse);
   $('#engine').addEventListener('change', analyse);

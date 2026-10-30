@@ -45,8 +45,20 @@ What the review shows, modelled on Chess.com's Game Review:
 - **Opening name** and book moves, from Lichess's [chess-openings](https://github.com/lichess-org/chess-openings) list (CC0). Rebuild `public/openings.json` with `node scripts/build-openings.mjs`.
 - Accuracy **by phase** (opening, middlegame, endgame) and a list of your key moments.
 - **Analysis board.** Drag a piece or click it and then its square (dots show the legal moves, a picker handles promotion) to try your own moves. Anything other than the game's next move starts **your line**, shown under the game move it replaces; step through it with ← →, click it to jump in, "Back to the game" to leave and × to remove it. Once the review is done, a **live engine** follows the board and shows its top 3 lines and the best move as a blue arrow; click a move in a line to play the line up to it. The Engine switch turns it off.
-- **Move sounds** for moves, captures, castling, checks and promotions, made with Web Audio (no sound files). The speaker button (or M) mutes them.
+- **Move sounds** in the style of Chess.com's: a wooden tock for a move, a brighter clack for a capture, two tocks for castling, a ping for check and promotion and a chime on mate. Chess.com's sound files are theirs (and Lichess's standard set isn't free either), so these are built in the browser, sample by sample, from a click of noise and the decaying tones a wooden piece rings at (`public/review/sound.mjs`). The speaker button (or M) mutes them.
+- **Analysis board** button: opens the game on the analysis board at the move shown.
 - Keys: ← → Home End, N for your next mistake, F to flip, M for sound, Esc to drop a picked piece.
+
+## Analysis board
+
+`analysis.html` (the "Analysis board" button on the home page) is a free board for playing out any position, like Chess.com's analysis board:
+
+- Move pieces by dragging or clicking. Going back and playing something else keeps both: the new move becomes a **variation**, shown indented under the move it replaces, nested as deep as you like (past three levels, in brackets). Right-click a move to make its line the main line or delete it.
+- A **live Stockfish** (full or lite, from the bar) follows the board: its top 3 lines (click a move to play the line up to it), the best move as a blue arrow and the eval bar.
+- The opening name, a red glow on a king in check, and the result when the game is over.
+- **Load PGN / FEN** (PGN with variations, comments and annotations, or a FEN), **Copy PGN** (with variations) and **Copy FEN**. **New** clears the board.
+- The analysis is kept in the browser, so it's still there after a reload. A link like `analysis.html#pgn=<PGN>&ply=<n>` opens a game at a move; the review page uses it.
+- Keys: ← → step, ↑ / Home to the start, ↓ / End to the end of the line, F flip, M sound, Esc drops a picked piece.
 
 `/api/game` fetches the game's PGN and the site's own accuracy numbers: Lichess's export-by-ids API (the single-game export asks for a login on some games), or the Chess.com monthly archive the game ended in.
 
