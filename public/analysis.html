@@ -62,6 +62,56 @@
           <div class="lines-body" id="lines-body"></div>
         </section>
 
+        <!-- Simulate a game: Stockfish plays on from the board, against itself or you. -->
+        <section class="sim" id="sim" aria-labelledby="sim-h" hidden>
+          <div class="sim-h">
+            <h2 id="sim-h">Simulate a game</h2>
+            <button type="button" class="sim-x" id="sim-close" aria-label="Close simulation" title="Back to analysis">×</button>
+          </div>
+          <div class="sim-sides">
+            <div class="sim-side">
+              <span class="sim-who"><span class="pl-dot w"></span>White</span>
+              <div class="seg" role="group" aria-label="Who plays White" data-side="w">
+                <button type="button" data-v="you">You</button>
+                <button type="button" data-v="engine">Stockfish</button>
+              </div>
+            </div>
+            <div class="sim-side">
+              <span class="sim-who"><span class="pl-dot b"></span>Black</span>
+              <div class="seg" role="group" aria-label="Who plays Black" data-side="b">
+                <button type="button" data-v="you">You</button>
+                <button type="button" data-v="engine">Stockfish</button>
+              </div>
+            </div>
+          </div>
+          <div class="sim-opts">
+            <label>
+              <span>Strength</span>
+              <select id="sim-level">
+                <option value="0">Beginner</option>
+                <option value="1">Casual</option>
+                <option value="2">Intermediate</option>
+                <option value="3">Advanced</option>
+                <option value="4">Expert</option>
+                <option value="5">Maximum</option>
+              </select>
+            </label>
+            <label id="sim-speed-wrap">
+              <span>Speed</span>
+              <select id="sim-speed">
+                <option value="slow">Slow</option>
+                <option value="normal">Normal</option>
+                <option value="fast">Fast</option>
+              </select>
+            </label>
+          </div>
+          <p class="sim-status" id="sim-status" aria-live="polite"></p>
+          <div class="sim-actions">
+            <button type="button" class="btn btn-solid sim-go" id="sim-go"></button>
+            <button type="button" class="btn" id="sim-undo" title="Take back your last move and Stockfish's reply">Take back</button>
+          </div>
+        </section>
+
         <div class="panel-body">
           <div class="tree" id="tree" aria-label="Moves"></div>
         </div>
@@ -84,6 +134,10 @@
           </button>
         </div>
         <div class="tools">
+          <button class="btn btn-solid sim-open" id="sim-open" type="button" title="Let Stockfish play on from here, against itself or against you">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></svg>
+            Simulate game
+          </button>
           <button class="btn" id="new" type="button" title="Clear the board back to the starting position">New</button>
           <button class="btn" id="load" type="button" title="Paste a PGN or FEN">Load PGN / FEN</button>
           <button class="btn" id="copy-pgn" type="button">Copy PGN</button>

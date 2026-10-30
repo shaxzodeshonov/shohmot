@@ -1,11 +1,13 @@
 // Analysis board: play out any position, try as many lines as you like (each
 // one a variation in the move tree, like Chess.com's analysis board) and see
 // a live Stockfish's top 3 lines, eval bar and best-move arrow as you go.
-// The analysis is kept in the browser, so it's still there after a reload.
+// "Simulate game" lets Stockfish play on from the board, against itself or
+// against you. The analysis is kept in the browser, so it's still there
+// after a reload.
 // Opened bare for a new board, or as /analysis.html#pgn=<PGN>&ply=<n> from a
 // game review to carry on from that game.
 import { Chess } from '../vendor/chess.mjs';
-import { LiveEngine } from './engine.mjs';
+import { LiveEngine, MoveEngine } from './engine.mjs';
 import { boardInput } from './board-input.mjs';
 import { winPercent } from './analysis.mjs';
 import { play as playSound, soundOf, isMuted, setMuted } from './sound.mjs';
@@ -62,6 +64,7 @@ function index() {
 
 // ---------- engine ----------
 function follow() {
+  if (hintsHidden()) { stopLive(); return; }
   if (!engineOn) return;
   const fen = cur.fen;
   if (new Chess(fen).isGameOver()) { liveLines = { fen: null, lines: [] }; return; }
@@ -182,7 +185,7 @@ function renderBoard() {
     }
   }
   const best = liveFor(cur.fen)[0];
-  const arrow = engineOn && best && best.pv[0] && !sel
+  const arrow = engineOn && !hintsHidden() && best && best.pv[0] && !sel
     ? `<svg class="arrow" viewBox="0 0 8 8" aria-hidden="true">${arrowPath(squareXY(best.pv[0].slice(0, 2)), squareXY(best.pv[0].slice(2, 4)), 'a-live')}</svg>`
     : '';
   $('#board').innerHTML = cells.join('') + arrow;
@@ -196,7 +199,7 @@ function renderEvalBar() {
   if (chess.isCheckmate()) score = { mate: 0 };
   else if (chess.isDraw() || chess.isStalemate()) score = { cp: 0 };
   const toMove = fen.split(' ')[1];
-  const w = score && engineOn ? (toMove === 'w' ? winPercent(score) : 100 - winPercent(score)) : null;
+  const w = score && engineOn && !hintsHidden() ? (toMove === 'w' ? winPercent(score) : 100 - winPercent(score)) : null;
   const bar = $('#evalbar');
   bar.classList.toggle('flipped', flipped);
   bar.querySelector('i').style.height = `${w == null ? 50 : w}%`;
@@ -311,11 +314,15 @@ function render() {
   renderPlayers();
   renderLines();
   renderTree();
+  renderSim();
 }
 
 // ---------- moving around ----------
 // Every change of position comes through here: draw, sound, engine, save.
-function show(node, sound) {
+// how: 'move' for a move played on the board, 'keep' for a take-back, and
+// 'nav' for jumping around, which pauses a running simulation.
+function show(node, sound, how = 'nav') {
+  if (how === 'nav' && sim.running) { sim.running = false; sim.token++; }
   cur = node;
   sel = null;
   targets = [];
@@ -324,6 +331,7 @@ function show(node, sound) {
   if (sound) playSound(sound);
   follow();
   save();
+  if (sim.running) simTick();
 }
 
 function step(d) {
@@ -335,7 +343,7 @@ function playMove(uci) {
   const next = play(cur, uci);
   if (!next) return false;
   index();
-  show(next, soundOf(next));
+  show(next, soundOf(next), 'move');
   return true;
 }
 
@@ -363,6 +371,7 @@ function squareAt(x, y) {
 }
 
 function pick(sq) {
+  if (engineToMove()) return false;
   const chess = new Chess(cur.fen);
   const p = chess.get(sq);
   if (!p || p.color !== chess.turn()) return false;
@@ -399,6 +408,160 @@ function askPromotion(color, to) {
     promoting = true;
     setTimeout(() => document.addEventListener('pointerdown', outside, true));
   });
+}
+
+// ---------- simulating a game ----------
+// Stockfish plays on from the board: both sides, to watch a game unfold, or
+// one side against you. Its moves go into the move tree like any other, so
+// simulating from the middle of a line makes a variation.
+const LEVELS = [
+  { skill: 0, movetime: 150 },   // Beginner
+  { skill: 3, movetime: 250 },   // Casual
+  { skill: 7, movetime: 400 },   // Intermediate
+  { skill: 11, movetime: 600 },  // Advanced
+  { skill: 15, movetime: 900 },  // Expert
+  { skill: 20, movetime: 1500 }, // Maximum
+];
+// The least time between moves when Stockfish plays both sides (ms), so the game can be followed.
+const GAP = { slow: 1600, normal: 800, fast: 150 };
+const SIM_KEY = 'shohmot-simulate';
+const simSaved = store.get(SIM_KEY) || {};
+const sim = {
+  open: false,
+  running: false,
+  started: false, // has run since the panel opened, so Start reads "Resume"
+  thinking: false,
+  token: 0,       // bumps whenever a pending engine move should be dropped
+  players: { w: simSaved.w || 'engine', b: simSaved.b || 'engine' },
+  level: Number.isInteger(simSaved.level) ? simSaved.level : 2,
+  speed: simSaved.speed || 'normal',
+  error: '',
+};
+let mover = null;
+
+function saveSim() { store.set(SIM_KEY, { w: sim.players.w, b: sim.players.b, level: sim.level, speed: sim.speed }); }
+const human = () => sim.players.w === 'you' || sim.players.b === 'you';
+const sideToMove = () => cur.fen.split(' ')[1];
+// While you play Stockfish, its lines, arrow and eval bar would give the moves away.
+function hintsHidden() { return sim.open && human(); }
+function engineToMove() { return sim.running && sim.players[sideToMove()] === 'engine'; }
+
+// Moves the simulation on: asks Stockfish for a move when it's its turn.
+function simTick() {
+  sim.thinking = false;
+  if (sim.running && new Chess(cur.fen).isGameOver()) sim.running = false;
+  if (!engineToMove()) return renderSim();
+  const token = ++sim.token;
+  const fen = cur.fen;
+  const started = Date.now();
+  sim.thinking = true;
+  renderSim();
+  mover ??= new MoveEngine($('#engine').value);
+  mover.pick(fen, LEVELS[sim.level]).then(async (uci) => {
+    const gap = human() ? 300 : GAP[sim.speed];
+    const left = gap - (Date.now() - started);
+    if (left > 0) await new Promise((r) => setTimeout(r, left));
+    if (token !== sim.token || !sim.running || cur.fen !== fen) return;
+    if (!uci || !playMove(uci)) { sim.running = false; sim.thinking = false; renderSim(); }
+  }).catch(() => {
+    if (token !== sim.token) return;
+    if (mover) mover.stop();
+    mover = null;
+    // The full build comes from unpkg; if that's blocked, the lite one still works.
+    if ($('#engine').value === 'full') { $('#engine').value = 'lite'; simTick(); return; }
+    sim.running = false;
+    sim.thinking = false;
+    sim.error = 'Stockfish could not start in this browser.';
+    renderSim();
+  });
+}
+
+function startSim() {
+  if (new Chess(cur.fen).isGameOver() || (sim.players.w === 'you' && sim.players.b === 'you')) return;
+  // Playing one side: your pieces go at the bottom.
+  if (!sim.started && sim.players.w !== sim.players.b) flipped = sim.players.b === 'you';
+  sim.running = true;
+  sim.started = true;
+  sim.error = '';
+  sim.token++;
+  render();
+  follow();
+  simTick();
+}
+
+function pauseSim() {
+  sim.running = false;
+  sim.thinking = false;
+  sim.token++;
+  renderSim();
+}
+
+function openSim() {
+  sim.open = true;
+  sim.started = false;
+  sim.error = '';
+  render();
+  follow();
+  $('#sim-go').focus();
+}
+
+function closeSim() {
+  pauseSim();
+  sim.open = false;
+  if (mover) mover.stop();
+  mover = null;
+  render();
+  follow();
+  $('#sim-open').focus();
+}
+
+// Takes back your last move (and Stockfish's reply to it): back to the last
+// position where it was your move.
+function takeBack() {
+  let n = cur.parent;
+  while (n && sim.players[n.fen.split(' ')[1]] !== 'you') n = n.parent;
+  if (!n) return;
+  sim.token++;
+  sim.thinking = false;
+  show(n, 'move', 'keep');
+}
+
+function renderSim() {
+  const box = $('#sim');
+  box.hidden = !sim.open;
+  $('#lines').hidden = sim.open;
+  $('#sim-open').hidden = sim.open;
+  if (!sim.open) return;
+  for (const seg of box.querySelectorAll('.seg')) {
+    for (const b of seg.querySelectorAll('button')) b.setAttribute('aria-pressed', String(b.dataset.v === sim.players[seg.dataset.side]));
+  }
+  $('#sim-level').value = String(sim.level);
+  $('#sim-speed').value = sim.speed;
+  // Speed only matters when Stockfish plays both sides.
+  $('#sim-speed-wrap').hidden = human();
+
+  const over = gameOverText(new Chess(cur.fen));
+  const side = sideToMove() === 'w' ? 'White' : 'Black';
+  const nobody = sim.players.w === 'you' && sim.players.b === 'you';
+  let status;
+  if (sim.error) status = sim.error;
+  else if (over) status = `<b>${over}.</b> Go back a move or two to play it differently.`;
+  else if (nobody) status = 'Pick Stockfish for at least one side.';
+  else if (sim.running && sim.thinking) status = `<span class="think">Stockfish is thinking for ${side}</span>`;
+  else if (sim.running) status = `<b>Your move</b> as ${side}.`;
+  else if (sim.started) status = 'Paused. Resume carries on from the position on the board.';
+  else if (human()) status = `Play Stockfish from the position on the board. ${side} to move.`;
+  else status = `Stockfish plays both sides from the position on the board. ${side} to move.`;
+  const el = $('#sim-status');
+  el.innerHTML = status;
+  el.dataset.state = over ? 'over' : sim.running ? (sim.thinking ? 'thinking' : 'you') : 'idle';
+
+  const go = $('#sim-go');
+  go.textContent = sim.running ? 'Pause' : sim.started ? 'Resume' : 'Start';
+  go.dataset.state = sim.running ? 'pause' : 'play';
+  go.disabled = !sim.running && (!!over || nobody);
+  $('#sim-undo').hidden = !human();
+  $('#sim-undo').disabled = !cur.parent;
 }
 
 // ---------- tools ----------
@@ -493,6 +656,23 @@ function wire() {
     }
   });
 
+  $('#sim-open').addEventListener('click', openSim);
+  $('#sim-close').addEventListener('click', closeSim);
+  $('#sim-go').addEventListener('click', () => (sim.running ? pauseSim() : startSim()));
+  $('#sim-undo').addEventListener('click', takeBack);
+  $('#sim').addEventListener('click', (e) => {
+    const b = e.target.closest('.seg button');
+    if (!b) return;
+    sim.players[b.closest('.seg').dataset.side] = b.dataset.v;
+    saveSim();
+    sim.token++;
+    render();
+    follow();
+    simTick();
+  });
+  $('#sim-level').addEventListener('change', () => { sim.level = Number($('#sim-level').value); saveSim(); });
+  $('#sim-speed').addEventListener('change', () => { sim.speed = $('#sim-speed').value; saveSim(); });
+
   $('#live-toggle').addEventListener('click', () => {
     engineOn = !engineOn;
     store.set('shohmot-review-live', engineOn);
@@ -502,6 +682,10 @@ function wire() {
   $('#engine').addEventListener('change', () => {
     store.set('shohmot-review-engine', $('#engine').value);
     stopLive();
+    if (mover) mover.stop();
+    mover = null;
+    sim.token++;
+    if (sim.running) simTick();
     render();
     follow();
   });
@@ -550,6 +734,8 @@ function wire() {
 
   document.addEventListener('keydown', (e) => {
     if (e.target.closest('select, input, textarea, dialog') || e.metaKey || e.ctrlKey || e.altKey) return;
+    // Space on a focused button already presses it.
+    if (e.key === ' ' && e.target.closest('button')) return;
     const keys = {
       ArrowLeft: () => step(-1), ArrowRight: () => step(1),
       ArrowUp: () => cur !== root && show(root, 'move'),
@@ -557,6 +743,7 @@ function wire() {
       Home: () => cur !== root && show(root, 'move'),
       End: () => { const end = lineEnd(cur); if (end !== cur) show(end, soundOf(end)); },
       f: () => $('#flip').click(), m: () => $('#sound').click(),
+      ' ': () => { if (sim.open && !$('#sim-go').disabled) $('#sim-go').click(); },
       Escape: () => { closeMenu(); sel = null; targets = []; renderBoard(); },
     };
     const fn = keys[e.key];

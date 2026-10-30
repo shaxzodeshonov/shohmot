@@ -178,6 +178,49 @@ export class EnginePool {
   }
 }
 
+// One engine that plays moves, for simulating a game: Stockfish's own
+// "Skill Level" (0 = weakest, 20 = full strength) and a time per move.
+// Asks are queued, so one search finishes before the next starts.
+export class MoveEngine {
+  constructor(kind) {
+    this.kind = kind;
+    this.engine = null;
+    this.ready = null;
+    this.skill = null;
+    this.queue = Promise.resolve();
+  }
+
+  start() {
+    this.ready ??= (async () => {
+      this.engine = new Engine(await engineUrl(this.kind));
+      await this.engine.init(1, 32);
+    })();
+    return this.ready;
+  }
+
+  // Resolves with the move to play, as UCI ("e2e4"), or null if there is none.
+  pick(fen, { skill = 20, movetime = 800 } = {}) {
+    const run = async () => {
+      await this.start();
+      if (skill !== this.skill) {
+        await this.engine.send([`setoption name Skill Level value ${skill}`, 'isready'], (l) => l === 'readyok');
+        this.skill = skill;
+      }
+      const lines = await this.engine.send([`position fen ${fen}`, `go movetime ${movetime}`], (l) => l.startsWith('bestmove'));
+      const best = lines[lines.length - 1].split(' ')[1];
+      return best && best !== '(none)' ? best : null;
+    };
+    this.queue = this.queue.then(run, run);
+    return this.queue;
+  }
+
+  stop() {
+    if (this.engine) this.engine.stop();
+    this.engine = null;
+    this.ready = null;
+  }
+}
+
 // One engine that follows the board: it searches whatever position is shown
 // (top 3 lines, up to depth 24) and reports as it goes deeper. Asking for a
 // new position stops the current search first; UCI answers a stop with

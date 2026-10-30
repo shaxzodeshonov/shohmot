@@ -55,10 +55,11 @@ What the review shows, modelled on Chess.com's Game Review:
 
 - Move pieces by dragging or clicking. Going back and playing something else keeps both: the new move becomes a **variation**, shown indented under the move it replaces, nested as deep as you like (past three levels, in brackets). Right-click a move to make its line the main line or delete it.
 - A **live Stockfish** (full or lite, from the bar) follows the board: its top 3 lines (click a move to play the line up to it), the best move as a blue arrow and the eval bar.
+- **Simulate game** lets Stockfish play on from the position on the board. Pick who plays each side (You or Stockfish): Stockfish against itself to watch the game unfold (Slow, Normal or Fast), or against you, with your pieces at the bottom, its lines, arrow and eval bar hidden so they don't give moves away, and a Take back button. Six strengths, Beginner to Maximum (Stockfish's Skill Level). The moves go into the move tree like any others. Start / Pause (or Space); stepping through the moves pauses it.
 - The opening name, a red glow on a king in check, and the result when the game is over.
 - **Load PGN / FEN** (PGN with variations, comments and annotations, or a FEN), **Copy PGN** (with variations) and **Copy FEN**. **New** clears the board.
 - The analysis is kept in the browser, so it's still there after a reload. A link like `analysis.html#pgn=<PGN>&ply=<n>` opens a game at a move; the review page uses it.
-- Keys: ← → step, ↑ / Home to the start, ↓ / End to the end of the line, F flip, M sound, Esc drops a picked piece.
+- Keys: ← → step, ↑ / Home to the start, ↓ / End to the end of the line, Space starts or pauses a simulation, F flip, M sound, Esc drops a picked piece.
 
 `/api/game` fetches the game's PGN and the site's own accuracy numbers: Lichess's export-by-ids API (the single-game export asks for a login on some games), or the Chess.com monthly archive the game ended in.
 
