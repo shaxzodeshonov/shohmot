@@ -1,3 +1,5 @@
+import { currentUser, freshUser, remember, signOut } from './session.js';
+
 (() => {
   'use strict';
 
@@ -31,16 +33,14 @@
 
   const SYNC_MS = 60000;
   const MAX_ACCOUNTS = 4;
-  let myAccounts = store.get('shohmot-accounts', []);
-  // A link like /?accounts=chesscom:name,lichess:name opens straight onto those accounts.
+  // The chess accounts live on the signed-in Shohmot account (see startup at the bottom).
+  let myAccounts = [];
+  // A link like /app.html?accounts=chesscom:name,lichess:name opens straight onto those accounts.
   const linked = new URLSearchParams(location.search).get('accounts');
+  let fromLink = [];
   if (linked) {
-    const fromLink = linked.split(',').map((p) => p.split(':')).filter(([pf, u]) => PLATFORM[pf] && /^[A-Za-z0-9_-]{2,30}$/.test(u || ''))
+    fromLink = linked.split(',').map((p) => p.split(':')).filter(([pf, u]) => PLATFORM[pf] && /^[A-Za-z0-9_-]{2,30}$/.test(u || ''))
       .slice(0, MAX_ACCOUNTS).map(([platform, username]) => ({ platform, username }));
-    if (fromLink.length) {
-      myAccounts = fromLink;
-      store.set('shohmot-accounts', myAccounts);
-    }
     history.replaceState(null, '', location.pathname);
   }
   let state = null;
@@ -246,7 +246,7 @@
   function reviewLink(g, a) {
     if (g.variant !== 'chess' && g.variant !== 'standard') return '<span></span>';
     const qs = new URLSearchParams({ p: a.platform, u: a.username, id: g.id, t: String(g.end) });
-    return `<a class="review-link" href="review.html?${esc(qs.toString())}">Review</a>`;
+    return `<a class="review-link" href="/review.html?${esc(qs.toString())}" data-astro-prefetch="false">Review</a>`;
   }
 
   let boardDays = new Map();
@@ -319,7 +319,9 @@
   }
 
   // Saving a new account list: load its games right away (behind the pop-up).
+  let accountsEdited = false; // changed here since the page opened
   function useAccounts(list) {
+    accountsEdited = true;
     myAccounts = list.map(({ platform, username }) => ({ platform, username }));
     saveAccounts();
     state = null;
@@ -354,7 +356,16 @@
   }
 
   // ---------- sync: ask the server for fresh data every minute ----------
-  function saveAccounts() { store.set('shohmot-accounts', myAccounts); }
+  async function saveAccounts() {
+    try {
+      const res = await fetch('/api/me', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accounts: myAccounts }) });
+      if (res.status === 401) location.replace('/login.html?next=/app.html');
+      else if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      else remember((await res.json()).user);
+    } catch {
+      toast('Couldn’t save your accounts to Shohmot. They’ll be lost on reload.');
+    }
+  }
   let syncAgain = false;
   // With nothing on screen yet, first ask for just the last two days (fast),
   // then fetch the full 26 weeks for the calendar right after.
@@ -469,9 +480,44 @@
   }, 1000);
   setInterval(() => { if (state && isToday()) { renderRows(); renderGames(); } }, 30000);
 
+  $('#sign-out').addEventListener('click', signOut);
+
+  function showUser(user) {
+    $('#me-name').textContent = user.name;
+    $('#me-av').textContent = [...user.name][0].toUpperCase();
+    $('#me').hidden = false;
+  }
+
   syncControls();
-  $('#sync-now').hidden = !myAccounts.length;
+  $('#sync-now').hidden = true;
   render();
-  // First visit: nothing saved yet, so ask for an account straight away.
-  if (myAccounts.length) sync(); else popup.open();
+  // Starts from last visit's copy of the profile (instant), then follows what
+  // the server says if the accounts changed on another device.
+  currentUser().then((user) => {
+    if (user) {
+      showUser(user);
+      myAccounts = user.accounts;
+      freshUser().then((now) => {
+        if (!now) return;
+        showUser(now);
+        if (!accountsEdited && JSON.stringify(now.accounts) !== JSON.stringify(myAccounts)) {
+          myAccounts = now.accounts.slice();
+          state = null;
+          $('#sync-now').hidden = !myAccounts.length;
+          render();
+          if (myAccounts.length) sync(true); else popup.open();
+        }
+      });
+    }
+    // Accounts saved in this browser before sign-in existed move onto the Shohmot account once.
+    const legacy = store.get('shohmot-accounts', null);
+    if (legacy) {
+      try { localStorage.removeItem('shohmot-accounts'); } catch { /* private mode */ }
+      if (!myAccounts.length && Array.isArray(legacy) && legacy.length) fromLink = legacy.slice(0, MAX_ACCOUNTS);
+    }
+    if (fromLink.length) { useAccounts(fromLink); return; }
+    $('#sync-now').hidden = !myAccounts.length;
+    // First visit: nothing saved yet, so ask for an account straight away.
+    if (myAccounts.length) sync(); else popup.open();
+  });
 })();

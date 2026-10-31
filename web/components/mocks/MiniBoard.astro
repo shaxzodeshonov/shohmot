@@ -1,0 +1,32 @@
+---
+// A chessboard drawn at build time from a FEN placement, with optional
+// arrows ("g1f3") and highlighted squares. No JavaScript in the browser.
+interface Props { fen: string; arrows?: string[]; hl?: string[]; id: string }
+const { fen, arrows = [], hl = [], id } = Astro.props;
+const at = (sq: string) => ({ x: sq.charCodeAt(0) - 97, y: 8 - Number(sq[1]) });
+const lit = new Set(hl.map((s) => { const p = at(s); return `${p.x},${p.y}`; }));
+const cells: { x: number; y: number; piece?: string }[] = [];
+fen.split('/').forEach((row, y) => {
+  let x = 0;
+  for (const ch of row) {
+    if (/\d/.test(ch)) { for (let n = 0; n < Number(ch); n++) cells.push({ x: x++, y }); continue; }
+    cells.push({ x: x++, y, piece: (ch === ch.toUpperCase() ? 'w' : 'b') + ch.toUpperCase() });
+  }
+});
+const lines = arrows.map((a) => {
+  const f = at(a.slice(0, 2)); const t = at(a.slice(2, 4));
+  const dx = t.x - f.x; const dy = t.y - f.y; const len = Math.hypot(dx, dy);
+  return { x1: f.x + 0.5, y1: f.y + 0.5, x2: t.x + 0.5 - (dx / len) * 0.35, y2: t.y + 0.5 - (dy / len) * 0.35 };
+});
+---
+<div class="mini-board">
+  {cells.map((c) => (
+    <i class:list={[{ d: (c.x + c.y) % 2, hl: lit.has(`${c.x},${c.y}`) }]}>{c.piece && <img src={`/pieces/${c.piece}.svg`} alt="" width="45" height="45" loading="lazy" decoding="async" />}</i>
+  ))}
+  {lines.length > 0 && (
+    <svg class="arrows" viewBox="0 0 8 8" aria-hidden="true">
+      <defs><marker id={`ah-${id}`} viewBox="0 0 4 4" refX="2" refY="2" markerWidth="2.2" markerHeight="2.2" orient="auto"><path d="M0 0 4 2 0 4z" fill="#5b9bd5" /></marker></defs>
+      {lines.map((l) => <line {...l} stroke="#5b9bd5" stroke-width="0.17" stroke-linecap="round" opacity="0.9" marker-end={`url(#ah-${id})`} />)}
+    </svg>
+  )}
+</div>

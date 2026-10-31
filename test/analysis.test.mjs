@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { winPercent, moveAccuracy, gameAccuracy, classify, gameRating, phases } from '../public/review/analysis.mjs';
+import { winPercent, moveAccuracy, gameAccuracy, classify, gameRating, phases } from '../web/scripts/review/analysis.mjs';
 
 const near = (a, b, eps = 0.1) => assert.ok(Math.abs(a - b) < eps, `${a} is not close to ${b}`);
 
@@ -97,7 +97,7 @@ test('phases: book, then middlegame by move 12 or trades, endgame when few piece
 });
 
 test('engine stretches cover every position once, from the end backwards', async () => {
-  const { stretches } = await import('../public/review/engine.mjs');
+  const { stretches } = await import('../web/scripts/review/engine.mjs');
   const runs = stretches(19, 8);
   assert.deepEqual(runs[0], [18, 17, 16, 15, 14, 13, 12, 11]);
   assert.deepEqual(runs.at(-1), [2, 1, 0]);
@@ -106,7 +106,7 @@ test('engine stretches cover every position once, from the end backwards', async
 });
 
 test('cloud scores turn from White\'s side to the side to move', async () => {
-  const { cloudLines } = await import('../public/review/cloud.mjs');
+  const { cloudLines } = await import('../web/scripts/review/cloud.mjs');
   const black = 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1';
   const lines = cloudLines({ depth: 50, pvs: [{ moves: 'e7e5 g1f3', cp: 22 }, { moves: 'c7c6', mate: 3 }] }, black);
   assert.deepEqual(lines[0].score, { cp: -22 });
@@ -118,7 +118,7 @@ test('cloud scores turn from White\'s side to the side to move', async () => {
 });
 
 test('Chess.com constants: perfect play is 100, one blunder costs less than on Lichess', async () => {
-  const { ACCURACY } = await import('../public/review/analysis.mjs');
+  const { ACCURACY } = await import('../web/scripts/review/analysis.mjs');
   const flat = Array(41).fill(50);
   assert.equal(Math.round(gameAccuracy(flat, true, ACCURACY.chesscom).white), 100);
   // White throws away a won position on move 10, everything else is perfect.

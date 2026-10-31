@@ -1,0 +1,11 @@
+---
+// A 26-week calendar with made-up but repeatable activity, drawn at build time.
+interface Props { seed?: number }
+let seed = Astro.props.seed ?? 7;
+const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+const levels = Array.from({ length: 26 * 7 }, (_, i) => {
+  const r = rand() * (0.45 + i / 260);
+  return r > 0.75 ? 3 : r > 0.5 ? 2 : r > 0.3 ? 1 : 0;
+});
+---
+<div class="heat" aria-hidden="true">{levels.map((l) => <i data-l={l} />)}</div>

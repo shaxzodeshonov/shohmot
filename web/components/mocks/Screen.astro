@@ -1,0 +1,8 @@
+---
+interface Props { label: string }
+---
+<div class="screen" role="img" aria-label={Astro.props.label}>
+  <div class="screen-dots" aria-hidden="true"><i></i><i></i><i></i></div>
+  <div aria-hidden="true"><slot /></div>
+  <slot name="chip" />
+</div>

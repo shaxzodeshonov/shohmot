@@ -1,15 +1,24 @@
 {
   "name": "shohmot",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "description": "Live game counter for Chess.com and Lichess accounts",
   "main": "server.js",
   "private": true,
+  "type": "commonjs",
   "scripts": {
-    "start": "node server.js",
+    "dev": "astro dev",
+    "build": "astro build",
+    "start": "astro build && node server.js",
+    "serve": "node server.js",
     "test": "node --test"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22.23.4"
   },
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "@fontsource-variable/bricolage-grotesque": "5.3.0",
+    "astro": "7.4.4",
+    "chess.js": "1.4.0"
+  }
 }

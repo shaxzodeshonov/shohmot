@@ -1,0 +1,19 @@
+---
+// The public pages: top bar, content, call to action and footer.
+import Base from './Base.astro';
+import SiteBar from '../components/SiteBar.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+import CtaBand from '../components/CtaBand.astro';
+import '../styles/site.css';
+interface Props { title: string; description: string; current?: string }
+const { title, description, current } = Astro.props;
+---
+<Base title={title} description={description}>
+  <SiteBar current={current} />
+  <main class="wrap">
+    <slot />
+    <CtaBand />
+  </main>
+  <SiteFooter />
+  <script>import '../scripts/site.js';</script>
+</Base>

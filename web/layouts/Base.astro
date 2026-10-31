@@ -1,0 +1,37 @@
+---
+// Every page: head, self-hosted font, page transitions, and a tiny inline
+// script that knows before first paint whether the visitor is signed in.
+// `guard` pages send signed-out visitors to sign in before anything draws.
+import '@fontsource-variable/bricolage-grotesque/opsz.css';
+import fontUrl from '@fontsource-variable/bricolage-grotesque/files/bricolage-grotesque-latin-opsz-normal.woff2?url';
+import '../styles/app.css';
+
+interface Props {
+  title: string;
+  description: string;
+  guard?: boolean;
+  bodyClass?: string;
+}
+const { title, description, guard = false, bodyClass } = Astro.props;
+---
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script is:inline define:vars={{ guard }}>
+    var signedIn = document.cookie.split('; ').indexOf('shohmot_in=1') !== -1;
+    document.documentElement.dataset.auth = signedIn ? 'in' : 'out';
+    if (guard && !signedIn) location.replace('/login.html?next=' + encodeURIComponent(location.pathname + location.search + location.hash));
+  </script>
+  <title>{title}</title>
+  <meta name="description" content={description}>
+  <meta name="theme-color" content="#1b140f">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href={fontUrl} as="font" type="font/woff2" crossorigin>
+  <slot name="head" />
+</head>
+<body class={bodyClass}>
+  <slot />
+</body>
+</html>

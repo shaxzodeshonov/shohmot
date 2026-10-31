@@ -6,7 +6,7 @@
 // piece empties it. With nothing picked, drag pieces around the board, or off
 // it to take them away. Right-click a square to empty it. Pieces can also be
 // dragged straight from the rows onto the board.
-import { Chess, validateFen } from '../vendor/chess.mjs';
+import { Chess, validateFen } from 'chess.js';
 
 const FILES = 'abcdefgh';
 const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';

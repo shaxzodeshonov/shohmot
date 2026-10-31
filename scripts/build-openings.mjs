@@ -4,7 +4,7 @@
 // The review page uses it to name the opening and to mark book moves.
 // Run with `node scripts/build-openings.mjs` (needs the internet).
 import { writeFile } from 'node:fs/promises';
-import { Chess } from '../public/vendor/chess.mjs';
+import { Chess } from 'chess.js';
 
 const BASE = 'https://raw.githubusercontent.com/lichess-org/chess-openings/master/';
 const out = {};

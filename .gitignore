@@ -1,5 +1,7 @@
 node_modules/
-data/
+dist/
+.astro/
+/data/
 .claude/
 *.tmp
 .DS_Store

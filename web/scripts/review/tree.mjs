@@ -1,7 +1,7 @@
 // The analysis board's moves as a tree: every position can have several next
 // moves. The first is the main line, the others are variations. Reads and
 // writes PGN with variations in brackets, so a whole analysis fits in one string.
-import { Chess } from '../vendor/chess.mjs';
+import { Chess } from 'chess.js';
 
 export const START = new Chess().fen();
 

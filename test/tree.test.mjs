@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { newTree, play, toPgn, fromPgn, lineEnd, cut, promote, addressOf, nodeAt, numText } from '../public/review/tree.mjs';
+import { newTree, play, toPgn, fromPgn, lineEnd, cut, promote, addressOf, nodeAt, numText } from '../web/scripts/review/tree.mjs';
 
 const sans = (node) => {
   const out = [];

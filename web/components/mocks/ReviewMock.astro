@@ -1,0 +1,15 @@
+---
+import Screen from './Screen.astro';
+const moves = [
+  { k: '#2fb8a9', tag: '!!', move: '21. Rxf7', note: 'sacrifices the rook', label: 'Brilliant' },
+  { k: '#8fbf5a', tag: '★', move: '22. Qh5+', note: '', label: 'Best' },
+  { k: '#dc4f42', tag: '??', move: '17... Qd7', note: 'allows mate in 3', label: 'Blunder' },
+];
+---
+<Screen label="Game review: your accuracy 87.4, opponent 71.9, with move labels">
+  <div class="acc"><div><small>You · accuracy</small><strong>87.4</strong></div><div><small>Opponent</small><strong>71.9</strong></div></div>
+  <svg class="graph" viewBox="0 0 200 60" preserveAspectRatio="none"><path d="M0 30 L12 29 L24 31 L36 27 L48 28 L60 24 L72 26 L84 22 L96 23 L108 34 L120 20 L132 18 L144 16 L156 12 L168 13 L180 8 L200 6 L200 60 L0 60Z" fill="#f4efe4" /><line x1="0" y1="30" x2="200" y2="30" stroke="#806d56" stroke-width="0.6" stroke-dasharray="3 3" /></svg>
+  <div class="moves">
+    {moves.map((m) => <p style={`--k:${m.k}`}><span class="tag">{m.tag}</span><b>{m.move}</b> {m.note}<span>{m.label}</span></p>)}
+  </div>
+</Screen>

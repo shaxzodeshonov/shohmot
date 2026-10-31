@@ -21,7 +21,8 @@
   --daily: #8fb86a;
   --other: #b8a385;
 
-  --font: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif;
+  --font: 'Bricolage Grotesque Variable', 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif;
+  --ease: cubic-bezier(.2, .7, .2, 1);
   color-scheme: dark;
 }
 
@@ -41,6 +42,21 @@ a { color: inherit; }
 button, input, select { font: inherit; color: inherit; }
 :focus-visible { outline: 0.125rem solid var(--focus); outline-offset: 0.1875rem; border-radius: 0.25rem; }
 
+/* ---------- smooth navigation ----------
+   Pages cross-fade into each other (browsers with cross-document view
+   transitions), and the top bar stays put instead of flashing. */
+@view-transition { navigation: auto; }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: .18s; animation-timing-function: var(--ease); }
+.bar, .site-bar, .auth-top { view-transition-name: top-bar; }
+@media (prefers-reduced-motion: reduce) {
+  @view-transition { navigation: none; }
+}
+
+/* Buttons answer the press straight away. */
+.btn, .step, .pop-add, .link-btn, .review-link { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+.btn:active:not(:disabled), .step:active:not(:disabled), .pop-add:active:not(:disabled) { transform: scale(0.97); }
+.btn { transition: background-color .15s var(--ease), border-color .15s var(--ease), transform .08s var(--ease); }
+
 /* ---------- bar ---------- */
 .bar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; max-width: 72.5rem; margin: 0 auto; padding: 1.25rem 1.5rem; }
 .wordmark { display: inline-flex; align-items: center; gap: 0.5625rem; font-weight: 800; font-size: 1.25rem; letter-spacing: -0.02em; text-decoration: none; }
@@ -53,11 +69,16 @@ button, input, select { font: inherit; color: inherit; }
 .status[data-state="offline"] .status-dot { background: var(--loss); }
 @keyframes pulse { 50% { opacity: 0.25; } }
 
-.btn { border: 1px solid var(--line-2); background: transparent; padding: 0.4375rem 0.875rem; border-radius: 62.4375rem; font-size: 0.8125rem; font-weight: 600; cursor: pointer; transition: background-color .15s, border-color .15s; }
+.btn { border: 1px solid var(--line-2); background: transparent; padding: 0.4375rem 0.875rem; border-radius: 62.4375rem; font-size: 0.8125rem; font-weight: 600; cursor: pointer; }
 .btn:hover { background: var(--raise); border-color: var(--faint); }
+a.btn { text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; }
 .btn:disabled { opacity: .5; cursor: progress; }
 .btn-solid { background: var(--sage); color: var(--sage-ink); border-color: var(--sage); }
 .btn-solid:hover { background: #d5dcc2; border-color: #d5dcc2; }
+
+/* ---------- who is signed in ---------- */
+.me-chip { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.8125rem; font-weight: 600; color: var(--muted); }
+.me-av { width: 1.75rem; height: 1.75rem; border-radius: 50%; background: var(--sage); color: var(--sage-ink); display: grid; place-items: center; font-weight: 800; font-size: 0.8125rem; }
 
 main { max-width: 72.5rem; margin: 0 auto; padding: 0 1.5rem 6rem; }
 

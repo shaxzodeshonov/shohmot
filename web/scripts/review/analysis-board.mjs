@@ -6,7 +6,7 @@
 // after a reload.
 // Opened bare for a new board, or as /analysis.html#pgn=<PGN>&ply=<n> from a
 // game review to carry on from that game.
-import { Chess } from '../vendor/chess.mjs';
+import { Chess } from 'chess.js';
 import { LiveEngine, MoveEngine } from './engine.mjs';
 import { boardInput } from './board-input.mjs';
 import { winPercent } from './analysis.mjs';

@@ -3,7 +3,7 @@
 // is also an analysis board: pieces can be moved freely to try other moves
 // (a "line" off the game), with a live engine showing the best moves ahead.
 // Opened from the game list as /review.html?p=<platform>&u=<username>&id=<game id>&t=<end ms>
-import { Chess } from '../vendor/chess.mjs';
+import { Chess } from 'chess.js';
 import { EnginePool, LiveEngine, ENGINES } from './engine.mjs';
 import { boardInput } from './board-input.mjs';
 import { play, soundOf, isMuted, setMuted } from './sound.mjs';

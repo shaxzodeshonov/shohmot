@@ -1,0 +1,19 @@
+---
+import Logo from './Logo.astro';
+import { FEATURES } from '../data/features';
+interface Props { current?: string }
+const { current } = Astro.props;
+---
+<header class="site-bar">
+  <div class="wrap">
+    <a class="wordmark" href="/"><Logo /> Shohmot</a>
+    <nav class="site-nav" aria-label="Features">
+      {FEATURES.map((f) => <a href={`/features/${f.slug}.html`} aria-current={f.slug === current ? 'page' : undefined}>{f.name}</a>)}
+    </nav>
+    <div class="site-actions">
+      <a class="btn" href="/login.html" data-signed-out>Sign in</a>
+      <a class="btn btn-solid" href="/signup.html" data-signed-out><span class="wide-only">Create account</span><span class="narrow-only">Sign up</span></a>
+      <a class="btn btn-solid" href="/app.html" data-signed-in>Open Shohmot</a>
+    </div>
+  </div>
+</header>

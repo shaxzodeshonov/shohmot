@@ -1,0 +1,15 @@
+---
+import Screen from './Screen.astro';
+import MiniBoard from './MiniBoard.astro';
+---
+<Screen label="Analysis board: Italian Game with Stockfish suggesting c3">
+  <div class="board-row">
+    <div class="evalbar" style="--w:56%"><i></i></div>
+    <MiniBoard id="analysis" fen="r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R" arrows={['c2c3']} hl={['f8', 'c5']} />
+  </div>
+  <div class="lines">
+    <p><b>+0.42</b>4. c3 Nf6 5. d4 exd4 6. cxd4 Bb4+</p>
+    <p><b>+0.35</b>4. O-O Nf6 5. d3 d6 6. c3 O-O</p>
+    <p><b>+0.21</b>4. d3 Nf6 5. c3 d6 6. O-O a6</p>
+  </div>
+</Screen>

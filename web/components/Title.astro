@@ -1,0 +1,6 @@
+---
+// A heading with the *starred* part drawn in sage.
+interface Props { text: string }
+const parts = Astro.props.text.split(/\*([^*]+)\*/);
+---
+{parts.map((p, i) => (i % 2 ? <em>{p}</em> : p))}

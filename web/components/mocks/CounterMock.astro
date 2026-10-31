@@ -1,0 +1,29 @@
+---
+import Screen from './Screen.astro';
+import Heat from './Heat.astro';
+interface Props { seed?: number }
+const ICON = {
+  bullet: 'M13 2 4 14h7l-1 8 9-12h-7z',
+  blitz: 'M12 2c1 3.5-2.5 5-2.5 8.5 0 1.4.8 2.5 2 2.8-.3-1.6.6-3 2-4 .2 2.4 2.5 3.4 2.5 6 0 2.6-2.2 4.7-5 4.7S6 17.9 6 15c0-5.2 6-7.4 6-13z',
+  rapid: 'M9 1h6v2H9zM12 5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17zm1 8.4V8h-2v6.5l4.3 2.5 1-1.7z',
+};
+const cols = [
+  { speed: 'bullet', name: 'Bullet', played: 6, lost: 2, wdl: [4, 0, 2] },
+  { speed: 'blitz', name: 'Blitz', played: 5, lost: 2, wdl: [2, 1, 2] },
+  { speed: 'rapid', name: 'Rapid', played: 3, lost: 1, wdl: [2, 0, 1] },
+] as const;
+---
+<Screen label="Shohmot dashboard: today you played 14 games and lost 5">
+  <p class="mock-head">Today you played 14 games and lost <b>5</b>.</p>
+  <div class="mock-cols">
+    {cols.map((c) => (
+      <div class="mock-col" style={`--c:var(--${c.speed})`}>
+        <small><svg viewBox="0 0 24 24"><path d={ICON[c.speed]} fill="currentColor" fill-rule="evenodd" /></svg> {c.name}</small>
+        <strong>{c.played}</strong><span>{c.lost} lost</span>
+        <div class="wdl">{c.wdl.map((n) => <i style={`flex:${n}`} />)}</div>
+      </div>
+    ))}
+  </div>
+  <Heat seed={Astro.props.seed} />
+  <span class="float-chip" slot="chip" aria-hidden="true">Synced 12s ago</span>
+</Screen>

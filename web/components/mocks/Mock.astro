@@ -1,0 +1,12 @@
+---
+import CounterMock from './CounterMock.astro';
+import ReviewMock from './ReviewMock.astro';
+import AnalysisMock from './AnalysisMock.astro';
+import PlayMock from './PlayMock.astro';
+interface Props { slug: string; seed?: number }
+const { slug, seed } = Astro.props;
+---
+{slug === 'counter' && <CounterMock seed={seed} />}
+{slug === 'review' && <ReviewMock />}
+{slug === 'analysis' && <AnalysisMock />}
+{slug === 'play' && <PlayMock />}

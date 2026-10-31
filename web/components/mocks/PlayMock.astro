@@ -1,0 +1,12 @@
+---
+import Screen from './Screen.astro';
+import MiniBoard from './MiniBoard.astro';
+const order = ['K', 'Q', 'R', 'B', 'N', 'P'];
+const levels = ['Beginner', 'Casual', 'Intermediate', 'Advanced', 'Expert', 'Maximum'];
+---
+<Screen label="Position editor with a back-rank mate set up, and Stockfish strength levels">
+  <div class="palette">{order.map((p) => <img src={`/pieces/b${p}.svg`} alt="" width="40" height="40" loading="lazy" />)}</div>
+  <MiniBoard id="play" fen="6k1/5ppp/8/8/8/8/5PPP/3R2K1" arrows={['d1d8']} hl={['d1']} />
+  <div class="palette">{order.map((p) => <img class:list={[{ on: p === 'R' }]} src={`/pieces/w${p}.svg`} alt="" width="40" height="40" loading="lazy" />)}</div>
+  <div class="chips">{levels.map((l) => <span class:list={[{ on: l === 'Advanced' }]}>{l}</span>)}</div>
+</Screen>

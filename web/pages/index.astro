@@ -1,0 +1,41 @@
+---
+import SitePage from '../layouts/SitePage.astro';
+import Mock from '../components/mocks/Mock.astro';
+import Arrow from '../components/Arrow.astro';
+import { FEATURES, plain } from '../data/features';
+---
+<SitePage title="Shohmot · Today’s chess games, counted" description="Shohmot follows your Chess.com and Lichess accounts, counts today’s games and losses for each type, and reviews any game with Stockfish in your browser.">
+  <section class="landing-hero" aria-labelledby="hero-title">
+    <div class="hero-copy">
+      <span class="eyebrow">For Chess.com and Lichess players</span>
+      <h1 id="hero-title">How many games did you play <em>today?</em></h1>
+      <p class="lead">Shohmot follows your Chess.com and Lichess accounts and counts today’s bullet, blitz, rapid and daily games, and the ones you lost. Then it reviews any of them with Stockfish, right in your browser.</p>
+      <div class="cta-row">
+        <a class="btn btn-solid btn-lg" href="/signup.html" data-signed-out>Create free account</a>
+        <a class="btn btn-solid btn-lg" href="/app.html" data-signed-in>Open Shohmot</a>
+        <a class="btn btn-lg" href="#features">See what it does</a>
+      </div>
+      <p class="fine">Free. Up to four accounts. Your accounts follow you to any device.</p>
+    </div>
+    <div class="hero-visual"><Mock slug="counter" seed={5} /></div>
+  </section>
+
+  <div id="features" class="features-intro reveal">
+    <span class="eyebrow">Features</span>
+    <h2>Count it, review it, play it out.</h2>
+    <p>Four tools, one account. Everything runs in your browser, and none of it needs a Chess.com or Lichess login.</p>
+  </div>
+
+  {FEATURES.map((f, i) => (
+    <section class="feature" id={f.slug} aria-labelledby={`${f.slug}-title`}>
+      <div class="feature-copy reveal">
+        <span class="feature-num">0{i + 1} · {f.name.toUpperCase()}</span>
+        <h3 id={`${f.slug}-title`}>{plain(f.title)}.</h3>
+        <p>{f.short}</p>
+        <ul class="ticks">{f.ticks.map((t) => <li>{t}</li>)}</ul>
+        <a class="more" href={`/features/${f.slug}.html`}>More about {f.name.toLowerCase()} <Arrow /></a>
+      </div>
+      <div class="feature-visual reveal"><Mock slug={f.slug} seed={11} /></div>
+    </section>
+  ))}
+</SitePage>

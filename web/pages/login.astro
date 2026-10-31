@@ -1,0 +1,37 @@
+---
+import Base from '../layouts/Base.astro';
+import Logo from '../components/Logo.astro';
+import '../styles/site.css';
+---
+<Base title="Sign in · Shohmot" description="Sign in to Shohmot to see today's chess games." bodyClass="auth-page">
+  <header class="auth-top">
+    <a class="wordmark" href="/"><Logo /> Shohmot</a>
+  </header>
+
+  <main class="auth-main">
+      <div class="auth-card">
+        <h1>Welcome back</h1>
+        <p>Sign in to see today’s games.</p>
+  
+        <form id="auth-form" data-mode="login" novalidate>
+          <label class="field">
+            <span class="field-label">Email</span>
+            <input name="email" type="email" autocomplete="email" maxlength="254" required placeholder="you@example.com" autocapitalize="none" spellcheck="false">
+          </label>
+          <div class="field">
+            <label class="field-label" for="password">Password</label>
+            <div class="field-input">
+              <input id="password" name="password" type="password" autocomplete="current-password" maxlength="128" required>
+              <button type="button" class="pw-toggle" data-reveal="password" aria-pressed="false">Show</button>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-solid btn-lg auth-submit">Sign in</button>
+          <p class="auth-status" id="auth-status" aria-live="polite"></p>
+        </form>
+  
+        <p class="auth-switch">New to Shohmot? <a href="/signup.html" data-keep-next>Create an account</a></p>
+      </div>
+    </main>
+
+  <script>import '../scripts/auth.js';</script>
+</Base>

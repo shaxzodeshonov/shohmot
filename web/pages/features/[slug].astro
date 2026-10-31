@@ -1,0 +1,41 @@
+---
+import SitePage from '../../layouts/SitePage.astro';
+import Mock from '../../components/mocks/Mock.astro';
+import Title from '../../components/Title.astro';
+import { FEATURES, type Feature } from '../../data/features';
+
+export function getStaticPaths() {
+  return FEATURES.map((f, i) => ({ params: { slug: f.slug }, props: { f, next: FEATURES[(i + 1) % FEATURES.length] } }));
+}
+interface Props { f: Feature; next: Feature }
+const { f, next } = Astro.props;
+---
+<SitePage title={`${f.name} · Shohmot`} description={f.short} current={f.slug}>
+  <section class="feature-hero" aria-labelledby="page-title">
+    <span class="eyebrow">{f.eyebrow}</span>
+    <h1 id="page-title"><Title text={f.title} /></h1>
+    <p class="lead">{f.lead}</p>
+    <div class="cta-row">
+      <a class="btn btn-solid btn-lg" href="/signup.html" data-signed-out>Create free account</a>
+      <a class="btn btn-solid btn-lg" href="/app.html" data-signed-in>Open Shohmot</a>
+      <a class="btn btn-lg" href="/#features">All features</a>
+    </div>
+  </section>
+
+  <div class="showcase"><Mock slug={f.slug} seed={11} /></div>
+
+  <h2 class="section-title reveal">What you get</h2>
+  <div class="points">
+    {f.points.map(([t, d]) => <div class="point reveal"><h3>{t}</h3><p>{d}</p></div>)}
+  </div>
+
+  <h2 class="section-title reveal">How it works</h2>
+  <ol class="steps reveal">
+    {f.steps.map(([t, d]) => <li><b>{t}</b>{d}</li>)}
+  </ol>
+
+  <a class="next-feature reveal" href={`/features/${next.slug}.html`}>
+    <span><small>Next feature</small><strong>{next.name}</strong></span>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+  </a>
+</SitePage>
