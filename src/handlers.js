@@ -1,5 +1,7 @@
 // Request handlers shared by the Vercel functions in api/ and the local server.
 const { fetchAccount, lookupAccount, fetchGamePgn, WINDOW_DAYS } = require('./games');
+const { store } = require('./store');
+const { clientIp } = require('./auth');
 
 const USERNAME_RE = /^[A-Za-z0-9_-]{2,30}$/;
 const PLATFORMS = ['chesscom', 'lichess'];
@@ -24,11 +26,24 @@ function parseAccounts(raw) {
   return out.slice(0, MAX_ACCOUNTS);
 }
 
+// Everything here can make Shohmot ask Chess.com or Lichess for data, so each
+// IP gets a budget, which keeps one visitor from getting the server blocked
+// by them. The CDN answers repeat requests before they get here, so only
+// real look-ups count. Without a database, requests aren't limited.
+async function overLimit(req, name, max, windowSec) {
+  try {
+    return (await store.incr(`rl:${name}:${clientIp(req)}`, windowSec)) > max;
+  } catch {
+    return false;
+  }
+}
+
 // GET /api/state?accounts=chesscom:name,lichess:name[&days=2][&fresh=1]
 async function state(req, res) {
   const url = new URL(req.url, 'http://localhost');
   const accounts = parseAccounts(url.searchParams.get('accounts'));
-  const fresh = url.searchParams.has('fresh');
+  // "fresh" skips every cache; past the budget it quietly doesn't.
+  const fresh = url.searchParams.has('fresh') && !(await overLimit(req, 'fresh', 30, 600));
   const days = Math.min(WINDOW_DAYS, Math.max(1, Number(url.searchParams.get('days')) || WINDOW_DAYS));
   const results = await Promise.all(accounts.map((a) => fetchAccount(a.platform, a.username, { fresh, days })));
   // Let Vercel's CDN serve the same answer for a minute, so the APIs are hit
@@ -43,6 +58,7 @@ async function check(req, res) {
   const username = (url.searchParams.get('username') || '').trim();
   if (!PLATFORMS.includes(platform)) return send(res, 400, { error: 'Pick Chess.com or Lichess.' });
   if (!USERNAME_RE.test(username)) return send(res, 400, { error: 'Usernames are 2–30 letters, numbers, - or _.' });
+  if (await overLimit(req, 'check', 60, 600)) return send(res, 429, { error: 'That’s a lot of look-ups. Wait a few minutes and try again.' });
   const site = platform === 'lichess' ? 'Lichess' : 'Chess.com';
   let found;
   try {
@@ -66,6 +82,7 @@ async function game(req, res) {
   if (!PLATFORMS.includes(platform) || !USERNAME_RE.test(username) || !GAME_ID_RE.test(id)) {
     return send(res, 400, { error: 'That game link looks broken.' });
   }
+  if (await overLimit(req, 'game', 60, 600)) return send(res, 429, { error: 'That’s a lot of games at once. Wait a few minutes and try again.' });
   const site = platform === 'lichess' ? 'Lichess' : 'Chess.com';
   let found;
   try {

@@ -8,6 +8,20 @@ const http = require('http');
 process.env.SHOHMOT_DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'shohmot-auth-'));
 const auth = require('../src/auth');
 
+// A stand-in for Have I Been Pwned's range API, so the tests don't need the
+// network: these passwords count as breached, and `hibpDown` fakes an outage.
+const BREACHED = ['monkey-trouble-1', 'letmein-please'];
+let hibpDown = false;
+const realFetch = globalThis.fetch;
+globalThis.fetch = async (url, opts) => {
+  const m = /^https:\/\/api\.pwnedpasswords\.com\/range\/([0-9A-F]{5})$/.exec(String(url));
+  if (!m) return realFetch(url, opts);
+  if (hibpDown) throw new TypeError('fetch failed');
+  const lines = BREACHED.map((p) => require('crypto').createHash('sha1').update(p).digest('hex').toUpperCase())
+    .filter((h) => h.startsWith(m[1])).map((h) => `${h.slice(5)}:42`);
+  return new Response([...lines, '0000000000000000000000000000000000A:0'].join('\r\n'));
+};
+
 const routes = { '/api/register': auth.register, '/api/login': auth.login, '/api/logout': auth.logout, '/api/me': auth.me };
 let base;
 const server = http.createServer((req, res) => routes[new URL(req.url, 'http://x').pathname](req, res));
@@ -74,6 +88,30 @@ test('rejects duplicates, weak input and cross-site requests', async () => {
   const form = await fetch(`${base}/api/login`, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'email=a&password=b' });
   assert.equal(form.status, 415);
   assert.equal((await call('/api/me', { cookie: 'shohmot_sid=forged' })).status, 401);
+});
+
+test('refuses breached passwords, but signs up if the breach check is down', async () => {
+  assert.equal(await auth.isBreached('monkey-trouble-1'), true);
+  assert.equal(await auth.isBreached('a very unusual phrase 4417'), false);
+  const res = await call('/api/register', { body: { name: 'C', email: 'pwned@example.com', password: 'letmein-please' } });
+  assert.equal(res.status, 400);
+  assert.match(res.body.error, /data breach/);
+  hibpDown = true;
+  try {
+    assert.equal(await auth.isBreached('monkey-trouble-1'), false);
+    assert.equal((await call('/api/register', { body: { name: 'C', email: 'pwned@example.com', password: 'letmein-please' } })).status, 201);
+  } finally {
+    hibpDown = false;
+  }
+});
+
+test('signing in again ends the session the browser had before', async () => {
+  const reg = await call('/api/register', { body: { name: 'D', email: 'rotate@example.com', password: 'rook on the seventh' } });
+  const again = await call('/api/login', { cookie: reg.cookie, body: { email: 'rotate@example.com', password: 'rook on the seventh' } });
+  assert.equal(again.status, 200);
+  assert.notEqual(again.cookie, reg.cookie);
+  assert.equal((await call('/api/me', { cookie: reg.cookie })).status, 401, 'old session is gone');
+  assert.equal((await call('/api/me', { cookie: again.cookie })).status, 200);
 });
 
 test('locks an email after 10 wrong passwords', async () => {

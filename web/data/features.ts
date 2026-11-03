@@ -39,10 +39,10 @@ export const FEATURES: Feature[] = [
     title: 'Find out what really happened in that *loss.*',
     lead: 'Every game in your list has a Review button. Stockfish 19 analyses it in your browser and labels every move, Brilliant to Blunder, with accuracy on the scale of the site you played on.',
     short: 'Stockfish 19 reviews any game in your browser: accuracy, a label on every move, and the better move with the reason.',
-    ticks: ['Accuracy on Chess.com’s or Lichess’s own scale', 'Every move labelled, Brilliant to Blunder', 'The better move as an arrow, and why yours wasn’t'],
+    ticks: ['Accuracy on the scale of the site you played on', 'Every move labelled, Brilliant to Blunder', 'The better move as an arrow, and why yours wasn’t'],
     points: [
-      ['Accuracy you can trust', 'Lichess games use Lichess’s published formula. Chess.com games use constants fitted to games Chess.com had reviewed.'],
-      ['Every move labelled', 'Brilliant, Great, Best, Excellent, Good, Book, Inaccuracy, Mistake, Miss and Blunder, on Chess.com’s thresholds.'],
+      ['Accuracy you can trust', 'Lichess games use Lichess’s published formula. Other games use the same formula, tuned against real reviewed games.'],
+      ['Every move labelled', 'Brilliant, Great, Best, Excellent, Good, Book, Inaccuracy, Mistake, Miss and Blunder, judged by how much each move changes your winning chances.'],
       ['The better move, and why', 'A best-move arrow, the engine’s line, and a short reason, like “It loses a knight” or “It allows mate in 2”.'],
       ['Eval bar and graph', 'Click the graph to jump to any moment. See your key moments and accuracy by phase.'],
       ['Deep evaluations first', 'Positions Lichess has already searched 40–60 moves deep come from its cloud, then Stockfish 19 with the full network.'],

@@ -1,4 +1,4 @@
-// "Set Up Position", like Chess.com's board editor: put any pieces anywhere,
+// "Set Up Position", a board editor: put any pieces anywhere,
 // pick who moves and the castling rights, then analyse the position.
 //
 // Pick a piece from the rows above and below the board (or the bin) and click

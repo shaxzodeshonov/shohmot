@@ -1,5 +1,5 @@
 // Analysis board: play out any position, try as many lines as you like (each
-// one a variation in the move tree, like Chess.com's analysis board) and see
+// one a variation in the move tree) and see
 // a live Stockfish's top 3 lines, eval bar and best-move arrow as you go.
 // "Simulate game" lets Stockfish play on from the board, against itself or
 // against you. The analysis is kept in the browser, so it's still there
@@ -37,7 +37,7 @@ let promoting = false;
 let live = null;
 let liveLines = { fen: null, lines: [] };
 let engineOn = store.get('shohmot-review-live') !== false;
-// The panel shows one of three things, as on Chess.com: the start menu
+// The panel shows one of three things: the start menu
 // ('home'), the analysis ('analysis') or the board editor ('setup').
 let view = 'analysis';
 let setupFrom = 'analysis'; // where Cancel in the editor goes back to
@@ -167,7 +167,7 @@ function renderBoard() {
   if (promoting || view === 'setup') return;
   const chess = new Chess(cur.fen);
   const last = cur.parent ? cur : null;
-  // The king in check gets a red glow, as on Chess.com.
+  // The king in check gets a red glow.
   let checked = null;
   if (chess.inCheck()) {
     for (const row of chess.board()) for (const p of row) if (p && p.type === 'k' && p.color === chess.turn()) checked = p.square;
@@ -890,7 +890,7 @@ async function main() {
   wire();
   restore();
   index();
-  // A fresh board opens on the start menu, as on Chess.com.
+  // A fresh board opens on the start menu.
   const toSetup = view === 'setup-next';
   view = !root.children.length && root.fen === START ? 'home' : 'analysis';
   if (toSetup) setView('setup');

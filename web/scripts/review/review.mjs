@@ -658,7 +658,7 @@ function gameOverText(chess) {
   return '';
 }
 
-// The engine's top lines for the position on the board, Chess.com style:
+// The engine's top lines for the position on the board:
 // the score, then the moves it expects. Clicking a move plays the line up to it.
 function renderLines() {
   $('#live-toggle').setAttribute('aria-pressed', String(engineOn));
@@ -798,7 +798,7 @@ async function dropOn(from, to) {
   playMove(from + to + promo);
 }
 
-// A little column of pieces on the promotion square, like on Chess.com.
+// A little column of pieces on the promotion square.
 function askPromotion(color, to) {
   return new Promise((resolve) => {
     const { x, y } = squareXY(to);

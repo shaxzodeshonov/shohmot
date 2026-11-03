@@ -29,12 +29,11 @@ const API = {
   '/api/logout': auth.logout,
   '/api/me': auth.me,
 };
-// The same headers vercel.json sets.
-const SECURITY_HEADERS = {
-  'X-Content-Type-Options': 'nosniff',
-  'X-Frame-Options': 'DENY',
-  'Referrer-Policy': 'strict-origin-when-cross-origin',
-};
+// The headers vercel.json sets on every response (security headers and the
+// Content-Security-Policy), read from there so the two never drift apart.
+const SECURITY_HEADERS = Object.fromEntries(
+  require('./vercel.json').headers.find((h) => h.source === '/(.*)').headers.map((h) => [h.key, h.value]),
+);
 
 function serveStatic(req, res, pathname) {
   const rel = pathname === '/' ? 'index.html' : decodeURIComponent(pathname).replace(/^\/+/, '');

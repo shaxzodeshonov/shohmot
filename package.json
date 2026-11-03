@@ -7,8 +7,8 @@
   "type": "commonjs",
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build",
-    "start": "astro build && node server.js",
+    "build": "astro build && node scripts/check-csp.mjs",
+    "start": "npm run build && node server.js",
     "serve": "node server.js",
     "test": "node --test"
   },

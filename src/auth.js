@@ -1,6 +1,7 @@
 // Shohmot accounts: sign up, sign in, sign out and the signed-in user's
 // profile. Built on Node's own crypto, no packages:
-// - passwords are hashed with scrypt (OWASP's N=2^15, r=8, p=3) and a random salt;
+// - passwords are hashed with scrypt (OWASP's N=2^15, r=8, p=3) and a random salt,
+//   and new ones that appear in known data breaches are refused;
 // - a session is a random 32-byte token in an HttpOnly cookie, and the store
 //   keeps only its SHA-256, so a leaked store holds no usable sessions;
 // - POSTs must be JSON from this site's own origin (CSRF), and sign-up and
@@ -64,6 +65,28 @@ function checkPassword(password, email) {
   if (typeof password !== 'string' || password.length < 8) throw new HttpError(400, 'Use at least 8 characters for your password.');
   if (password.length > 128) throw new HttpError(400, 'Keep your password under 128 characters.');
   if (COMMON.has(password.toLowerCase()) || password.toLowerCase() === email) throw new HttpError(400, 'That password is too easy to guess. Pick another.');
+}
+
+// Has this password turned up in a data breach? Asks Have I Been Pwned's
+// range API, which only ever sees the first 5 characters of the password's
+// SHA-1 (k-anonymity), never the password. If the API can't be reached in
+// time, sign-up goes ahead rather than failing.
+async function isBreached(password) {
+  const hash = crypto.createHash('sha1').update(password).digest('hex').toUpperCase();
+  try {
+    const res = await fetch(`https://api.pwnedpasswords.com/range/${hash.slice(0, 5)}`, {
+      headers: { 'User-Agent': 'Shohmot', 'Add-Padding': 'true' },
+      signal: AbortSignal.timeout(3000),
+    });
+    if (!res.ok) return false;
+    const rest = hash.slice(5);
+    return (await res.text()).split('\n').some((line) => {
+      const [suffix, count] = line.trim().split(':');
+      return suffix === rest && Number(count) > 0;
+    });
+  } catch {
+    return false;
+  }
 }
 
 function cleanAccounts(raw) {
@@ -154,7 +177,11 @@ async function rateLimit(key, max, windowSec, message) {
   if ((await store.incr(`rl:${key}`, windowSec)) > max) throw new HttpError(429, message);
 }
 
+// A new session for every sign-in; any session this browser already had is
+// deleted, so an old cookie can't outlive the sign-in that replaced it.
 async function startSession(req, res, email) {
+  const old = readCookie(req);
+  if (old) await store.del(sessionKey(old));
   const token = crypto.randomBytes(32).toString('base64url');
   await store.set(sessionKey(token), email, { ttl: SESSION_TTL });
   res.setHeader('Set-Cookie', cookieHeaders(req, token, SESSION_TTL));
@@ -195,7 +222,10 @@ const register = handler(async (req, res) => {
   const email = cleanEmail(body.email);
   checkPassword(body.password, email);
   await rateLimit(`register:${clientIp(req)}`, 10, 3600, 'Too many new accounts from here. Try again in an hour.');
-  const user = { id: crypto.randomUUID(), name, email, hash: await hashPassword(body.password), accounts: [], createdAt: Date.now() };
+  if (await isBreached(body.password)) {
+    throw new HttpError(400, 'That password has shown up in a data breach, so attackers try it first. Pick another.');
+  }
+  const user ={ id: crypto.randomUUID(), name, email, hash: await hashPassword(body.password), accounts: [], createdAt: Date.now() };
   if (!(await store.set(userKey(email), JSON.stringify(user), { nx: true }))) {
     throw new HttpError(409, 'There’s already an account with this email. Sign in instead.');
   }
@@ -251,4 +281,4 @@ const me = handler(async (req, res) => {
   send(res, 200, { user: publicUser(user) });
 });
 
-module.exports = { register, login, logout, me, hashPassword, verifyPassword };
+module.exports = { register, login, logout, me, hashPassword, verifyPassword, isBreached, clientIp };

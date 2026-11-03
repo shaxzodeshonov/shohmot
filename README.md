@@ -43,9 +43,11 @@ Accounts need a database, because Vercel functions don't keep files. In the Verc
 Built on Node's own `crypto`, no packages (`src/auth.js`):
 
 - Passwords are hashed with **scrypt** (N=2^15, r=8, p=3, OWASP's settings) and a random salt, compared in constant time. At least 8 characters; a few very common ones are refused. Signing in with an unknown email still runs scrypt, so timing doesn't reveal which emails have accounts.
-- A session is a random 32-byte token in an **HttpOnly, SameSite=Lax** cookie (Secure on Vercel), valid 30 days. The store keeps only the token's SHA-256, and signing out deletes it.
+- **Breached passwords** are refused at sign-up. [Have I Been Pwned](https://haveibeenpwned.com/API/v3#PwnedPasswords)'s range API only ever sees the first 5 characters of the password's SHA-1, never the password; if it can't be reached within 3 seconds, sign-up goes ahead.
+- A session is a random 32-byte token in an **HttpOnly, SameSite=Lax** cookie (Secure on Vercel), valid 30 days. The store keeps only the token's SHA-256. Signing out deletes it, and signing in deletes the session the browser had before.
 - **CSRF**: POSTs must be `application/json` (which a form on another site can't send) and, when the browser sends an Origin, it must be this site.
-- **Rate limits**: 10 sign-ups an hour per IP; 30 sign-in attempts per 15 minutes per IP; 10 wrong passwords lock an email for 15 minutes.
+- **Rate limits**: 10 sign-ups an hour per IP; 30 sign-in attempts per 15 minutes per IP; 10 wrong passwords lock an email for 15 minutes. Look-ups that reach Chess.com or Lichess are limited per IP too (60 username checks and 60 games per 10 minutes, 30 "Sync now"s, after which syncs use the cache), so one visitor can't get the server blocked by them.
+- **Headers** (`vercel.json`, which `server.js` also reads): a Content-Security-Policy that only runs this site's own scripts (the one inline script is allowed by its hash) and only lets pages talk to this site, Lichess (cloud evals) and unpkg (the Stockfish network); HSTS; `X-Frame-Options: DENY` and `frame-ancestors 'none'`; `nosniff`; a strict Referrer-Policy; a Permissions-Policy that turns off camera, microphone, location and payments; and `Cross-Origin-Opener-Policy: same-origin`. `npm run build` runs `scripts/check-csp.mjs`, which fails the build if an inline script's hash is missing from the policy.
 - Your chess accounts are saved on your Shohmot account (`POST /api/me`), so they follow you to any device. Accounts saved in the browser before sign-in existed move over the first time you sign in.
 
 API: `POST /api/register` `{ name, email, password }`, `POST /api/login` `{ email, password }`, `POST /api/logout`, `GET /api/me`, `POST /api/me` `{ name?, accounts? }`.
@@ -71,32 +73,32 @@ How the evaluations are made, most accurate first:
 
 Depth runs from Quick (12) to Deep (22); Strong (18) is the default.
 
-What the review shows, modelled on Chess.com's Game Review:
+What the review shows:
 
 - **Accuracy** for both players, on the scale of the site the game was played on. Lichess games use Lichess's published formula exactly ([lila](https://github.com/lichess-org/lila): `AccuracyPercent.scala`); on 12 games Lichess had analysed, it came within about 3 points of Lichess's number on average. Chess.com's formula is private, so Chess.com games use the same formula with constants fitted to 26 games that Chess.com had also reviewed: on games left out of the fit it misses Chess.com's number by 4–5 points on average, down from about 8 (`ACCURACY` in `web/scripts/review/analysis.mjs`). The fit used players rated 100–1200, so it may drift for much stronger players.
 - **The site's own accuracy**, under ours, when the game was reviewed on Chess.com or analysed on Lichess.
 - **Game rating**: a rough "you played like ____" from accuracy. Chess.com's formula is private, so this is a hand fit.
-- **Move labels**: Brilliant, Great, Best, Excellent, Good, Book, Forced, Inaccuracy, Mistake, Miss, Blunder. They use Chess.com's expected-points thresholds (0.02 / 0.05 / 0.10 / 0.20), plus: Brilliant is a sound sacrifice of 2+ pawns' worth, Great is the only good move, Miss is failing to punish an opponent's mistake.
+- **Move labels**: Brilliant, Great, Best, Excellent, Good, Book, Forced, Inaccuracy, Mistake, Miss, Blunder. They use expected-points thresholds (0.02 / 0.05 / 0.10 / 0.20), plus: Brilliant is a sound sacrifice of 2+ pawns' worth, Great is the only good move, Miss is failing to punish an opponent's mistake.
 - **Best move arrow** and the engine's line for every move that wasn't best, a short reason ("It loses a knight", "It allows mate in 2"), the **eval bar** and the **eval graph** (click to jump).
 - **Opening name** and book moves, from Lichess's [chess-openings](https://github.com/lichess-org/chess-openings) list (CC0). Rebuild `public/openings.json` with `node scripts/build-openings.mjs`.
 - Accuracy **by phase** (opening, middlegame, endgame) and a list of your key moments.
 - **Analysis board.** Drag a piece or click it and then its square (dots show the legal moves, a picker handles promotion) to try your own moves. Anything other than the game's next move starts **your line**, shown under the game move it replaces; step through it with ← →, click it to jump in, "Back to the game" to leave and × to remove it. Once the review is done, a **live engine** follows the board and shows its top 3 lines and the best move as a blue arrow; click a move in a line to play the line up to it. The Engine switch turns it off.
-- **Move sounds** in the style of Chess.com's: a wooden tock for a move, a brighter clack for a capture, two tocks for castling, a ping for check and promotion and a chime on mate. Chess.com's sound files are theirs (and Lichess's standard set isn't free either), so these are built in the browser, sample by sample, from a click of noise and the decaying tones a wooden piece rings at (`web/scripts/review/sound.mjs`). The speaker button (or M) mutes them.
+- **Move sounds**: a wooden tock for a move, a brighter clack for a capture, two tocks for castling, a ping for check and promotion and a chime on mate. No sound files are copied from any chess site; these are built in the browser, sample by sample, from a click of noise and the decaying tones a wooden piece rings at (`web/scripts/review/sound.mjs`). The speaker button (or M) mutes them.
 - **Analysis board** button: opens the game on the analysis board at the move shown.
 - Keys: ← → Home End, N for your next mistake, F to flip, M for sound, Esc to drop a picked piece.
 
 ## Analysis board
 
-`analysis.html` (the "Analysis board" button on the main page) is a free board for playing out any position, laid out like Chess.com's analysis board:
+`analysis.html` (the "Analysis board" button on the main page) is a free board for playing out any position:
 
-- A fresh board opens on a **start menu**, as on Chess.com: a box to paste a PGN or FEN and Load, then **Set Up Position**, **New Analysis**, **Play Stockfish** and **Game Review**. The first move made on the board opens the analysis.
+- A fresh board opens on a **start menu**: a box to paste a PGN or FEN and Load, then **Set Up Position**, **New Analysis**, **Play Stockfish** and **Game Review**. The first move made on the board opens the analysis.
 - **Set Up Position** (also the "Set up position" button on the main page, and Set Up under the board) turns the board into an editor: pick a piece from the rows above and below the board and click or drag across squares to place it (clicking a square that already has it empties it, the bin removes pieces), drag pieces around, or off the board to remove them, right-click to empty a square, or drag straight from the rows. Choose who moves and the castling rights (only the ones the king and rook allow), paste or copy the FEN, or start from the starting position or an empty board. It says what is wrong with an illegal position (no king, pawns on the back rank, the side not to move in check). **Analyze** opens the position with Stockfish's best move as an arrow and its top 3 lines.
 
 - Move pieces by dragging or clicking. Going back and playing something else keeps both: the new move becomes a **variation**, shown indented under the move it replaces, nested as deep as you like (past three levels, in brackets). Right-click a move to make its line the main line or delete it.
 - A **live Stockfish** (full or lite, from the bar) follows the board: its top 3 lines (click a move to play the line up to it), the best move as a blue arrow and the eval bar.
 - **Play** (Play Stockfish) lets Stockfish play on from the position on the board. Pick who plays each side (You or Stockfish): Stockfish against itself to watch the game unfold (Slow, Normal or Fast), or against you, with your pieces at the bottom, its lines, arrow and eval bar hidden so they don't give moves away, and a Take back button. Six strengths, Beginner to Maximum (Stockfish's Skill Level). The moves go into the move tree like any others. Start / Pause (or Space); stepping through the moves pauses it.
 - The opening name, a red glow on a king in check, and the result when the game is over.
-- Under the board, as on Chess.com: **New** (back to the start menu with a new board), **Set Up**, **Play** and **⋯** with **Load PGN / FEN** (PGN with variations, comments and annotations, or a FEN), **Copy PGN** (with variations) and **Copy FEN**.
+- Under the board: **New** (back to the start menu with a new board), **Set Up**, **Play** and **⋯** with **Load PGN / FEN** (PGN with variations, comments and annotations, or a FEN), **Copy PGN** (with variations) and **Copy FEN**.
 - The analysis is kept in the browser, so it's still there after a reload. A link like `analysis.html#pgn=<PGN>&ply=<n>` opens a game at a move; the review page uses it.
 - Keys: ← → step, ↑ / Home to the start, ↓ / End to the end of the line, Space starts or pauses a simulation, F flip, M sound, Esc drops a picked piece.
 

@@ -1,5 +1,5 @@
 /* Game review page. Builds on app.css (tokens, bar, buttons, toggle).
-   Laid out like Chess.com's review: on wide screens the page is exactly the
+   On wide screens the page is exactly the
    window. The board fills the height on the left (player rows above and
    below, eval bar beside it) and a fixed-width panel on the right holds the
    title, eval graph, report or moves (which scroll) and the move buttons.

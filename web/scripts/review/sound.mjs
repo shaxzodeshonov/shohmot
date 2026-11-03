@@ -1,8 +1,8 @@
-// Move sounds in the style of Chess.com's: a short wooden "tock" for a move, a
+// Move sounds: a short wooden "tock" for a move, a
 // brighter, louder "clack" for a capture, two quick tocks for castling, and a
 // tock with a little ping for check, a rising ping for promotion, and a soft
-// two-note chime when the game ends. Chess.com's own sound files are theirs,
-// so these are made here, sample by sample: each knock is a click of noise
+// two-note chime when the game ends. No sound files are copied from any chess
+// site; these are made here, sample by sample: each knock is a click of noise
 // plus a few decaying tones at the pitches a wooden piece rings at. Every kind
 // has a few takes with slightly different pitches, so repeats don't sound
 // mechanical. They're built once, the first time a sound plays.
