@@ -1,0 +1,14 @@
+---
+// A number spelled in chess material: pawn = 1, bishop = 3, rook = 5,
+// queen = 9, so 2 is two pawns, 4 a bishop and a pawn, 6 a rook and a pawn.
+interface Props { n: number }
+const { n } = Astro.props;
+const VALUES: [string, number, string][] = [['Q', 9, 'queen'], ['R', 5, 'rook'], ['B', 3, 'bishop'], ['P', 1, 'pawn']];
+const pieces: { code: string; name: string }[] = [];
+let left = n;
+for (const [code, v, name] of VALUES) while (left >= v) { pieces.push({ code, name }); left -= v; }
+const label = pieces.map((p) => p.name).join(' + ');
+---
+<span class="piece-count" role="img" aria-label={`${n}: ${label}`} title={`${label} = ${n}`}>
+  {pieces.map((p) => <img src={`/pieces/w${p.code}.svg`} alt="" width="45" height="45" loading="lazy" decoding="async" />)}
+</span>
