@@ -1,8 +1,10 @@
 import { currentUser, freshUser, remember, features, onUser, api } from './session.js';
 import { track } from './track.js';
 import { tiltAlerts } from './tilt.mjs';
-import { scan } from './brilliants/scan.mjs';
-import { foundIn, isChecked } from './brilliants/store.mjs';
+import { foundIn } from './brilliants/store.mjs';
+import { analyzeMany } from './training/analyze.mjs';
+import { latestUnseen, markSeen, gameInfo } from './training/store.mjs';
+import { LABELS } from './review/analysis.mjs';
 
 (() => {
   'use strict';
@@ -242,12 +244,19 @@ import { foundIn, isChecked } from './brilliants/store.mjs';
       <li class="game">
         <span class="res ${g.result}">${label[g.result]}</span>
         <span class="opp">
-          <span class="opp-name"><a href="${esc(g.url)}" target="_blank" rel="noopener">vs ${esc(g.opponent)}</a>${g.oppRating ? ` <small>${g.oppRating}</small>` : ''}${brilBadge(g, a)}</span>
+          <span class="opp-name"><a href="${esc(g.url)}" target="_blank" rel="noopener">vs ${esc(g.opponent)}</a>${g.oppRating ? ` <small>${g.oppRating}</small>` : ''}${brilBadge(g, a)}${mistakeBadge(g, a)}</span>
           <span class="opp-meta"><i style="--c:var(--${g.speed})">${SPEED_NAME[g.speed]}</i> on ${esc(a.username)}, ${PLATFORM[a.platform]}${g.rated ? '' : ', casual'}</span>
         </span>
         <span class="when" title="${esc(new Date(g.end).toLocaleString())}">${isToday() ? ago(g.end) : timeFmt.format(g.end)}</span>
         ${reviewLink(g, a)}
       </li>`).join('') || `<li class="empty">${gamesFilter === 'loss' ? `No losses ${dayWord()}.` : `No games ${dayWord()}.`}</li>`;
+  }
+
+  // How many mistakes a checked game had; it opens Training on that game.
+  function mistakeBadge(g, a) {
+    const info = gameInfo(a.platform, g.id);
+    if (!info || !info.n) return '';
+    return ` <a class="mist-badge" href="/train.html?game=${encodeURIComponent(`${a.platform}:${g.id}`)}" data-astro-prefetch="false" title="${info.n} position${info.n === 1 ? '' : 's'} to train from this game">${info.n} to train</a>`;
   }
 
   // "!!" on games with a brilliant move; it opens the review at the first one.
@@ -258,20 +267,55 @@ import { foundIn, isChecked } from './brilliants/store.mjs';
     return ` <a class="bril-badge" href="/review.html?${esc(qs.toString())}" data-astro-prefetch="false" title="${found.length} brilliant move${found.length === 1 ? '' : 's'}: ${esc(found.map((b) => b.san).join(', '))}">!!${found.length > 1 ? ` ${found.length}` : ''}</a>`;
   }
 
-  // Today's new games get checked for brilliant moves on their own (only the
-  // positions with a piece sacrifice ever reach Stockfish, so it's quick).
-  let brilJob = null;
-  function scanToday() {
-    if (brilJob || !state) return;
+  // Every new game today gets a quick check by Stockfish, in this tab: your
+  // mistakes become training positions (and a "what to work on" card here),
+  // and brilliant moves are counted. Losses go first.
+  let checkJob = null;
+  let checking = null; // { opponent } while a game is being checked
+  function analyzeToday() {
+    if (checkJob || !state) return;
     const from = startOfDay(Date.now());
-    const todo = state.accounts.filter((a) => a.games.some((g) => g.end >= from && (g.variant === 'chess' || g.variant === 'standard') && !isChecked(a.platform, g.id)));
+    const todo = state.accounts.filter((a) => a.games.some((g) => g.end >= from && (g.variant === 'chess' || g.variant === 'standard') && !gameInfo(a.platform, g.id)));
     if (!todo.length) return;
-    brilJob = scan({
+    checkJob = analyzeMany({
       accounts: todo.map((a) => ({ platform: a.platform, username: a.username })),
       since: from,
-      onFound: () => { render(); toast('You played a brilliant move!'); },
-      onDone: () => { brilJob = null; render(); },
+      onProgress: (p) => {
+        const m = /vs (.+)…$/.exec(p.note || '');
+        checking = m ? { opponent: m[1] } : null;
+        renderBanners();
+      },
+      onGame: (platform, g, out) => {
+        if (out.brilliants.length) toast(`Brilliant move against ${g.opponent}: ${out.brilliants.map((b) => b.san).join(', ')}!`);
+        render();
+      },
+      onDone: () => { checkJob = null; checking = null; render(); },
     });
+  }
+
+  // The "what to work on" card for the newest game with mistakes.
+  function needsWorkHtml() {
+    if (!myAccounts.length) return '';
+    const nw = latestUnseen(myAccounts, startOfDay(Date.now()) - DAY);
+    if (!nw) return checking ? `<div class="banner" data-kind="info"><p><b>Checking your game vs ${esc(checking.opponent)}…</b> Stockfish is looking for your mistakes. It takes a few seconds.</p></div>` : '';
+    const g = nw.g;
+    const counts = {};
+    for (const it of nw.items) counts[it.label] = (counts[it.label] || 0) + 1;
+    const summary = ['blunder', 'mistake', 'miss'].filter((l) => counts[l]).map((l) => plural(counts[l], LABELS[l].name.toLowerCase(), `${LABELS[l].name.toLowerCase()}${l === 'miss' ? 'es' : 's'}`)).join(', ');
+    const head = g.r === 'loss' ? `You lost to ${g.o}. Here’s what to work on.` : `Your game vs ${g.o}: room to improve.`;
+    const list = nw.items.slice(0, 3).map((it) => {
+      const no = `${Math.ceil(it.ply / 2)}${it.ply % 2 ? '.' : '…'}`;
+      return `<li><b class="nw-move" data-l="${it.label}">${no} ${esc(it.san)}${LABELS[it.label].mark}</b> ${esc(it.why)} <span class="muted">Better was <b>${esc(it.bestSan)}</b>.</span></li>`;
+    }).join('');
+    const first = nw.items[0];
+    const qs = new URLSearchParams({ p: nw.platform, u: g.u || '', id: nw.id, t: String(g.e), ply: String(first.ply) });
+    return `<div class="banner needs-work" data-kind="warn">
+      <div class="nw-body"><p><b>${esc(head)}</b> ${esc(summary)}${g.acc != null ? ` · accuracy ${Math.round(g.acc)}` : ''}.</p><ol class="nw-list">${list}</ol></div>
+      <div class="banner-actions">
+        <a class="btn btn-solid" href="/train.html?game=${encodeURIComponent(nw.key)}" data-astro-prefetch="false">Train ${nw.items.length === 1 ? 'this position' : `these ${nw.items.length} positions`}</a>
+        <a class="btn" href="/review.html?${esc(qs.toString())}" data-astro-prefetch="false">Full review</a>
+        <button class="btn" type="button" data-seen="${esc(nw.key)}">Dismiss</button>
+      </div></div>`;
   }
 
   // Stockfish review, for standard chess only.
@@ -439,7 +483,7 @@ import { foundIn, isChecked } from './brilliants/store.mjs';
       lastSyncAt = now;
       render();
       if (added.length) toast(`New games: ${added.join(', ')}`);
-      if (!quick) scanToday();
+      if (!quick) analyzeToday();
     } catch {
       connection = 'offline';
     } finally {
@@ -527,6 +571,7 @@ import { foundIn, isChecked } from './brilliants/store.mjs';
       out.push(`<div class="banner" data-kind="info"><p><b>Confirm your email.</b> We sent a link to ${esc(me.email)}. It lets you reset your password and get your weekly recap.</p>
         <div class="banner-actions"><button class="btn" type="button" data-act="resend">Send it again</button></div></div>`);
     }
+    if (state) out.push(needsWorkHtml());
     if (me && state) {
       const games = state.accounts.flatMap((a) => a.games);
       for (const alert of tiltAlerts(games, me.prefs || {}, { pro: me.plan && me.plan !== 'free', now: Date.now() })) {
@@ -556,6 +601,8 @@ import { foundIn, isChecked } from './brilliants/store.mjs';
   $('#banners').addEventListener('click', async (e) => {
     const d = e.target.closest('[data-dismiss]');
     if (d) return dismiss(d.dataset.dismiss);
+    const seenBtn = e.target.closest('[data-seen]');
+    if (seenBtn) { markSeen(seenBtn.dataset.seen); return renderBanners(); }
     const r = e.target.closest('[data-act="resend"]');
     if (r) {
       r.disabled = true;

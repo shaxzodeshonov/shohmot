@@ -10,7 +10,8 @@ import { play, soundOf, isMuted, setMuted } from './sound.mjs';
 import { cloudEvals } from './cloud.mjs';
 import { newTree, play as playOn, toPgn } from './tree.mjs';
 import { LABELS, BAD, ACCURACY, winPercent, moveAccuracy, gameAccuracy, classify, gameRating, phases } from './analysis.mjs';
-import { sacrificeOf } from './sacrifice.mjs';
+import { labelGame } from './label.mjs';
+import { saveReviewedMistakes, mistakesOf } from '../training/store.mjs';
 import { saveReviewed } from '../brilliants/store.mjs';
 
 const $ = (s) => document.querySelector(s);
@@ -25,7 +26,6 @@ const PLATFORM = params.get('p');
 const USERNAME = params.get('u') || '';
 const GAME_ID = params.get('id');
 const SITE = PLATFORM === 'lichess' ? 'Lichess' : 'Chess.com';
-const VALUE = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
 const PIECE_NAME = { p: 'pawn', n: 'knight', b: 'bishop', r: 'rook', q: 'queen', k: 'king' };
 // depth -> time cap per position (ms). The full network searches fewer
 // positions a second, so it gets more time to reach the same depth.
@@ -119,34 +119,12 @@ function applyBook(openings) {
 }
 
 // ---------- chess helpers ----------
-function balance(chess, color) {
-  let s = 0;
-  for (const row of chess.board()) for (const sq of row) if (sq) s += (sq.color === color ? 1 : -1) * VALUE[sq.type];
-  return s;
-}
-
 function playUci(chess, uci) {
   try {
     return chess.move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] });
   } catch {
     return null;
   }
-}
-
-// Material the mover is down after a move once the captures in the engine's
-// best reply settle (positive = down). Used for sacrifices and "this loses a knight".
-function materialDrop(i) {
-  const mover = game.moves[i].color;
-  const before = balance(new Chess(game.fens[i]), mover);
-  const chess = new Chess(game.fens[i + 1]);
-  const line = results[i + 1] && results[i + 1][0] ? results[i + 1][0].pv : [];
-  for (const uci of line.slice(0, 8)) {
-    const probe = new Chess(chess.fen());
-    const m = playUci(probe, uci);
-    if (!m || (!m.captured && !m.promotion)) break;
-    playUci(chess, uci);
-  }
-  return before - balance(chess, mover);
 }
 
 function sanLine(fen, pv, max = 6) {
@@ -189,39 +167,16 @@ function scoreText(s, fen) {
 
 function buildReview() {
   const n = game.moves.length;
-  const wins = game.fens.map((_, i) => whiteWin(i));
+  // Labels come from the shared labeller (label.mjs), the same one the counter's
+  // quick mistake check uses.
+  const { wins, labels, info } = labelGame(game, results);
   // Accuracy on each site's own scale, so it's comparable with what the site shows.
   const consts = ACCURACY[PLATFORM === 'lichess' ? 'lichess' : 'chesscom'];
   const accWins = game.fens.map((_, i) => whiteWin(i, consts.k));
-  const labels = [];
-  const info = [];
   for (let i = 0; i < n; i++) {
-    const m = game.moves[i];
-    const white = m.color === 'w';
-    const lines = results[i];
-    const before = white ? wins[i] : 100 - wins[i];
-    const after = white ? wins[i + 1] : 100 - wins[i + 1];
-    const second = lines[1] ? winPercent(lines[1].score) : null;
-    const best = lines[0].pv[0];
-    const isBest = best === m.uci || (lines[1] && lines[1].pv[0] === m.uci && second >= before - 1);
-    const prev = game.moves[i - 1];
-    const drop = materialDrop(i);
-    // A sacrifice: a piece the opponent can win right now (even if taking it
-    // loses, which the engine's line wouldn't show), or a piece the engine's
-    // line wins once the captures settle.
-    const sac = sacrificeOf(game.fens[i], m.uci);
-    const rating = Number(white ? game.headers.WhiteElo : game.headers.BlackElo) || null;
-    const label = classify({
-      before, after, second, isBest, rating,
-      legal: game.legal[i],
-      book: i < game.bookPlies,
-      sacrifice: (sac && sac.net >= 2 && !!sac.piece) || drop >= 3,
-      recapture: !!(prev && prev.captured && m.captured && prev.to === m.to),
-      oppLabel: labels[i - 1] || null,
-    });
-    labels.push(label);
+    const white = game.moves[i].color === 'w';
     const mover = (w) => (white ? w : 100 - w);
-    info.push({ before, after, best, drop, accuracy: moveAccuracy(mover(accWins[i]), mover(accWins[i + 1]), consts.a) });
+    info[i].accuracy = moveAccuracy(mover(accWins[i]), mover(accWins[i + 1]), consts.a);
   }
 
   const accuracy = gameAccuracy(accWins, game.fens[0].split(' ')[1] === 'w', consts);
@@ -329,6 +284,10 @@ function finish(depth) {
     });
     const h = game.headers;
     saveReviewed(PLATFORM, GAME_ID, { end: Number(params.get('t')) || Date.now(), username: USERNAME, opponent: game.me === 'w' ? h.Black : h.White, found });
+    // And its mistakes become training positions.
+    const r = h.Result;
+    const result = r === '1/2-1/2' ? 'draw' : (r === '1-0') === (game.me === 'w') ? 'win' : r === '*' ? null : 'loss';
+    saveReviewedMistakes(PLATFORM, GAME_ID, mistakesOf(game, results, review, { end: Number(params.get('t')) || Date.now(), username: USERNAME, opponent: game.me === 'w' ? h.Black : h.White, result }));
   }
   $('#progress').hidden = true;
   $('#progress').dataset.depth = depth;

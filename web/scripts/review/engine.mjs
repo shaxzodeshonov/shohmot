@@ -38,6 +38,7 @@ class Engine {
   send(cmds, done) {
     return new Promise((resolve, reject) => {
       const lines = [];
+      this.pending = reject;
       this.worker.onerror = (e) => reject(new Error(e.message || 'Stockfish failed to load.'));
       this.listener = (line) => {
         lines.push(line);
@@ -62,8 +63,16 @@ class Engine {
     return parseInfo(lines);
   }
 
-  stop() { this.worker.terminate(); }
+  // Ends the worker; a search still running is rejected, so nothing waits forever.
+  stop() {
+    this.worker.terminate();
+    if (this.pending) this.pending(new StoppedError());
+    this.pending = null;
+    this.listener = null;
+  }
 }
+
+export class StoppedError extends Error { constructor() { super('Stopped'); } }
 
 // Keeps the deepest line for each MultiPV slot. Scores are for the side to move.
 export function parseInfo(lines) {
@@ -160,12 +169,18 @@ export class EnginePool {
     const worker = async () => {
       const engine = new Engine(url);
       this.engines.push(engine);
-      await engine.init(multiPv, hash);
-      while (!this.stopped && queue.length) {
-        for (const i of queue.shift()) {
-          if (this.stopped) return;
-          onResult(i, await engine.analyse(jobs[i].fen, depth, movetime));
+      try {
+        await engine.init(multiPv, hash);
+        while (!this.stopped && queue.length) {
+          for (const i of queue.shift()) {
+            if (this.stopped) return;
+            const lines = await engine.analyse(jobs[i].fen, depth, movetime);
+            if (!this.stopped) onResult(i, lines);
+          }
         }
+      } catch (err) {
+        // Stopping on purpose isn't an error.
+        if (!this.stopped && !(err instanceof StoppedError)) throw err;
       }
     };
     await Promise.all(Array.from({ length: Math.min(this.size, queue.length) }, worker));

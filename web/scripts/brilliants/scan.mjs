@@ -28,7 +28,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // The opening book, so book moves (gambits!) aren't counted.
 let bookPromise = null;
-function loadBook() {
+export function loadBook() {
   bookPromise ??= fetch('/openings.json').then((r) => r.json()).catch(() => ({}));
   return bookPromise;
 }
@@ -81,7 +81,7 @@ export function windows(platform, since, until) {
   return out;
 }
 
-async function fetchWindow(account, w, shouldStop) {
+export async function fetchWindow(account, w, shouldStop) {
   const qs = new URLSearchParams({ platform: account.platform, username: account.username, since: String(Math.floor(w.since)), until: String(Math.floor(w.until)) });
   for (let attempt = 0; attempt < 4; attempt++) {
     if (shouldStop()) return null;

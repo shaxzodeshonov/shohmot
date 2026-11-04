@@ -140,14 +140,14 @@ function movesOfChesscom(g, username) {
   if (!base || base.variant !== 'chess' || !g.pgn) return null;
   const { moves, fen } = pgnMoves(g.pgn);
   if (!moves) return null;
-  return { id: base.id, end: base.end, color: base.color[0], rating: base.rating, speed: base.speed, opponent: base.opponent, moves, ...(fen ? { fen } : {}) };
+  return { id: base.id, end: base.end, color: base.color[0], result: base.result, rating: base.rating, speed: base.speed, opponent: base.opponent, moves, ...(fen ? { fen } : {}) };
 }
 
 function movesOfLichess(g, username) {
   const base = parseLichessGame(g, username);
   if (!base || !['standard', 'fromPosition'].includes(g.variant) || !g.moves) return null;
   if (g.variant === 'fromPosition' && !g.initialFen) return null;
-  return { id: base.id, end: base.end, color: base.color[0], rating: base.rating, speed: base.speed, opponent: base.opponent, moves: g.moves, ...(g.initialFen ? { fen: g.initialFen } : {}) };
+  return { id: base.id, end: base.end, color: base.color[0], result: base.result, rating: base.rating, speed: base.speed, opponent: base.opponent, moves: g.moves, ...(g.initialFen ? { fen: g.initialFen } : {}) };
 }
 
 module.exports = { normSpeed, parseChesscomGame, parseLichessGame, parseNdjson, archiveMonthEnd, archiveMonthStart, pgnMoves, movesOfChesscom, movesOfLichess };

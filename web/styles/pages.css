@@ -62,3 +62,36 @@
   .bz-weeks { gap: 0.125rem; }
   .bz-week b { display: none; }
 }
+
+/* ---------- training ---------- */
+.tr-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 1.5rem; flex-wrap: wrap; }
+.tr-stats { display: flex; gap: 1.5rem; margin: 0; }
+.tr-stats div { text-align: right; }
+.tr-stats dt { font-size: 0.75rem; color: var(--faint); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
+.tr-stats dd { margin: 0; font-size: 1.75rem; font-weight: 800; letter-spacing: -0.03em; }
+.tr-main { display: grid; grid-template-columns: minmax(0, auto) minmax(18rem, 1fr); gap: 2rem; margin-top: 1.5rem; align-items: start; }
+.tr-board-wrap { --s: min(34rem, calc(100vw - 3rem)); }
+.tr-who { display: flex; align-items: center; gap: 0.5rem; height: 2.25rem; font-weight: 600; font-size: 0.9375rem; color: var(--muted); }
+.tr-panel { display: grid; gap: 0.75rem; align-content: start; padding-top: 2.25rem; }
+.tr-prompt { font-size: 1.75rem; font-weight: 800; letter-spacing: -0.03em; line-height: 1.1; }
+.tr-feedback p { margin-top: 0.25rem; }
+.tr-ok b { color: var(--win); }
+.tr-bad b { color: var(--loss); }
+.tr-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem; }
+.tr-work-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr)); gap: 2rem; margin-top: 1rem; }
+.tr-tip { color: var(--muted); max-width: 46rem; }
+.tr-tip b { color: var(--ink); }
+.tr-bars h3 { font-size: 0.8125rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--faint); margin-bottom: 0.5rem; }
+.tr-bars p { display: grid; grid-template-columns: 11rem 1fr 2rem; align-items: center; gap: 0.75rem; font-size: 0.9375rem; padding: 0.25rem 0; }
+.tr-bars i { display: block; height: 0.5rem; width: var(--w); min-width: 0.25rem; border-radius: 1rem; background: var(--loss); }
+.tr-bars b { text-align: right; }
+.train .bz-scan { margin-top: 2.5rem; }
+.nw-move { font-weight: 800; }
+.nw-move[data-l="blunder"] { color: #e8695b; }
+.nw-move[data-l="mistake"] { color: #ec9a3c; }
+.nw-move[data-l="miss"] { color: #ee7a5e; }
+@media (max-width: 56.25em) {
+  .tr-main { grid-template-columns: minmax(0, 1fr); }
+  .tr-panel { padding-top: 0; }
+  .tr-bars p { grid-template-columns: 8.5rem 1fr 2rem; }
+}

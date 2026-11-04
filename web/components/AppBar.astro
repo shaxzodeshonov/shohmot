@@ -2,7 +2,7 @@
 // The top bar on the signed-in pages: the sections, an Upgrade button for
 // free accounts (when paid plans are on), and who's signed in, which opens
 // Settings. Page-specific buttons go in the default slot.
-interface Props { current?: 'counter' | 'brilliants' | 'insights' | 'puzzles' | 'coach' | 'settings' | 'admin' }
+interface Props { current?: 'counter' | 'train' | 'brilliants' | 'coach' | 'settings' | 'admin' }
 const { current } = Astro.props;
 const here = (k: string) => (k === current ? 'page' : undefined);
 ---
@@ -13,9 +13,8 @@ const here = (k: string) => (k === current ? 'page' : undefined);
   </a>
   <nav class="app-nav" aria-label="Sections">
     <a href="/app.html" aria-current={here('counter')}>Counter</a>
+    <a href="/train.html" aria-current={here('train')} data-astro-prefetch="false">Training</a>
     <a href="/brilliants.html" aria-current={here('brilliants')} data-astro-prefetch="false">Brilliants</a>
-    <a href="/insights.html" aria-current={here('insights')} data-astro-prefetch="false">Insights</a>
-    <a href="/puzzles.html" aria-current={here('puzzles')} data-astro-prefetch="false">Puzzles</a>
     <a href="/analysis.html" data-astro-prefetch="false">Analysis</a>
     <a href="/coach.html" aria-current={here('coach')} data-astro-prefetch="false" data-for="coach" hidden>Students</a>
     <a href="/admin.html" aria-current={here('admin')} data-astro-prefetch="false" data-for="admin" hidden>Admin</a>

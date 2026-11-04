@@ -309,6 +309,18 @@ a.me-chip:hover, a.me-chip[aria-current="page"] { border-color: var(--line-2); b
 .bril-chip b { color: var(--ink); }
 .bril-badge { display: inline-block; font-size: 0.6875rem; padding: 0 0.3125rem; margin-left: 0.25rem; text-decoration: none; vertical-align: 0.0625rem; }
 
+/* ---------- what to work on ---------- */
+.needs-work { align-items: flex-start; }
+.nw-body { flex: 1 1 28rem; min-width: 0; }
+.nw-list { margin: 0.625rem 0 0; padding-left: 1.25rem; display: grid; gap: 0.375rem; color: var(--muted); }
+.nw-list b { color: var(--ink); }
+.nw-move { font-weight: 800; }
+.nw-move[data-l="blunder"] { color: #e8695b !important; }
+.nw-move[data-l="mistake"] { color: #ec9a3c !important; }
+.nw-move[data-l="miss"] { color: #ee7a5e !important; }
+.mist-badge { display: inline-block; font-size: 0.6875rem; font-weight: 700; padding: 0 0.375rem; margin-left: 0.25rem; border-radius: 0.375rem; border: 1px solid rgb(232 135 107 / 0.6); color: var(--loss); text-decoration: none; vertical-align: 0.0625rem; }
+.mist-badge:hover { background: rgb(232 135 107 / 0.12); }
+
 /* ---------- smaller screens ---------- */
 @media (max-width: 56.25em) {
   .lower { grid-template-columns: minmax(0, 1fr); gap: 0; }

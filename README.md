@@ -87,6 +87,25 @@ What the review shows:
 - **Analysis board** button: opens the game on the analysis board at the move shown.
 - Keys: ← → Home End, N for your next mistake, F to flip, M for sound, Esc to drop a picked piece.
 
+## Mistakes and training
+
+**After every game.** While the counter is open, each new game gets a quick check (`web/scripts/training/analyze.mjs`):
+
+- Stockfish lite analyses every position in this tab, at depth 12 and at most 0.7 s a position, losses first. A game takes a few seconds.
+- Moves are labelled by the same code as the full review (`web/scripts/review/label.mjs`).
+- If you made mistakes, a card appears on the counter: "You lost to X. Here's what to work on." It lists up to three of your worst moves, each with what went wrong ("It allows mate in 1", "It leaves a piece to be taken") and the better move. Its buttons are **Train these positions**, **Full review** and **Dismiss**.
+- Games with mistakes get an "N to train" badge in the game list.
+- The same check also finds brilliant moves.
+
+**Training** (`/train.html`). Each mistake, miss or blunder you made becomes a position to solve: find the better move. The engine's choice counts, and so does any move nearly as good.
+
+- **Scheduling** (spaced repetition, `web/scripts/training/store.mjs`): solve a position on the first try and it comes back after 1, 3, 7 and 21 days, then it's learned. Miss it, or need a hint or a second try, and it comes back in 10 minutes.
+- **"What to work on"** counts your mistakes by kind (left a piece hanging, allowed a mate, missed a mate, lost material, missed a chance, let the position slip) and by game phase, with a tip for the most common kind.
+- **"Check older games"** goes back through your losses.
+- **Free vs Pro:** free accounts train 5 positions a day and check losses from the last 7 days. Pro has no daily limit and checks 26 weeks.
+- **Overrides:** a full review overrides the quick check for its game, but keeps your training progress.
+- **Storage:** everything is kept in the browser (`shohmot-training:v1`).
+
 ## Brilliant moves
 
 **How a move becomes Brilliant** (`isBrilliant` in `web/scripts/review/analysis.mjs`), following Chess.com's published description, since its exact formula is private:

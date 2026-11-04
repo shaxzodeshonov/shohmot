@@ -65,7 +65,7 @@ test('pgnMoves keeps only the moves', () => {
   assert.equal(pgnMoves('[SetUp "1"]\n[FEN "8/8/8/8/8/8/8/K6k w - - 0 1"]\n\n1. Kb2 Kg2 1/2-1/2').fen, '8/8/8/8/8/8/8/K6k w - - 0 1');
   const cc = movesOfChesscom({ uuid: 'u1', url: 'x', end_time: 100, time_class: 'blitz', rated: true, rules: 'chess', pgn,
     white: { username: 'Me', rating: 900, result: 'win' }, black: { username: 'b', rating: 950, result: 'resigned' } }, 'me');
-  assert.deepEqual(cc, { id: 'u1', end: 100000, color: 'w', rating: 900, speed: 'blitz', opponent: 'b', moves: 'e4 e5 Nf3 Nc6 Bb5 a6 Ba4' });
+  assert.deepEqual(cc, { id: 'u1', end: 100000, color: 'w', result: 'win', rating: 900, speed: 'blitz', opponent: 'b', moves: 'e4 e5 Nf3 Nc6 Bb5 a6 Ba4' });
   assert.equal(movesOfChesscom({ ...{ uuid: 'u2', rules: 'chess960', pgn, white: { username: 'me' }, black: {} } }, 'me'), null);
   const li = movesOfLichess({ id: 'abcdefgh', createdAt: 1, lastMoveAt: 2, speed: 'rapid', rated: true, variant: 'standard', status: 'mate', winner: 'black',
     moves: 'e4 e5', players: { white: { user: { id: 'me', name: 'Me' }, rating: 1500 }, black: { user: { id: 'x', name: 'X' }, rating: 1490 } } }, 'me');
