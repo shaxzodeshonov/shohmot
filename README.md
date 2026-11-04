@@ -25,6 +25,13 @@ What makes it quick:
 - **Smooth page changes.** Pages cross-fade with cross-document View Transitions and the top bar stays still.
 - **Less to load.** The font is self-hosted and preloaded (no Google Fonts round trip); the landing page's boards and calendars are drawn at build time, so they cost no JavaScript; the public pages ship about 1 KB of script.
 - Motion is subtle and switched off for people who ask for reduced motion.
+- **Nothing jumps while data loads.** The counter's HTML has placeholder rows (as many as last visit's accounts, which the inline head script reads) and the demo's banner and rows; the headline, the win/draw/loss bar and the app bar keep their space. `web/scripts/counter-markup.js` draws the placeholders both at build time and in the browser, so they match.
+- **The counter draws first, checks later.** The mistake checker (Stockfish, chess.js, the labeller) loads alongside the counter instead of before it.
+- **Below-the-fold sections cost nothing until needed** (`content-visibility: auto` on the landing page's features).
+- **The service worker uses navigation preload**, so having one never slows a page down.
+- `server.js` compresses text with brotli or gzip, as Vercel does, so local measurements match production.
+
+Accessibility: every page passes axe-core's WCAG 2.2 AA and best-practice rules, desktop and mobile, and fits a 320px-wide screen without sideways scrolling. Text colours are at least 4.5:1 on every background (keep new colours to that), each page has a "Skip to content" link to `#main`, and anything that scrolls sideways is focusable so keyboards can scroll it.
 
 ## Deploy to Vercel
 
