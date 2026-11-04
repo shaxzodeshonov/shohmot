@@ -28,7 +28,7 @@ function describeDb(env = process.env) {
   if (found) return { db: 'redis', from: found.from };
   if (!env.VERCEL) return { db: 'file', from: 'data/store.json' };
   const related = Object.keys(env).filter((k) => /KV_|REDIS|UPSTASH/.test(k)).sort();
-  let hint = 'No database connected. In Vercel: Storage → Create Database → Upstash (Redis) → Connect to this project, tick Production, then redeploy.';
+  let hint = 'No database connected. Make a free Redis database at console.upstash.com, copy its REST URL and token into UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN (Vercel → Project → Settings → Environment Variables, Production and Preview), then redeploy.';
   if (related.length) hint = `Found ${related.join(', ')} but not a REST URL and token pair (…_REST_API_URL and …_REST_API_TOKEN). Reconnect the Upstash store to this project, or copy its REST URL and token into UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN, then redeploy.`;
   return { db: 'missing', related, hint };
 }

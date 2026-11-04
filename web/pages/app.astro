@@ -1,6 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import AppBar from '../components/AppBar.astro';
+import Counter from '../components/Counter.astro';
 import '../styles/app.css';
 ---
 <Base title="Shohmot" description="Today's games on each Chess.com and Lichess account: how many of each type you played, and how many you lost." guard>
@@ -12,99 +13,7 @@ import '../styles/app.css';
     <button class="btn" id="open-accounts" type="button">Accounts</button>
   </AppBar>
 
-  <main id="dashboard">
-    <div class="banners" id="banners" aria-live="polite"></div>
-    <section class="hero" aria-labelledby="headline">
-      <div class="day-nav">
-        <button class="step" id="day-prev" type="button" aria-label="Previous day">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 8 12l7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>
-        <p class="day-label" id="day-label">Today</p>
-        <button class="step" id="day-next" type="button" aria-label="Next day">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>
-        <button class="link-btn" id="day-today" type="button" hidden>Back to today</button>
-      </div>
-      <h1 class="headline" id="headline">Counting your games…</h1>
-      <div class="split" id="split" aria-hidden="true"></div>
-      <p class="hero-sub" id="hero-sub"></p>
-    </section>
-
-    <section class="block" aria-labelledby="accounts-title">
-      <div class="block-head">
-        <h2 id="accounts-title">By account</h2>
-        <label class="check"><input type="checkbox" id="rated-only"> Rated games only</label>
-      </div>
-      <div class="grid-head" id="grid-head" aria-hidden="true"></div>
-      <div id="rows"></div>
-    </section>
-
-    <div class="lower">
-      <section class="block" aria-labelledby="games-title">
-        <div class="block-head">
-          <h2 id="games-title">Games today</h2>
-          <div class="toggle" role="group" aria-label="Which games" id="games-filter">
-            <button type="button" data-r="all" aria-pressed="true">All</button>
-            <button type="button" data-r="loss" aria-pressed="false">Losses</button>
-          </div>
-        </div>
-        <ol class="games" id="games"></ol>
-      </section>
-
-      <section class="block" aria-labelledby="board-title">
-        <div class="block-head">
-          <h2 id="board-title">Last 26 weeks</h2>
-        </div>
-        <div class="board-wrap"><div class="board" id="board"></div></div>
-        <p class="hint" id="board-hint"></p>
-      </section>
-    </div>
-  </main>
-
-  <div class="tip" id="tip" role="tooltip" hidden></div>
-  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-
-  <dialog class="pop" id="pop" aria-labelledby="pop-title">
-    <form class="pop-card" id="pop-form" novalidate>
-      <div class="pop-head">
-        <h2 id="pop-title">Add your chess account</h2>
-        <button type="button" class="pop-x" id="pop-close" aria-label="Close">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
-        </button>
-      </div>
-      <ul class="pop-saved" id="pop-saved" aria-label="Accounts you added"></ul>
-      <div class="pop-row" id="pop-row">
-        <label class="pop-name">
-          <span class="sr-only">Username</span>
-          <input id="pop-user" type="text" placeholder="Username" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="30" aria-describedby="pop-status">
-        </label>
-        <label class="pop-site">
-          <span class="sr-only">Site</span>
-          <select id="pop-site">
-            <option value="chesscom">Chess.com</option>
-            <option value="lichess">Lichess</option>
-          </select>
-        </label>
-        <button type="submit" class="pop-add" id="pop-add" aria-label="Add account">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>
-      </div>
-      <p class="pop-status" id="pop-status" aria-live="polite"></p>
-      <div class="pop-confirm" id="pop-confirm" role="alertdialog" aria-labelledby="pop-confirm-text" hidden>
-        <p id="pop-confirm-text"></p>
-        <div class="pop-confirm-actions">
-          <button type="button" class="btn btn-solid" data-act="save">Save</button>
-          <button type="button" class="btn" data-act="discard">Discard</button>
-        </div>
-      </div>
-      <div class="pop-foot">
-        <button type="button" class="pop-plus" id="pop-plus">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
-          Add another account
-        </button>
-      </div>
-    </form>
-  </dialog>
+  <Counter />
 
   <script>
   import '../scripts/popup.js';

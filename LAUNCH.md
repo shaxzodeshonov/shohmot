@@ -7,7 +7,12 @@ to put Shohmot live and start getting users.
 ## 1. Deploy (Vercel)
 
 - [ ] Import the GitHub repo in Vercel (framework: Astro; the build settings come from `vercel.json`).
-- [ ] **Storage → Create → Upstash for Redis**, then connect it to the project. This sets `KV_REST_API_URL` and `KV_REST_API_TOKEN`.
+- [ ] **Database:**
+  1. Make a free Redis database at [console.upstash.com](https://console.upstash.com).
+  2. From its "REST API" section, copy the URL and token into Vercel → Project → Settings → Environment Variables as `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`. Tick Production and Preview.
+  3. Redeploy.
+
+  Connecting an Upstash store from Vercel's Storage or Marketplace also works; Shohmot finds the variables whatever they're named.
 - [ ] Add a custom domain, then set `SITE_URL` to it.
 - [ ] Set the env vars in `.env.example` under "Needed to launch", then redeploy. `PUBLIC_*` values are read at build time, so a redeploy is required.
 - [ ] Open `https://your-domain/api/health`. It should show `"db": true` and `"mail": true`.
@@ -22,11 +27,15 @@ to put Shohmot live and start getting users.
 
 ## 3. Check it yourself
 
-- [ ] Signed out: review a game by pasting a Lichess link and a Chess.com PGN; make a share image; open the analysis board.
+- [ ] Signed out: open /demo.html (it works even before the database is connected); review a game by pasting a Lichess link and a Chess.com PGN; make a share image; open the analysis board.
 - [ ] Signed in: add your accounts, play a game with the counter open, and check that the "what to work on" card appears. Train the position.
 - [ ] Open Brilliants and let the scan run on your accounts. Note how long it takes; heavy Lichess accounts are slowest.
 - [ ] Coach: in Settings → Coach → Start coaching, send the link to a second account, and check that it shows up on /coach.html.
-- [ ] Add your email to `ADMIN_EMAILS` and open /admin.html.
+- [ ] **Your admin login:** set `ADMIN_EMAILS` to your email and `ADMIN_PASSWORD` to a long password, then redeploy.
+  - Signing in with those creates the account; no sign-up is needed.
+  - Change the password in Settings afterwards. `ADMIN_PASSWORD` only creates the account once, and you can then remove it.
+  - Or run `npm run seed -- you@example.com "Your Name" 'password'` with the Upstash variables set locally.
+  - Then open /admin.html.
 - [ ] Settings → Download my data, then delete a test account.
 - [ ] On a phone: install it ("Add to Home Screen"), and check the counter and Training.
 

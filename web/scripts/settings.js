@@ -136,6 +136,18 @@ $('#sign-out-all').addEventListener('click', async () => {
   location.href = '/login.html';
 });
 
+$('#pw-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const data = Object.fromEntries(new FormData(e.target));
+  try {
+    const out = await api('/api/account', { action: 'password', ...data });
+    remember(out.user);
+    e.target.reset();
+    e.target.closest('details').open = false;
+    toast('Password changed. Other devices are signed out.');
+  } catch (err) { toast(err.message); }
+});
+
 $('#delete-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const password = new FormData(e.target).get('password');

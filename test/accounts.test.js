@@ -214,6 +214,26 @@ test('the database is found whatever Vercel named it', () => {
   const d = describeDb({ VERCEL: '1', REDIS_URL: 'rediss://…' });
   assert.equal(d.db, 'missing');
   assert.deepEqual(d.related, ['REDIS_URL']);
-  assert.match(describeDb({ VERCEL: '1' }).hint, /Storage/);
+  assert.match(describeDb({ VERCEL: '1' }).hint, /UPSTASH_REDIS_REST_URL/);
   assert.equal(describeDb({}).db, 'file');
+});
+
+test('ready-made admin login, and changing a password', async () => {
+  process.env.ADMIN_PASSWORD = 'the-admin-password-1';
+  const wrong = await call('/api/login', { body: { email: 'boss2@example.com', password: 'the-admin-password-1' } });
+  assert.equal(wrong.status, 401, 'only ADMIN_EMAILS addresses');
+  process.env.ADMIN_EMAILS = 'boss@example.com,boss2@example.com';
+  assert.equal((await call('/api/login', { body: { email: 'boss2@example.com', password: 'nope-nope-nope' } })).status, 401);
+  const ok = await call('/api/login', { body: { email: 'boss2@example.com', password: 'the-admin-password-1' } });
+  assert.equal(ok.status, 200);
+  assert.equal(ok.body.user.admin, true);
+  assert.equal(ok.body.user.verified, true);
+  // Change it: the old one stops working, this device stays in.
+  assert.equal((await call('/api/account', { cookie: ok.cookie, body: { action: 'password', current: 'wrong-one-123', password: 'a-new-admin-pass-2' } })).status, 401);
+  const changed = await call('/api/account', { cookie: ok.cookie, body: { action: 'password', current: 'the-admin-password-1', password: 'a-new-admin-pass-2' } });
+  assert.equal(changed.status, 200);
+  assert.equal((await call('/api/me', { cookie: changed.cookie })).status, 200);
+  assert.equal((await call('/api/login', { body: { email: 'boss2@example.com', password: 'the-admin-password-1' } })).status, 401, 'ADMIN_PASSWORD only creates the account once');
+  assert.equal((await call('/api/login', { body: { email: 'boss2@example.com', password: 'a-new-admin-pass-2' } })).status, 200);
+  delete process.env.ADMIN_PASSWORD;
 });

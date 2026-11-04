@@ -132,3 +132,7 @@
 .ad-two { display: grid; grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr)); gap: 2rem; }
 .ad-two .c-table td:last-child { text-align: right; }
 @media (max-width: 40em) { .ad-funnel p { grid-template-columns: 9rem 1fr 3rem; } }
+
+.pw-change { margin-top: 1rem; }
+.pw-change summary { cursor: pointer; font-weight: 700; }
+.pw-change form { margin-top: 0.875rem; }

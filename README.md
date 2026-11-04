@@ -30,7 +30,15 @@ What makes it quick:
 
 Vercel runs `astro build` and serves `dist/`, and the files in `api/` run as functions (see `vercel.json`). Import the GitHub repo in Vercel, or run `npx vercel --prod` from this folder.
 
-Accounts need a database, because Vercel functions don't keep files. In the Vercel project, open **Storage → Create → Upstash for Redis** (free tier is plenty) and connect it to the project: that sets `KV_REST_API_URL` and `KV_REST_API_TOKEN` (or `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`), which `src/store.js` reads. Redeploy. Without it, sign-up answers "Accounts aren't set up on this server yet".
+Accounts need a database, because Vercel functions don't keep files:
+
+1. Make a free Redis database at [console.upstash.com](https://console.upstash.com).
+2. Copy its REST URL and token into the Vercel project's environment variables, as `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`.
+3. Redeploy.
+
+`src/store.js` also finds Vercel's `KV_REST_API_*` names, with or without a prefix. `/api/health` says what it found or what's missing. Without a database, sign-up says so and points to `/demo.html`: the counter on well-known players' public games, which needs no database.
+
+A ready-made admin login: set `ADMIN_EMAILS` and `ADMIN_PASSWORD`, and the first sign-in with them creates the account. Or run `npm run seed -- email "Name" 'password' [lichess:user]` against any store.
 
 ## Plans
 

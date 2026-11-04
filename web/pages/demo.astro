@@ -1,0 +1,32 @@
+---
+// The counter with no sign-up: well-known players' public games, live. A
+// visitor can swap in their own usernames (kept in this browser only).
+import Base from '../layouts/Base.astro';
+import Logo from '../components/Logo.astro';
+import Counter from '../components/Counter.astro';
+import '../styles/app.css';
+
+// Public accounts of well-known players who play a lot online.
+export const DEMO = 'chesscom:Hikaru,chesscom:MagnusCarlsen,lichess:DrNykterstein,lichess:penguingim1';
+---
+<Base title="Live demo · Shohmot" description="Try Shohmot without an account: today's games for Hikaru Nakamura and Magnus Carlsen on Chess.com and Lichess, counted live, with a free Stockfish review of any game. Or put in your own username.">
+  <header class="bar app-bar">
+    <a class="wordmark" href="/"><Logo /> Shohmot</a>
+    <span class="demo-tag">Live demo</span>
+    <div class="bar-actions">
+      <p class="status" id="status" aria-live="polite"><span class="status-dot"></span><span id="status-text">Connecting</span></p>
+      <button class="btn" id="sync-now" type="button">Sync now</button>
+      <button class="btn" id="open-accounts" type="button">Try your username</button>
+      <a class="btn" href="/login.html" data-signed-out>Sign in</a>
+      <a class="btn btn-solid" href="/signup.html" data-signed-out>Create free account</a>
+      <a class="btn btn-solid" href="/app.html" data-signed-in>Open your counter</a>
+    </div>
+  </header>
+
+  <Counter demo={DEMO} />
+
+  <script>
+  import '../scripts/popup.js';
+  import '../scripts/app.js';
+  </script>
+</Base>

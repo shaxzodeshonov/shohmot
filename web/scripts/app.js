@@ -39,6 +39,14 @@ import { LABELS } from './review/analysis.mjs';
 
   const SYNC_MS = 60000;
   const MAX_ACCOUNTS = 4;
+  // The no-sign-up demo (demo.html): these accounts, nothing saved to a
+  // Shohmot account, no mistake checks (they'd fill this browser's training
+  // with someone else's games), and a shorter history so it loads quickly.
+  const DEMO_LIST = (document.querySelector('#dashboard').dataset.demo || '').split(',').filter(Boolean)
+    .map((p) => { const [platform, username] = p.split(':'); return { platform, username }; });
+  const DEMO = DEMO_LIST.length > 0;
+  const DEMO_KEY = 'shohmot-demo-accounts';
+  const DEMO_DAYS = 30;
   // The chess accounts live on the signed-in Shohmot account (see startup at the bottom).
   let myAccounts = [];
   // A link like /app.html?accounts=chesscom:name,lichess:name opens straight onto those accounts.
@@ -152,7 +160,8 @@ import { LABELS } from './review/analysis.mjs';
     const t = tally(accts.flatMap((a) => filtered(a.games)));
     const syncedOnce = accts.some((a) => a.lastSyncAt);
     const h = $('#headline');
-    const lead = isToday() ? 'Today you' : isYesterday() ? 'Yesterday you' : `On ${shortDayFmt.format(day)} you`;
+    const who = DEMO ? 'they' : 'you';
+    const lead = isToday() ? `Today ${who}` : isYesterday() ? `Yesterday ${who}` : `On ${shortDayFmt.format(day)} ${who}`;
     if (!accts.length) h.textContent = 'Add an account to start counting.';
     else if (!syncedOnce) h.textContent = 'Counting your games…';
     else if (!t.n) h.textContent = isToday() ? 'No games yet today.' : `No games ${dayWord()}.`;
@@ -322,6 +331,7 @@ import { LABELS } from './review/analysis.mjs';
   function reviewLink(g, a) {
     if (g.variant !== 'chess' && g.variant !== 'standard') return '<span></span>';
     const qs = new URLSearchParams({ p: a.platform, u: a.username, id: g.id, t: String(g.end) });
+    if (DEMO) qs.set('guest', '1'); // keeps a demo player's game out of this browser's training
     return `<a class="review-link" href="/review.html?${esc(qs.toString())}" data-astro-prefetch="false">Review</a>`;
   }
 
@@ -397,10 +407,10 @@ import { LABELS } from './review/analysis.mjs';
   // Saving a new account list: load its games right away (behind the pop-up).
   let accountsEdited = false; // changed here since the page opened
   function useAccounts(list) {
-    if (list.length > myAccounts.length) track('account_added');
+    if (list.length > myAccounts.length && !DEMO) track('account_added');
     accountsEdited = true;
     myAccounts = list.map(({ platform, username }) => ({ platform, username }));
-    saveAccounts();
+    if (DEMO) store.set(DEMO_KEY, myAccounts); else saveAccounts();
     state = null;
     lastSyncAt = null;
     connection = 'connecting';
@@ -444,6 +454,7 @@ import { LABELS } from './review/analysis.mjs';
     }
   }
   let syncAgain = false;
+  let demoMoved = false;
   // With nothing on screen yet, first ask for just the last two days (fast),
   // then fetch the full 26 weeks for the calendar right after.
   async function sync(fresh = false) {
@@ -458,7 +469,7 @@ import { LABELS } from './review/analysis.mjs';
       let accounts = [];
       if (myAccounts.length) {
         const q = myAccounts.map((a) => `${a.platform}:${a.username}`).join(',');
-        const res = await fetch(`/api/state?accounts=${encodeURIComponent(q)}${quick ? '&days=2' : ''}${fresh ? `&fresh=${Date.now()}` : ''}`);
+        const res = await fetch(`/api/state?accounts=${encodeURIComponent(q)}${quick ? '&days=2' : DEMO ? `&days=${DEMO_DAYS}` : ''}${fresh ? `&fresh=${Date.now()}` : ''}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         accounts = (await res.json()).accounts;
       }
@@ -483,7 +494,13 @@ import { LABELS } from './review/analysis.mjs';
       lastSyncAt = now;
       render();
       if (added.length) toast(`New games: ${added.join(', ')}`);
-      if (!quick) analyzeToday();
+      if (!quick && !DEMO) analyzeToday();
+      // In the demo, if nobody has played yet today, show their latest day.
+      if (!quick && DEMO && !demoMoved) {
+        demoMoved = true;
+        const latest = Math.max(0, ...state.accounts.flatMap((a) => a.games.map((g) => g.end)));
+        if (latest && latest < startOfDay(Date.now())) setDay(latest);
+      }
     } catch {
       connection = 'offline';
     } finally {
@@ -567,6 +584,13 @@ import { LABELS } from './review/analysis.mjs';
   function renderBanners() {
     const box = $('#banners');
     const out = [];
+    if (DEMO) {
+      const famous = JSON.stringify(myAccounts) === JSON.stringify(DEMO_LIST);
+      out.push(`<div class="banner" data-kind="info"><p><b>${famous ? 'This is Shohmot on Hikaru’s and Magnus Carlsen’s public games.' : 'This is Shohmot on the accounts you picked.'}</b> Press Review on any game for a free Stockfish review. With a free account, every game you play is checked for mistakes, turned into training, and your brilliant moves are found.</p>
+        <div class="banner-actions">${famous ? '' : '<button class="btn" type="button" data-act="demo-reset">Back to the famous players</button>'}<a class="btn btn-solid" href="/signup.html" data-signed-out>Create free account</a></div></div>`);
+      box.innerHTML = out.join('');
+      return;
+    }
     if (me && !me.verified && features().mail) {
       out.push(`<div class="banner" data-kind="info"><p><b>Confirm your email.</b> We sent a link to ${esc(me.email)}. It lets you reset your password and get your weekly recap.</p>
         <div class="banner-actions"><button class="btn" type="button" data-act="resend">Send it again</button></div></div>`);
@@ -603,6 +627,7 @@ import { LABELS } from './review/analysis.mjs';
     if (d) return dismiss(d.dataset.dismiss);
     const seenBtn = e.target.closest('[data-seen]');
     if (seenBtn) { markSeen(seenBtn.dataset.seen); return renderBanners(); }
+    if (e.target.closest('[data-act="demo-reset"]')) { try { localStorage.removeItem(DEMO_KEY); } catch { /* */ } useAccounts(DEMO_LIST); return; }
     const r = e.target.closest('[data-act="resend"]');
     if (r) {
       r.disabled = true;
@@ -620,6 +645,13 @@ import { LABELS } from './review/analysis.mjs';
   syncControls();
   $('#sync-now').hidden = true;
   render();
+  if (DEMO) {
+    myAccounts = store.get(DEMO_KEY, null) || DEMO_LIST;
+    $('#sync-now').hidden = false;
+    renderBanners();
+    sync();
+    return;
+  }
   // Starts from last visit's copy of the profile (instant), then follows what
   // the server says if the accounts changed on another device.
   currentUser().then((user) => {

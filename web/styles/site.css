@@ -239,3 +239,5 @@ html { scroll-behavior: smooth; }
 .bm-item strong { display: block; font-size: 1.375rem; font-weight: 800; }
 .bm-item em { font-style: normal; color: #1baca6; }
 .bm-item small { display: block; color: var(--muted); font-size: 0.875rem; }
+.auth-status a { color: var(--sage); }
+.fine a { color: var(--muted); }

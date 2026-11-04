@@ -306,7 +306,10 @@ const login = handler(async (req, res) => {
   const failKey = `rl:login-fail:${sha256(email)}`;
   if (Number(await store.get(failKey)) >= 10) throw new HttpError(429, 'Too many wrong passwords for this email. Wait 15 minutes and try again.');
   const raw = await store.get(userKey(email));
-  const user = raw ? JSON.parse(raw) : null;
+  let user = raw ? JSON.parse(raw) : null;
+  // The ready-made admin account: the first sign-in with an ADMIN_EMAILS
+  // address and ADMIN_PASSWORD creates it, so there's a login without signing up.
+  if (!user) user = await seedAdmin(email, password);
   const ok = await verifyPassword(password, user ? user.hash : await getDummyHash());
   if (!user || !ok) {
     await store.incr(failKey, 900);
@@ -317,6 +320,19 @@ const login = handler(async (req, res) => {
   await index(user);
   send(res, 200, { user: publicUser(user), features: features() });
 });
+
+async function seedAdmin(email, password) {
+  const want = process.env.ADMIN_PASSWORD || '';
+  if (!want || !plans.isAdmin({ email })) return null;
+  const a = Buffer.from(crypto.createHash('sha256').update(password).digest());
+  const b = Buffer.from(crypto.createHash('sha256').update(want).digest());
+  if (!crypto.timingSafeEqual(a, b)) return null;
+  const user = { id: crypto.randomUUID(), name: process.env.ADMIN_NAME || 'Admin', email, hash: await hashPassword(password), accounts: [], createdAt: Date.now(), verified: true, indexed: true };
+  if (!(await store.set(userKey(email), JSON.stringify(user), { nx: true }))) return JSON.parse(await store.get(userKey(email)));
+  await store.set(`uid:${user.id}`, email);
+  await store.sadd(USERS, email);
+  return user;
+}
 
 // POST /api/logout
 const logout = handler(async (req, res) => {

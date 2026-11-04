@@ -35,7 +35,7 @@ let GAME_ID = PGN ? null : params.get('id');
 const SIDE = ['w', 'b'].includes(params.get('side') || hashParams.get('side')) ? (params.get('side') || hashParams.get('side')) : null;
 let SITE = PLATFORM === 'lichess' ? 'Lichess' : 'Chess.com';
 // Only games from your own accounts feed your brilliant moves and training.
-let SAVE = !!(PLATFORM && GAME_ID && USERNAME) && !params.has('coach'); // a coach looking at a student's game keeps it out of their own training
+let SAVE = !!(PLATFORM && GAME_ID && USERNAME) && !params.has('coach') && !params.has('guest'); // someone else's game (a coach's student, the demo) stays out of your training
 const signedIn = () => document.cookie.split('; ').includes('shohmot_in=1');
 const PIECE_NAME = { p: 'pawn', n: 'knight', b: 'bishop', r: 'rook', q: 'queen', k: 'king' };
 // depth -> time cap per position (ms). The full network searches fewer

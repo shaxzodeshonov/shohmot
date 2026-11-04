@@ -8,6 +8,7 @@
 //   verify { token }               confirms the email address
 //   resend-verify                  sends the confirmation email again
 //   signout-all                    ends every session, including this one
+//   password { current, password } changes the password, ends other sessions
 //   delete { password }            deletes the account for good
 // GET /api/account                 downloads everything stored about you (JSON)
 // GET /api/account?unsubscribe=<email>&sig=<hmac>   stops the weekly email
@@ -207,6 +208,19 @@ const account = handler(async (req, res) => {
       await saveUser(user);
       res.setHeader('Set-Cookie', auth.cookieHeaders(req, '', 0));
       return send(res, 200, { ok: true });
+    }
+    case 'password': {
+      const user = await requireUser(req, res);
+      const current = typeof body.current === 'string' ? body.current.slice(0, 128) : '';
+      await auth.rateLimit(`pw-change:${sha256(user.email)}`, 10, 900, 'Too many tries. Wait 15 minutes and try again.');
+      if (!(await auth.verifyPassword(current, user.hash))) throw new HttpError(401, 'Your current password isn’t right.');
+      auth.checkPassword(body.password, user.email);
+      if (await auth.isBreached(body.password)) throw new HttpError(400, 'That password has shown up in a data breach, so attackers try it first. Pick another.');
+      user.hash = await auth.hashPassword(body.password);
+      user.sessionsAfter = Date.now();
+      await saveUser(user);
+      await auth.startSession(req, res, user.email); // this device stays signed in
+      return send(res, 200, { ok: true, user: publicUser(user) });
     }
     case 'delete': {
       const user = await requireUser(req, res);

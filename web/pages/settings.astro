@@ -77,7 +77,14 @@ import { PRICES } from '../data/site';
         <button class="btn" type="button" id="sign-out">Sign out</button>
         <button class="btn" type="button" id="sign-out-all">Sign out everywhere</button>
       </div>
-      <p class="muted small">To change your password, sign out and use “Forgot it?” on the sign-in page.</p>
+      <details class="pw-change">
+        <summary>Change password</summary>
+        <form id="pw-form" class="set-grid">
+          <label class="field"><span class="field-label">Current password</span><input type="password" name="current" required autocomplete="current-password" maxlength="128"></label>
+          <label class="field"><span class="field-label">New password <small>At least 8 characters</small></span><input type="password" name="password" required minlength="8" autocomplete="new-password" maxlength="128"></label>
+          <div class="wide"><button class="btn btn-solid" type="submit">Change password</button> <span class="muted small">Other devices get signed out.</span></div>
+        </form>
+      </details>
     </section>
 
     <section class="set" aria-labelledby="s-data">

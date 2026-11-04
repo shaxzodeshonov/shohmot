@@ -48,6 +48,8 @@ import { track } from './track.js';
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
         say(body.error || 'Something went wrong. Try again.');
+        // No database yet: point people at what works without an account.
+        if (res.status === 503) status.insertAdjacentHTML('beforeend', ' Meanwhile, try the <a href="/demo.html">live demo</a> or the <a href="/review.html">free game review</a>.');
         submit.disabled = false;
         return;
       }

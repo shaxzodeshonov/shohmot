@@ -304,6 +304,9 @@ a.me-chip:hover, a.me-chip[aria-current="page"] { border-color: var(--line-2); b
 .banner[data-kind="warn"] p b { color: var(--loss); }
 .banner-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 
+.demo-tag { font-size: 0.75rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; padding: 0.1875rem 0.625rem; border-radius: 62.4375rem; background: #1baca6; color: #04211f; }
+.wordmark .logo, .app-bar .wordmark svg { flex: none; }
+
 /* ---------- brilliant moves ---------- */
 .bril-chip { display: inline-flex; align-items: center; gap: 0.375rem; text-decoration: none; color: var(--muted); }
 .bril-chip i, .bril-badge { font-style: normal; font-weight: 800; letter-spacing: -0.04em; background: #1baca6; color: #04211f; border-radius: 0.375rem; }
