@@ -5,8 +5,37 @@
 const fs = require('fs');
 const path = require('path');
 
-const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
-const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
+// Finds the database's REST address and token, whatever Vercel named them:
+// UPSTASH_REDIS_REST_URL / _TOKEN (Upstash's own names), KV_REST_API_URL /
+// _TOKEN (Vercel's), or either with a custom prefix chosen when connecting
+// the store (e.g. STORAGE_KV_REST_API_URL, MYDB_UPSTASH_REDIS_REST_URL).
+function findRedis(env = process.env) {
+  const pairs = [['UPSTASH_REDIS_REST_URL', 'UPSTASH_REDIS_REST_TOKEN'], ['KV_REST_API_URL', 'KV_REST_API_TOKEN']];
+  for (const [u, t] of pairs) if (env[u] && env[t]) return { url: env[u], token: env[t], from: u };
+  for (const name of Object.keys(env).sort()) {
+    const m = /^(.+)_(UPSTASH_REDIS_REST_URL|KV_REST_API_URL|REST_API_URL|REDIS_REST_URL)$/.exec(name);
+    if (!m || !/^https:\/\//.test(env[name] || '')) continue;
+    const token = env[`${m[1]}_${m[2].replace(/URL$/, 'TOKEN')}`];
+    if (token) return { url: env[name], token, from: name };
+  }
+  return null;
+}
+
+// What's there and what's missing, for /api/health. Only variable names,
+// never their values.
+function describeDb(env = process.env) {
+  const found = findRedis(env);
+  if (found) return { db: 'redis', from: found.from };
+  if (!env.VERCEL) return { db: 'file', from: 'data/store.json' };
+  const related = Object.keys(env).filter((k) => /KV_|REDIS|UPSTASH/.test(k)).sort();
+  let hint = 'No database connected. In Vercel: Storage → Create Database → Upstash (Redis) → Connect to this project, tick Production, then redeploy.';
+  if (related.length) hint = `Found ${related.join(', ')} but not a REST URL and token pair (…_REST_API_URL and …_REST_API_TOKEN). Reconnect the Upstash store to this project, or copy its REST URL and token into UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN, then redeploy.`;
+  return { db: 'missing', related, hint };
+}
+
+const FOUND = findRedis();
+const REDIS_URL = FOUND && FOUND.url;
+const REDIS_TOKEN = FOUND && FOUND.token;
 
 class NotConfiguredError extends Error {}
 
@@ -120,4 +149,4 @@ const fileStore = {
 const missing = new Proxy({}, { get: (_, k) => (k === 'shared' ? false : async () => { throw new NotConfiguredError('No database configured'); }) });
 const store = REDIS_URL && REDIS_TOKEN ? redisStore : process.env.VERCEL ? missing : fileStore;
 
-module.exports = { store, NotConfiguredError };
+module.exports = { store, NotConfiguredError, findRedis, describeDb };

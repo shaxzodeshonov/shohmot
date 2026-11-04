@@ -247,7 +247,7 @@ function handler(fn) {
       await fn(req, res);
     } catch (err) {
       if (err instanceof HttpError) return send(res, err.status, { error: err.message });
-      if (err instanceof NotConfiguredError) return send(res, 503, { error: 'Accounts aren’t set up on this server yet: it needs a database (see the README).' });
+      if (err instanceof NotConfiguredError) return send(res, 503, { error: 'Accounts aren’t available yet: this site’s database isn’t connected. If you run this site, open /api/health to see what’s missing.' });
       console.error(err);
       send(res, 500, { error: 'Something went wrong on the server.' });
     }

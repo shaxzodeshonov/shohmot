@@ -201,3 +201,19 @@ test('Stripe webhook signatures', () => {
   assert.equal(verifySignature(body, `t=${t - 3600},v1=${sig}`, secret), false, 'too old');
   assert.equal(verifySignature(body, `t=${t},v1=${sig}`, 'whsec_other'), false);
 });
+
+test('the database is found whatever Vercel named it', () => {
+  const { findRedis, describeDb } = require('../src/store');
+  const u = 'https://eu1-x.upstash.io';
+  assert.equal(findRedis({ KV_REST_API_URL: u, KV_REST_API_TOKEN: 't' }).from, 'KV_REST_API_URL');
+  assert.equal(findRedis({ UPSTASH_REDIS_REST_URL: u, UPSTASH_REDIS_REST_TOKEN: 't' }).token, 't');
+  assert.equal(findRedis({ STORAGE_KV_REST_API_URL: u, STORAGE_KV_REST_API_TOKEN: 't2' }).token, 't2');
+  assert.equal(findRedis({ MYDB_UPSTASH_REDIS_REST_URL: u, MYDB_UPSTASH_REDIS_REST_TOKEN: 't3' }).from, 'MYDB_UPSTASH_REDIS_REST_URL');
+  assert.equal(findRedis({ KV_REST_API_URL: u }), null, 'a URL without its token is no use');
+  assert.equal(findRedis({ REDIS_URL: 'rediss://default:x@host:6379' }), null);
+  const d = describeDb({ VERCEL: '1', REDIS_URL: 'rediss://…' });
+  assert.equal(d.db, 'missing');
+  assert.deepEqual(d.related, ['REDIS_URL']);
+  assert.match(describeDb({ VERCEL: '1' }).hint, /Storage/);
+  assert.equal(describeDb({}).db, 'file');
+});

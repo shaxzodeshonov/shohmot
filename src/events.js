@@ -7,7 +7,7 @@
 // GET  /api/admin?days=30           numbers for the admin page (ADMIN_EMAILS only)
 // GET  /api/health                  for uptime monitors
 const crypto = require('crypto');
-const { store, NotConfiguredError } = require('./store');
+const { store, NotConfiguredError, describeDb } = require('./store');
 const auth = require('./auth');
 const plans = require('./plans');
 const mail = require('./mail');
@@ -140,13 +140,26 @@ const admin = handler(async (req, res) => {
   send(res, 200, await report(days));
 });
 
+// Says what's set up and what isn't (names only, never secrets).
 const health = async (req, res) => {
+  const info = describeDb();
   let db = false;
-  try { await store.get('health'); db = true; } catch { db = false; }
+  let dbError = null;
+  try { await store.get('health'); db = true; } catch (err) { dbError = err instanceof NotConfiguredError ? null : String(err.message).slice(0, 200); }
+  const out = {
+    ok: db,
+    db,
+    database: { ...info, ...(dbError ? { error: dbError, hint: 'The database was found but didn’t answer. Check the REST URL and token in the Upstash console match the env vars, then redeploy.' } : {}) },
+    mail: !!process.env.RESEND_API_KEY || !process.env.VERCEL,
+    ...(process.env.VERCEL && !process.env.RESEND_API_KEY ? { mailHint: 'Set RESEND_API_KEY and MAIL_FROM so password resets and confirmations can be sent.' } : {}),
+    billing: plans.billingOn(),
+    site: mail.siteUrl(req),
+    time: new Date().toISOString(),
+  };
   res.statusCode = db ? 200 : 503;
   res.setHeader('Content-Type', 'application/json');
   res.setHeader('Cache-Control', 'no-store');
-  res.end(JSON.stringify({ ok: db, db, mail: !!process.env.RESEND_API_KEY || !process.env.VERCEL, billing: plans.billingOn(), time: new Date().toISOString(), site: mail.siteUrl(req) }));
+  res.end(JSON.stringify(out, null, 2));
 };
 
 module.exports = { event, admin, health, count, report, EVENTS, pagePath };
