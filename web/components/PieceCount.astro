@@ -1,14 +1,20 @@
 ---
-// A number spelled in chess material: pawn = 1, bishop = 3, rook = 5,
-// queen = 9, so 2 is two pawns, 4 a bishop and a pawn, 6 a rook and a pawn.
+// A number spelled in chess material: pawn = 1, knight or bishop = 3,
+// rook = 5, queen = 9. The sets are picked by hand so neighbouring sections
+// look different (6 is two knights, not a rook and a pawn); numbers past the
+// table are made up from the biggest pieces.
 interface Props { n: number }
 const { n } = Astro.props;
-const VALUES: [string, number, string][] = [['Q', 9, 'queen'], ['R', 5, 'rook'], ['B', 3, 'bishop'], ['P', 1, 'pawn']];
-const pieces: { code: string; name: string }[] = [];
-let left = n;
-for (const [code, v, name] of VALUES) while (left >= v) { pieces.push({ code, name }); left -= v; }
-const label = pieces.map((p) => p.name).join(' + ');
+const NAME: Record<string, string> = { P: 'pawn', N: 'knight', B: 'bishop', R: 'rook', Q: 'queen' };
+const SETS: Record<number, string> = { 1: 'P', 2: 'PP', 3: 'B', 4: 'BP', 5: 'R', 6: 'NN', 7: 'BBP', 8: 'RB', 9: 'Q' };
+function greedy(x: number) {
+  let out = '';
+  for (const [code, v] of [['Q', 9], ['R', 5], ['B', 3], ['P', 1]] as const) while (x >= v) { out += code; x -= v; }
+  return out;
+}
+const pieces = [...(SETS[n] || greedy(n))];
+const label = pieces.map((p) => NAME[p]).join(' + ');
 ---
 <span class="piece-count" role="img" aria-label={`${n}: ${label}`} title={`${label} = ${n}`}>
-  {pieces.map((p) => <img src={`/pieces/w${p.code}.svg`} alt="" width="45" height="45" loading="lazy" decoding="async" />)}
+  {pieces.map((p) => <img src={`/pieces/w${p}.svg`} alt="" width="45" height="45" loading="lazy" decoding="async" />)}
 </span>
