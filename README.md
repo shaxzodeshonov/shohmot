@@ -69,6 +69,12 @@ Setting the Stripe env vars switches the plans on without a code change (`src/pl
 Built on Node's own `crypto`, no packages (`src/auth.js`):
 
 - Passwords are hashed with **scrypt** (N=2^15, r=8, p=3, OWASP's settings) and a random salt, compared in constant time. At least 8 characters; a few very common ones are refused. Signing in with an unknown email still runs scrypt, so timing doesn't reveal which emails have accounts.
+- **Email** (`src/mail.js`) is sent by the first of these that's set up:
+  1. Resend (`RESEND_API_KEY`), once you have a domain;
+  2. Gmail (`GMAIL_USER` and `GMAIL_APP_PASSWORD`), which needs no domain;
+  3. any SMTP server (`SMTP_*`).
+
+  `/api/health` says which one is in use.
 - **Breached passwords** are refused at sign-up. [Have I Been Pwned](https://haveibeenpwned.com/API/v3#PwnedPasswords)'s range API only ever sees the first 5 characters of the password's SHA-1, never the password; if it can't be reached within 3 seconds, sign-up goes ahead.
 - A session is a random 32-byte token in an **HttpOnly, SameSite=Lax** cookie (Secure on Vercel), valid 30 days. The store keeps only the token's SHA-256. Signing out deletes it, and signing in deletes the session the browser had before.
 - **CSRF**: POSTs must be `application/json` (which a form on another site can't send) and, when the browser sends an Origin, it must be this site.

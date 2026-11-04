@@ -18,9 +18,15 @@ to put Shohmot live and start getting users.
 - [ ] Open `https://your-domain/api/health`. It should show `"db": true` and `"mail": true`.
 - [ ] Check that all API routes run from the one function `api/[route].js`. In the Vercel dashboard → Functions, there should be a single function.
 
-## 2. Email (Resend)
+## 2. Email
 
-- [ ] Create a Resend account, verify your domain (DNS records), and create an API key. Set `RESEND_API_KEY` and `MAIL_FROM`.
+- [ ] **No domain yet: Gmail.**
+  1. On the Google account you'll send from, turn on 2-Step Verification.
+  2. Make an app password at [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords).
+  3. Set `GMAIL_USER` (the address) and `GMAIL_APP_PASSWORD` (the 16 letters).
+
+  Gmail allows about 500 emails a day.
+- [ ] **Later, with a domain: Resend.** Create a Resend account, verify the domain (DNS records), and create an API key. Set `RESEND_API_KEY` and `MAIL_FROM`. Resend is used over Gmail once its key is set.
 - [ ] Sign up on the live site with your own email. The confirmation email should arrive (check spam too).
 - [ ] Try "Forgot it?" on the sign-in page. The reset link should work once and sign you out everywhere else.
 - [ ] The weekly recap goes out Mondays from the daily cron (`vercel.json` → `crons`). Check Vercel → Cron Jobs to see it listed. `CRON_SECRET` must be set.
