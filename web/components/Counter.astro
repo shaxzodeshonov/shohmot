@@ -12,7 +12,7 @@ const demoAccounts = (demo || '').split(',').filter(Boolean).map((p) => {
   return { platform, username };
 });
 ---
-  <main id="main" data-demo={demo}>
+  <main id="main" class="is-loading" data-demo={demo}>
     <div class="banners" id="banners" aria-live="polite">{demo && (
       <div class="banner" data-kind="info" id="demo-banner">
         <p><b data-famous>This is Shohmot on Hikaru’s and Magnus Carlsen’s public games.</b><b data-picked hidden>This is Shohmot on the accounts you picked.</b> Press Review on any game for a free Stockfish review. With a free account, every game you play is checked for mistakes, turned into training, and your brilliant moves are found.</p>

@@ -19,7 +19,8 @@ export function remember(user, features) {
 }
 
 export function forget() {
-  try { localStorage.removeItem(KEY); } catch { /* private mode */ }
+  // The profile, and the counter's copy of your games (app.js).
+  try { for (const k of [KEY, 'shohmot-counter:v1', 'shohmot-counter:ready']) localStorage.removeItem(k); } catch { /* private mode */ }
 }
 
 // What the server can do: { mail, billing }. Last visit's answer until /api/me says.

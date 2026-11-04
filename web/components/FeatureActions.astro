@@ -1,0 +1,18 @@
+---
+// The button that opens a feature (data/features.ts: `open`). Features that don't need an account open
+// straight away (the review opens the review pop-up); the ones that do send
+// signed-out visitors to sign up first, then on to the feature.
+import type { Feature } from '../data/features';
+interface Props { f: Feature; size?: 'lg' }
+const { f, size } = Astro.props;
+const cls = `btn btn-solid${size === 'lg' ? ' btn-lg' : ''}`;
+const [label, href] = f.open;
+---
+{f.account ? (
+  <>
+    <a class={cls} href={`/signup.html?next=${encodeURIComponent(href)}`} data-signed-out>Create free account</a>
+    <a class={cls} href={href} data-astro-prefetch="false" data-signed-in>{label}</a>
+  </>
+) : (
+  <a class={cls} href={href} data-astro-prefetch="false" data-review-picker={f.slug === 'review' ? 'user' : undefined}>{label}</a>
+)}

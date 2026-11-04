@@ -302,3 +302,5 @@ a.btn { text-decoration: none; display: inline-block; }
 .review.pasting { grid-template-columns: minmax(0, 36rem); justify-content: center; }
 .review.pasting .panel { height: auto; }
 .review.pasting .rv-title { font-size: 2rem; }
+/* The other ways to pick a game (the review pop-up). */
+.paste-alt { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.25rem; }

@@ -1,6 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import '../styles/review.css';
+import ReviewPicker from '../components/ReviewPicker.astro';
 ---
 <Base title="Free chess game review · Shohmot" description="Paste a Lichess link or any PGN for a free Stockfish 19 game review: accuracy, every move labelled Brilliant to Blunder, the best moves and the evaluation graph. No account needed." bodyClass="rv-page">
 
@@ -76,6 +77,11 @@ import '../styles/review.css';
         </div>
         <p class="rv-error" id="paste-error" role="alert" hidden></p>
         <p class="muted small-note">On Chess.com: open the game, press Share, choose PGN and copy it. <span data-signed-out>With a free account, every game you play is checked for mistakes on its own.</span></p>
+        <div class="paste-alt">
+          <span class="muted">Or:</span>
+          <button class="btn" type="button" data-review-picker="user">Find it by your username</button>
+          <button class="btn" type="button" data-review-picker="file">Open a PGN file</button>
+        </div>
       </form>
 
       <div class="panel-game" id="panel-game" hidden>
@@ -143,4 +149,5 @@ import '../styles/review.css';
   <script>
   import '../scripts/review/review.mjs';
   </script>
+  <ReviewPicker />
 </Base>
