@@ -1,7 +1,7 @@
 // What each feature page and landing-page section says. The pages in
 // web/pages/features/ are generated from this list, in this order.
 export interface Feature {
-  slug: 'counter' | 'training' | 'brilliants' | 'review' | 'analysis' | 'play';
+  slug: 'counter' | 'training' | 'brilliants' | 'double' | 'review' | 'analysis' | 'play';
   name: string;
   eyebrow: string;
   /** The page heading; the part in *stars* is drawn in sage. */
@@ -11,6 +11,8 @@ export interface Feature {
   ticks: string[];
   points: [string, string][];
   steps: [string, string][];
+  /** A way to try it without an account: [label, link]. */
+  try?: [string, string];
 }
 
 export const FEATURES: Feature[] = [
@@ -69,6 +71,25 @@ export const FEATURES: Feature[] = [
     steps: [['Add your accounts', 'Chess.com, Lichess or both.'], ['Open Brilliants', 'The scan starts on its own.'], ['Share them', 'Every one opens in the review.']],
   },
   {
+    slug: 'double',
+    name: 'Play yourself',
+    eyebrow: 'Your chess double',
+    title: 'Can you beat *yourself?*',
+    lead: 'Put in your Lichess or Chess.com username. Shohmot learns your openings and your style from your games and builds a double of you: it plays the moves you play, at your level, with the kind of mistakes you make.',
+    short: 'A chess double of you, built from your own games: your openings, your style, your level. Play it, then send it to a friend.',
+    ticks: ['Your openings, move for move', 'Your rating and your style', 'No account needed: just a username'],
+    points: [
+      ['Your openings', 'In every position from your games, it plays what you played there, as often as you played it.'],
+      ['Your level', 'Past your openings, it chooses among Stockfish’s top moves the way a player of your rating would.'],
+      ['Your style', 'Attacking players’ doubles go for captures and checks; positional players’ doubles build up.'],
+      ['Your mistakes', 'It slips now and then, as often as players at your level do.'],
+      ['Your profile', 'See your style in numbers: openings, castling, captures, checks and queen trades.'],
+      ['Challenge friends', 'Send a link: they play your double, and you play theirs.'],
+    ],
+    steps: [['Put in your username', 'Lichess or Chess.com.'], ['Meet your double', 'Your style and openings, from your games.'], ['Play it', 'Then review the game or share the challenge.']],
+    try: ['Build your double', '/play-yourself.html'],
+  },
+  {
     slug: 'review',
     name: 'Game review',
     eyebrow: 'Game review',
@@ -85,6 +106,7 @@ export const FEATURES: Feature[] = [
       ['Runs on your machine', 'The server does no engine work. Results are kept, so a game opens instantly the second time.'],
     ],
     steps: [['Pick a game', 'Paste a link or PGN, or press Review in your list.'], ['Let it run', 'Quick to Deep, Strong by default.'], ['Share it', 'Press N for your next mistake, or share the review as an image.']],
+    try: ['Review a game free', '/review.html'],
   },
   {
     slug: 'analysis',

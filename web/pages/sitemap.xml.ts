@@ -3,7 +3,7 @@
 import { SITE } from '../data/site';
 import { FEATURES } from '../data/features';
 
-const PAGES = ['/', '/demo.html', '/review.html', '/analysis.html', '/signup.html', '/privacy.html', '/terms.html', '/licenses.html', ...FEATURES.map((f) => `/features/${f.slug}.html`)];
+const PAGES = ['/', '/demo.html', '/play-yourself.html', '/review.html', '/analysis.html', '/signup.html', '/privacy.html', '/terms.html', '/licenses.html', ...FEATURES.map((f) => `/features/${f.slug}.html`)];
 
 export function GET() {
   const today = new Date().toISOString().slice(0, 10);

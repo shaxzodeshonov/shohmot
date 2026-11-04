@@ -5,6 +5,7 @@ import AnalysisMock from './AnalysisMock.astro';
 import PlayMock from './PlayMock.astro';
 import TrainingMock from './TrainingMock.astro';
 import BrilliantsMock from './BrilliantsMock.astro';
+import DoubleMock from './DoubleMock.astro';
 interface Props { slug: string; seed?: number }
 const { slug, seed } = Astro.props;
 ---
@@ -14,3 +15,4 @@ const { slug, seed } = Astro.props;
 {slug === 'play' && <PlayMock />}
 {slug === 'training' && <TrainingMock />}
 {slug === 'brilliants' && <BrilliantsMock />}
+{slug === 'double' && <DoubleMock />}

@@ -136,3 +136,33 @@
 .pw-change { margin-top: 1rem; }
 .pw-change summary { cursor: pointer; font-weight: 700; }
 .pw-change form { margin-top: 0.875rem; }
+
+/* ---------- play yourself ---------- */
+.double .page-title { margin-top: 2rem; }
+.lead-s { font-size: 1.0625rem; max-width: 44rem; margin: 0.5rem 0 1.25rem; }
+.py-form { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
+.py-form input { flex: 1 1 14rem; max-width: 22rem; background: var(--raise); border: 1px solid var(--line-2); border-radius: 62.4375rem; padding: 0.625rem 1rem; font-size: 1rem; }
+.py-form input:focus { outline: none; border-color: var(--sage); }
+.py-mine { display: flex; gap: 0.375rem; flex-wrap: wrap; align-items: center; margin-top: 0.75rem; }
+.py-mine small { color: var(--faint); }
+.py-profile { margin-top: 2rem; padding: 1.25rem; border: 1px solid var(--line-2); border-radius: 1.25rem; background: var(--raise); }
+.py-head { display: flex; gap: 1rem; align-items: center; }
+.py-head h2 { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.03em; }
+.py-av { width: 3.25rem; height: 3.25rem; border-radius: 1rem; display: grid; place-items: center; font-weight: 800; font-size: 1.5rem; background: var(--sage); color: var(--sage-ink); flex: none; }
+.py-traits { display: flex; gap: 0.375rem; flex-wrap: wrap; margin: 1rem 0; }
+.py-trait { font-size: 0.8125rem; font-weight: 700; padding: 0.25rem 0.75rem; border-radius: 62.4375rem; background: rgb(198 206 178 / 0.14); color: var(--sage); }
+.py-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 1.25rem; }
+.py-grid h3 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--faint); margin-bottom: 0.375rem; }
+.py-grid small { color: var(--faint); }
+.py-bars { display: grid; grid-template-columns: 8rem 1fr 2.75rem; gap: 0.375rem 0.625rem; align-items: center; font-size: 0.875rem; }
+.py-bars i { display: block; height: 0.4375rem; width: var(--w); min-width: 0.125rem; border-radius: 1rem; background: var(--sage); }
+.py-bars b { text-align: right; }
+.py-trait-list { margin: 1rem 0 0; padding-left: 1.125rem; color: var(--muted); font-size: 0.9375rem; display: grid; gap: 0.25rem; }
+.py-trait-list b { color: var(--ink); }
+.py-play { margin-top: 2rem; }
+.py-setup { display: grid; gap: 0.875rem; justify-items: start; }
+.py-moves { list-style: none; margin: 0.5rem 0 0; padding: 0; max-height: 16rem; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); gap: 0.125rem 0.75rem; font-size: 0.9375rem; }
+.py-moves li { display: grid; grid-template-columns: 2rem 1fr 1fr; gap: 0.25rem; }
+.py-moves small { color: var(--faint); }
+.py-moves .mv-double { color: var(--sage); }
+.py-moves sup { font-size: 0.625rem; margin-left: 0.125rem; }

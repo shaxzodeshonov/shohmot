@@ -119,6 +119,20 @@ What the review shows:
 - **Analysis board** button: opens the game on the analysis board at the move shown.
 - Keys: ← → Home End, N for your next mistake, F to flip, M for sound, Esc to drop a picked piece.
 
+## Play yourself
+
+`/play-yourself.html` needs no account, only a username:
+
+1. Shohmot reads up to 400 of the player's recent games through `/api/moves`: 30 days, or 90 for players who don't play much.
+2. It builds a profile (`web/scripts/double/profile.mjs`):
+   - **an opening book of their own moves:** in each position of the first 12 moves where it was their turn, what they played and how often;
+   - **their rating** in their main time control;
+   - **how they play:** captures, checks, castling (how often, which side, by what move), early queen trades and game length, turned into an aggression score and a few labels ("Attacker", "Safe king", "Loyal to 1.e4"…).
+3. The double (`choose.mjs`) picks its moves like this:
+   - in a book position, one of their own moves, at their frequency;
+   - otherwise, one of Stockfish lite's top 4 moves, chosen with a spread that grows as the rating drops, a lean toward forcing or quiet moves to match their aggression, and an occasional clear slip at the rate players of that level make one. It never misses a mate in one or two.
+4. After a game, **Review this game** opens it in the full review, and **Challenge a friend** shares a link that builds the same double (`?u=lichess:name`).
+
 ## Mistakes and training
 
 **After every game.** While the counter is open, each new game gets a quick check (`web/scripts/training/analyze.mjs`):

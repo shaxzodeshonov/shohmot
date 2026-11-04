@@ -236,6 +236,43 @@ export class MoveEngine {
   }
 }
 
+// One engine that answers "what are the best N moves here?" for one position
+// at a time, kept running between asks (for the play-yourself double, which
+// chooses among the lines like a human of a given level).
+export class LinesEngine {
+  constructor(kind = 'lite', multiPv = 4) {
+    this.kind = kind;
+    this.multiPv = multiPv;
+    this.engine = null;
+    this.ready = null;
+    this.queue = Promise.resolve();
+  }
+
+  start() {
+    this.ready ??= (async () => {
+      this.engine = new Engine(await engineUrl(this.kind));
+      await this.engine.init(this.multiPv, 32);
+    })();
+    return this.ready;
+  }
+
+  // Resolves with [{ depth, score, pv }], best first. Scores are for the side to move.
+  lines(fen, { depth = 12, movetime = 800 } = {}) {
+    const run = async () => {
+      await this.start();
+      return this.engine.analyse(fen, depth, movetime);
+    };
+    this.queue = this.queue.then(run, run);
+    return this.queue;
+  }
+
+  stop() {
+    if (this.engine) this.engine.stop();
+    this.engine = null;
+    this.ready = null;
+  }
+}
+
 // One engine that follows the board: it searches whatever position is shown
 // (top 3 lines, up to depth 24) and reports as it goes deeper. Asking for a
 // new position stops the current search first; UCI answers a stop with

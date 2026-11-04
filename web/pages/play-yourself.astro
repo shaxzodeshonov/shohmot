@@ -1,0 +1,69 @@
+---
+// Play against your own double: built from your public games, no account needed.
+import Base from '../layouts/Base.astro';
+import Logo from '../components/Logo.astro';
+import '../styles/review.css';
+import '../styles/pages.css';
+---
+<Base title="Play against yourself · Shohmot" description="Put in your Lichess or Chess.com username: Shohmot learns your openings and style from your games and builds a chess double of you to play against. Free, no account needed.">
+  <header class="bar app-bar">
+    <a class="wordmark" href="/"><Logo /> Shohmot</a>
+    <nav class="app-nav" aria-label="Sections">
+      <a href="/app.html" data-signed-in>Counter</a>
+      <a href="/train.html" data-signed-in data-astro-prefetch="false">Training</a>
+      <a href="/review.html" data-astro-prefetch="false">Game review</a>
+      <a href="/play-yourself.html" aria-current="page">Play yourself</a>
+    </nav>
+    <div class="bar-actions">
+      <a class="btn" href="/login.html" data-signed-out>Sign in</a>
+      <a class="btn btn-solid" href="/signup.html" data-signed-out>Create free account</a>
+    </div>
+  </header>
+
+  <main class="page wide-page double">
+    <section class="py-intro" id="py-intro">
+      <h1 class="page-title">Play against yourself</h1>
+      <p class="muted lead-s">Shohmot reads your recent games, learns your openings and your style, and builds a double of you: it plays the moves you play, at your level, and makes the kind of mistakes you make. Can you beat yourself?</p>
+      <form class="py-form" id="py-form">
+        <label class="depth-pick">Site
+          <select id="py-site"><option value="lichess">Lichess</option><option value="chesscom">Chess.com</option></select>
+        </label>
+        <input id="py-user" placeholder="Your username" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="30" required aria-label="Username">
+        <button class="btn btn-solid" type="submit" id="py-go">Build my double</button>
+      </form>
+      <div class="py-mine" id="py-mine" hidden></div>
+      <p class="muted small" id="py-status" aria-live="polite">Free and in your browser. It only reads public games.</p>
+    </section>
+
+    <section class="py-profile" id="py-profile" hidden aria-labelledby="py-name"></section>
+
+    <section class="tr-main py-play" id="py-play" hidden aria-label="Game against your double">
+      <div class="tr-board-wrap">
+        <div class="tr-who" id="py-top"></div>
+        <div class="cb" id="board" role="img" aria-label="Board"></div>
+        <div class="tr-who" id="py-bottom"></div>
+      </div>
+      <div class="tr-panel">
+        <div class="py-setup" id="py-setup">
+          <h2 class="tr-prompt">Play your double</h2>
+          <div class="toggle" role="group" aria-label="Your colour" id="py-color">
+            <button type="button" data-c="w" aria-pressed="true">White</button>
+            <button type="button" data-c="b" aria-pressed="false">Black</button>
+            <button type="button" data-c="r" aria-pressed="false">Random</button>
+          </div>
+          <button class="btn btn-solid btn-lg" type="button" id="py-start">Start</button>
+        </div>
+        <p class="tr-feedback" id="py-note" aria-live="polite"></p>
+        <ol class="py-moves" id="py-moves"></ol>
+        <div class="tr-actions">
+          <button class="btn" type="button" id="py-resign" hidden>Resign</button>
+          <button class="btn" type="button" id="py-new" hidden>New game</button>
+          <a class="btn" id="py-review" hidden data-astro-prefetch="false">Review this game</a>
+          <button class="btn" type="button" id="py-share" hidden>Challenge a friend</button>
+        </div>
+      </div>
+    </section>
+    <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+  </main>
+  <script>import '../scripts/double/page.js';</script>
+</Base>
