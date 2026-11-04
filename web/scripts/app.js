@@ -2,14 +2,9 @@ import { currentUser, freshUser, remember, features, onUser, api, unlocked } fro
 import { track } from './track.js';
 import { tiltAlerts } from './tilt.mjs';
 import { foundIn } from './brilliants/store.mjs';
+import { gameInfo, latestUnseen, markSeen } from './training/store.mjs';
+import { LABELS } from './review/analysis.mjs';
 import { PLATFORM, BASE_SPEEDS, ALL_SPEEDS, SPEED_NAME, esc, cellLabel, gridHeadHtml, loadingRowsHtml } from './counter-markup.js';
-
-// The mistake check (Stockfish, chess.js, the move labeller) is only needed
-// once the games are in, so it loads alongside instead of holding up the
-// first draw of the counter. Until it's here, games just show no badges yet.
-let training = null; // { gameInfo, latestUnseen, markSeen, LABELS }
-const trainingLoaded = Promise.all([import('./training/store.mjs'), import('./review/analysis.mjs')])
-  .then(([store, analysis]) => { training = { ...store, LABELS: analysis.LABELS }; });
 
 (() => {
   'use strict';
@@ -51,7 +46,14 @@ const trainingLoaded = Promise.all([import('./training/store.mjs'), import('./re
       .slice(0, MAX_ACCOUNTS).map(([platform, username]) => ({ platform, username }));
     history.replaceState(null, '', location.pathname);
   }
+  // state: { accounts, coverFrom, base }
+  //   accounts[].games  every game we have, oldest first
+  //   coverFrom         games are complete from this time on (0: the whole calendar)
+  //   base              for the days before coverFrom, last visit's totals:
+  //                     { days: { dayKey: [games, lost, rated games, rated lost] }, speeds }
   let state = null;
+  let lastFetchedAt = 0; // the server's time of the newest answer: games are known up to here
+  let fullAt = 0; // when the whole 26 weeks were last fetched
   let connection = 'connecting';
   let syncing = false;
   let lastSyncAt = null;
@@ -97,7 +99,7 @@ const trainingLoaded = Promise.all([import('./training/store.mjs'), import('./re
   // The four usual types are always shown; classical/other only if ever played.
   function speedColumns() {
     if (!state) return BASE_SPEEDS;
-    const seen = new Set();
+    const seen = new Set(state.base ? state.base.speeds : []);
     for (const a of state.accounts) for (const g of a.games) seen.add(g.speed);
     return ALL_SPEEDS.filter((s) => BASE_SPEEDS.includes(s) || seen.has(s));
   }
@@ -119,8 +121,36 @@ const trainingLoaded = Promise.all([import('./training/store.mjs'), import('./re
   }
 
   // ---------- render ----------
+  // Each part is only rewritten when its markup changed, so a sync that
+  // brings nothing new doesn't touch the page.
+  const drawn = new WeakMap();
+  function setHTML(el, html) {
+    if (drawn.get(el) === html) return false;
+    drawn.set(el, html);
+    el.innerHTML = html;
+    return true;
+  }
+  // The shown day is older than the games we have (last visit's copy covers
+  // only today and yesterday): it waits for the full history.
+  const dayKnown = () => !state || !state.coverFrom || day >= state.coverFrom;
+
   function render() {
     renderDay();
+    $('#main').classList.toggle('is-loading', !state || !dayKnown());
+    if (state && !dayKnown()) {
+      $('#headline').textContent = `Loading ${shortDayFmt.format(day)}…`;
+      setHTML($('#hero-sub'), '');
+      setHTML($('#split'), '');
+      $('#split').hidden = false;
+      renderGridHead(speedColumns());
+      setHTML($('#rows'), loadingRowsHtml(state.accounts, speedColumns()));
+      setHTML($('#games'), '<li class="empty">Loading…</li>');
+      renderBanners();
+      renderBoard();
+      renderStatus();
+      wantFull();
+      return;
+    }
     if (!state) {
       // Waiting for the first answer from the server, or for the first account.
       // Until the account list is known the page keeps its "Counting…" headline,
@@ -129,15 +159,16 @@ const trainingLoaded = Promise.all([import('./training/store.mjs'), import('./re
         $('#headline').textContent = myAccounts.length ? `Finding ${DEMO ? 'their' : 'your'} games…` : 'Add an account to see today’s games.';
         $('#hero-sub').textContent = myAccounts.length ? 'The first look can take a few seconds.' : '';
       }
-      $('#split').innerHTML = '';
+      setHTML($('#split'), '');
+      $('#split').hidden = false;
       if (myAccounts.length) {
         renderGridHead(BASE_SPEEDS);
-        $('#rows').innerHTML = loadingRowsHtml(myAccounts);
+        setHTML($('#rows'), loadingRowsHtml(myAccounts));
       } else if (accountsKnown) {
-        $('#grid-head').innerHTML = '';
-        $('#rows').innerHTML = '';
+        setHTML($('#grid-head'), '');
+        setHTML($('#rows'), '');
       }
-      $('#games').innerHTML = '';
+      setHTML($('#games'), '');
       return;
     }
     renderHero();
@@ -172,17 +203,18 @@ const trainingLoaded = Promise.all([import('./training/store.mjs'), import('./re
     else if (!t.n) h.textContent = isToday() ? 'No games yet today.' : `No games ${dayWord()}.`;
     else h.innerHTML = `${lead} played ${plural(t.n, 'game', 'games')} and lost <span class="n-lost">${nf.format(t.l)}</span>.`;
 
-    $('#split').innerHTML = t.n
+    setHTML($('#split'), t.n
       ? `<i class="w" style="width:${pct(t.w, t.n)}%"></i><i class="d" style="width:${pct(t.d, t.n)}%"></i><i class="l" style="width:${pct(t.l, t.n)}%"></i>`
-      : '';
+      : '');
+    $('#split').hidden = !t.n;
     const shown = accts.flatMap((a) => filtered(a.games).map((g) => foundIn(a.platform, g.id).length));
     const bril = shown.reduce((s, n) => s + n, 0);
-    $('#hero-sub').innerHTML = t.n
+    setHTML($('#hero-sub'), t.n
       ? `<span><i class="k" style="background:var(--win)"></i><b>${t.w}</b> won</span>
          <span><i class="k" style="background:var(--draw)"></i><b>${t.d}</b> drawn</span>
          <span><i class="k" style="background:var(--loss)"></i><b>${t.l}</b> lost, ${Math.round(pct(t.l, t.n))}%</span>
          ${bril ? `<a class="bril-chip" href="/brilliants.html" data-astro-prefetch="false"><i>!!</i><b>${bril}</b> brilliant</a>` : ''}`
-      : '';
+      : '');
   }
 
   function cellHtml(speed, s, rt, label) {
@@ -205,7 +237,7 @@ const trainingLoaded = Promise.all([import('./training/store.mjs'), import('./re
 
   function renderGridHead(speeds) {
     $('#grid-head').setAttribute('style', `--cols:${speeds.length}`);
-    $('#grid-head').innerHTML = gridHeadHtml(speeds);
+    setHTML($('#grid-head'), gridHeadHtml(speeds));
   }
 
   function renderRows() {
@@ -214,13 +246,13 @@ const trainingLoaded = Promise.all([import('./training/store.mjs'), import('./re
     renderGridHead(speeds);
 
     if (!state.accounts.length) {
-      $('#rows').innerHTML = '<p class="empty">No accounts yet. Add one with the Accounts button at the top.</p>';
+      setHTML($('#rows'), '<p class="empty">No accounts yet. Add one with the Accounts button at the top.</p>');
       return;
     }
-    $('#rows').innerHTML = state.accounts.map((a) => {
+    setHTML($('#rows'), state.accounts.map((a) => {
       const t = tally(filtered(a.games));
       const p = a.profile || {};
-      const avatar = p.avatar ? `<img src="${esc(p.avatar)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : esc(a.username[0].toUpperCase());
+      const avatar = p.avatar && !brokenAvatars.has(p.avatar) ? `<img src="${esc(p.avatar)}" alt="" referrerpolicy="no-referrer">` : esc(a.username[0].toUpperCase());
       const name = p.url
         ? `<a class="who-name" href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.displayName || a.username)}</a>`
         : `<span class="who-name">${esc(a.username)}</span>`;
@@ -243,8 +275,15 @@ const trainingLoaded = Promise.all([import('./training/store.mjs'), import('./re
           ${speeds.map((s) => cellHtml(s, t.by[s], dayRating(a, s), SPEED_NAME[s])).join('')}
           ${cellHtml('total', t, null, 'Total')}
         </div>`;
-    }).join('');
+    }).join(''));
   }
+  // A picture that won't load (gone, or blocked) shows the first letter instead.
+  const brokenAvatars = new Set();
+  $('#rows').addEventListener('error', (e) => {
+    if (e.target.tagName !== 'IMG') return;
+    brokenAvatars.add(e.target.getAttribute('src'));
+    renderRows();
+  }, true);
 
   function renderGames() {
     const list = [];
@@ -257,7 +296,7 @@ const trainingLoaded = Promise.all([import('./training/store.mjs'), import('./re
     list.sort((x, y) => y.g.end - x.g.end);
     const label = { win: 'Won', draw: 'Draw', loss: 'Lost' };
     $('#games-title').textContent = isToday() ? 'Games today' : isYesterday() ? 'Games yesterday' : `Games on ${shortDayFmt.format(day)}`;
-    $('#games').innerHTML = list.map(({ g, a }) => `
+    setHTML($('#games'), list.map(({ g, a }) => `
       <li class="game">
         <span class="res ${g.result}">${label[g.result]}</span>
         <span class="opp">
@@ -266,12 +305,15 @@ const trainingLoaded = Promise.all([import('./training/store.mjs'), import('./re
         </span>
         <span class="when" title="${esc(new Date(g.end).toLocaleString())}">${isToday() ? ago(g.end) : timeFmt.format(g.end)}</span>
         ${reviewLink(g, a)}
-      </li>`).join('') || `<li class="empty">${gamesFilter === 'loss' ? `No losses ${dayWord()}.` : `No games ${dayWord()}.`}</li>`;
+      </li>`).join('') || `<li class="empty">${gamesFilter === 'loss' ? `No losses ${dayWord()}.` : `No games ${dayWord()}.`}</li>`);
   }
 
   // How many mistakes a checked game had; it opens Training on that game.
   function mistakeBadge(g, a) {
-    const info = training && training.gameInfo(a.platform, g.id);
+    if (checking && checking.platform === a.platform && checking.id === g.id) {
+      return ' <span class="checking-badge" title="Stockfish is looking for your mistakes in this game"><span class="spin" aria-hidden="true"></span>Checking…</span>';
+    }
+    const info = gameInfo(a.platform, g.id);
     if (!info || !info.n) return '';
     return ` <a class="mist-badge" href="/train.html?game=${encodeURIComponent(`${a.platform}:${g.id}`)}" data-astro-prefetch="false" title="${info.n} position${info.n === 1 ? '' : 's'} to train from this game">${info.n} to train</a>`;
   }
@@ -286,30 +328,38 @@ const trainingLoaded = Promise.all([import('./training/store.mjs'), import('./re
 
   // Every new game today gets a quick check by Stockfish, in this tab: your
   // mistakes become training positions (and a "what to work on" card here),
-  // and brilliant moves are counted. Losses go first.
+  // and brilliant moves are counted. Losses go first. It's background work:
+  // it waits until the page has settled and is on screen, and uses one or
+  // two engines, so the page and the computer stay quick while it runs.
   let checkJob = null;
-  let fullSyncDone = false; // the 26-week sync, after which today's games get checked
-  // The training code came in after the games: draw its badges and card, and start the check.
-  trainingLoaded.then(() => {
-    if (!state) return;
-    render();
-    if (fullSyncDone && !DEMO) analyzeToday();
-  }).catch(() => { /* the counter works without it */ });
-  let checking = null; // { opponent } while a game is being checked
+  let checking = null; // { platform, id } of the game being checked
+  let checkTimer = null;
+  function analyzeSoon() {
+    if (DEMO || checkJob) return;
+    clearTimeout(checkTimer);
+    checkTimer = setTimeout(() => {
+      if (document.prerendering || document.visibilityState !== 'visible') return; // tried again when it's shown
+      if ('requestIdleCallback' in window) requestIdleCallback(analyzeToday, { timeout: 4000 }); else analyzeToday();
+    }, 1500);
+  }
+  if (document.prerendering) document.addEventListener('prerenderingchange', analyzeSoon, { once: true });
   async function analyzeToday() {
-    if (checkJob || !state || !training) return;
+    if (checkJob || !state || DEMO) return;
     const from = startOfDay(Date.now());
-    const todo = state.accounts.filter((a) => a.games.some((g) => g.end >= from && (g.variant === 'chess' || g.variant === 'standard') && !training.gameInfo(a.platform, g.id)));
+    const todo = state.accounts.filter((a) => a.games.some((g) => g.end >= from && (g.variant === 'chess' || g.variant === 'standard') && !gameInfo(a.platform, g.id)));
     if (!todo.length) return;
     checkJob = true; // taken while the checker loads
-    const { analyzeMany } = await import('./training/analyze.mjs');
+    let analyzeMany;
+    try { ({ analyzeMany } = await import('./training/analyze.mjs')); } catch { checkJob = null; return; }
     checkJob = analyzeMany({
       accounts: todo.map((a) => ({ platform: a.platform, username: a.username })),
       since: from,
+      workers: (navigator.hardwareConcurrency || 2) >= 8 ? 2 : 1,
       onProgress: (p) => {
-        const m = /vs (.+)…$/.exec(p.note || '');
-        checking = m ? { opponent: m[1] } : null;
-        renderBanners();
+        const now = p.current || null;
+        if (JSON.stringify(now) === JSON.stringify(checking)) return;
+        checking = now;
+        if (state && dayKnown()) renderGames();
       },
       onGame: (platform, g, out) => {
         if (out.brilliants.length) toast(`Brilliant move against ${g.opponent}: ${out.brilliants.map((b) => b.san).join(', ')}!`);
@@ -321,10 +371,9 @@ const trainingLoaded = Promise.all([import('./training/store.mjs'), import('./re
 
   // The "what to work on" card for the newest game with mistakes.
   function needsWorkHtml() {
-    if (!myAccounts.length || !training) return '';
-    const { LABELS } = training;
-    const nw = training.latestUnseen(myAccounts, startOfDay(Date.now()) - DAY);
-    if (!nw) return checking ? `<div class="banner" data-kind="info"><p><b>Checking your game vs ${esc(checking.opponent)}…</b> Stockfish is looking for your mistakes. It takes a few seconds.</p></div>` : '';
+    if (!myAccounts.length) return '';
+    const nw = latestUnseen(myAccounts, startOfDay(Date.now()) - DAY);
+    if (!nw) return '';
     const g = nw.g;
     const counts = {};
     for (const it of nw.items) counts[it.label] = (counts[it.label] || 0) + 1;
@@ -354,17 +403,28 @@ const trainingLoaded = Promise.all([import('./training/store.mjs'), import('./re
   }
 
   let boardDays = new Map();
+  let boardScrolled = false;
   function renderBoard() {
     const now = Date.now();
     const start = startOfWeek(now) - (WEEKS - 1) * 7 * DAY;
+    // The days we have games for are counted from them; older days come from
+    // last visit's totals. Without those (a first visit), they're still loading.
+    const from = state.coverFrom || 0;
+    const complete = !from || !!state.base;
     boardDays = new Map();
     for (const a of state.accounts) {
-      for (const g of filtered(a.games, start, Infinity)) {
+      for (const g of filtered(a.games, Math.max(start, from), Infinity)) {
         const k = dayKey(g.end);
         const d = boardDays.get(k) || { total: 0, l: 0 };
         d.total++;
         if (g.result === 'loss') d.l++;
         boardDays.set(k, d);
+      }
+    }
+    if (from && state.base) {
+      for (const [k, [n, l, rn, rl]] of Object.entries(state.base.days)) {
+        const total = ratedOnly ? rn : n;
+        if (total) boardDays.set(k, { total, l: ratedOnly ? rl : l });
       }
     }
     const max = Math.max(1, ...[...boardDays.values()].map((d) => d.total));
@@ -396,11 +456,14 @@ const trainingLoaded = Promise.all([import('./training/store.mjs'), import('./re
       }
     }
     const board = $('#board');
-    board.innerHTML = cells.join('');
-    board.parentElement.scrollLeft = board.parentElement.scrollWidth;
+    setHTML(board, cells.join(''));
+    // Start at this week, once; after that, leave it where you scrolled it.
+    if (!boardScrolled) { board.parentElement.scrollLeft = board.parentElement.scrollWidth; boardScrolled = true; }
     board.setAttribute('role', 'img');
-    board.setAttribute('aria-label', `You played on ${played} days in the last ${WEEKS} weeks.`);
-    $('#board-hint').textContent = `You played on ${played} days in the last ${WEEKS} weeks. Click a day to open it.`;
+    const who = DEMO ? 'They' : 'You';
+    const summary = complete ? `${who} played on ${played} days in the last ${WEEKS} weeks.` : `Loading the last ${WEEKS} weeks…`;
+    board.setAttribute('aria-label', summary);
+    $('#board-hint').textContent = complete ? `${summary} Click a day to open it.` : summary;
   }
 
 
@@ -434,6 +497,8 @@ const trainingLoaded = Promise.all([import('./training/store.mjs'), import('./re
     if (DEMO) store.set(DEMO_KEY, myAccounts); else saveAccounts();
     state = null;
     lastSyncAt = null;
+    lastFetchedAt = 0;
+    fullAt = 0;
     connection = 'connecting';
     $('#sync-now').hidden = !myAccounts.length;
     render();
@@ -474,33 +539,132 @@ const trainingLoaded = Promise.all([import('./training/store.mjs'), import('./re
       toast('Couldn’t save your accounts to Shohmot. They’ll be lost on reload.');
     }
   }
+  // ---------- last visit's copy ----------
+  // After each sync the counter keeps a small copy of what it shows: today's
+  // and yesterday's games, the last game of each type before them (for the
+  // rating change), and a total per day for the calendar. The next visit draws
+  // the whole page from it straight away, then asks only for what's new.
+  const SNAP = 'shohmot-counter:v1';
+  const SNAP_READY = 'shohmot-counter:ready'; // read by Base.astro's head script, which can't afford to read the copy itself
+  const SNAP_MAX = 400 * 1024; // characters; a copy that would be bigger isn't kept
+  const accountsKey = (list) => list.map((a) => `${a.platform}:${a.username}`).join(',');
+  function dayStart(key) { const [y, m, d] = key.split('-').map(Number); return new Date(y, m, d).getTime(); }
+  const standard = (g) => g.variant === 'chess' || g.variant === 'standard';
+
+  function saveSnapshot() {
+    if (DEMO || !state || !lastFetchedAt || (state.coverFrom && !state.base)) return;
+    const now = Date.now();
+    const windowStart = addDays(startOfDay(now), -1);
+    const boardStart = startOfWeek(now) - (WEEKS - 1) * 7 * DAY;
+    const from = state.coverFrom || 0;
+    const days = { ...(state.base ? state.base.days : {}) };
+    const speeds = new Set(state.base ? state.base.speeds : []);
+    const accounts = state.accounts.map((a) => {
+      const recent = [];
+      const anchor = {};
+      for (const g of a.games) {
+        speeds.add(g.speed);
+        if (g.end >= windowStart) { recent.push(g); continue; }
+        if (g.rated && g.rating != null && standard(g)) anchor[g.speed] = g;
+        if (g.end >= from && g.end >= boardStart) {
+          const d = days[dayKey(g.end)] || (days[dayKey(g.end)] = [0, 0, 0, 0]);
+          d[0]++;
+          if (g.result === 'loss') d[1]++;
+          if (g.rated) { d[2]++; if (g.result === 'loss') d[3]++; }
+        }
+      }
+      return { id: a.id, platform: a.platform, username: a.username, profile: a.profile, lastError: a.lastError,
+        games: Object.values(anchor).concat(recent).sort((x, y) => x.end - y.end) };
+    });
+    for (const k of Object.keys(days)) if (dayStart(k) < boardStart) delete days[k];
+    const json = JSON.stringify({ v: 1, key: accountsKey(myAccounts), at: lastFetchedAt, fullAt, windowStart, days, speeds: [...speeds], accounts });
+    try {
+      if (json.length > SNAP_MAX) throw new Error('too big');
+      localStorage.setItem(SNAP, json);
+      localStorage.setItem(SNAP_READY, '1');
+    } catch {
+      // Too big, full or blocked: the next visit just loads the usual way.
+      try { localStorage.removeItem(SNAP); localStorage.removeItem(SNAP_READY); } catch { /* blocked */ }
+    }
+  }
+
+  function loadSnapshot() {
+    const s = store.get(SNAP, null);
+    if (!s || s.v !== 1 || s.key !== accountsKey(myAccounts) || Date.now() - s.at > 60 * DAY) return false;
+    state = { accounts: s.accounts.map((a) => ({ ...a, lastSyncAt: s.at })), coverFrom: s.windowStart, base: { days: s.days, speeds: s.speeds } };
+    lastFetchedAt = s.at;
+    fullAt = s.fullAt || 0;
+    lastSyncAt = s.at;
+    return true;
+  }
+
+  // An answer covers [from, serverTime]. A short one replaces just that
+  // stretch of the games we have; a full one replaces them all. An account
+  // that couldn't be fetched keeps what it had.
+  function merge(answer, { full, from, serverTime, now }) {
+    return answer.map((a) => {
+      const prev = state && state.accounts.find((x) => x.id === a.id);
+      if (a.error && prev) return { ...prev, profile: a.profile || prev.profile, lastSyncAt: now, lastError: { message: a.error } };
+      let games = a.games;
+      if (!full && prev) {
+        const ids = new Set(games.map((g) => g.id));
+        // An hour's overlap at the start allows for the two clocks differing.
+        const keep = prev.games.filter((g) => !ids.has(g.id) && (g.end < from + 3600000 || g.end > serverTime));
+        if (keep.length) games = keep.concat(games).sort((x, y) => x.end - y.end);
+      }
+      return { ...a, games, lastSyncAt: now, lastError: a.error ? { message: a.error } : null };
+    });
+  }
+
+  // ---------- sync ----------
+  // The first visit asks for two days (quick), then everything. After that,
+  // each sync asks only for what's new since the last one; everything again
+  // at most twice a day, or when an older day is opened.
+  const RECENT_DAYS = 2;
+  const FULL_EVERY = 12 * 3600000;
+  const SERVER_DAYS = 26 * 7 + 14; // what the server sends when no days are given
   let syncAgain = false;
+  let fullWanted = false;
   let demoMoved = false;
-  // With nothing on screen yet, first ask for just the last two days (fast),
-  // then fetch the full 26 weeks for the calendar right after.
+  let firstAnswer = true;
+  function wantFull() {
+    if (!state || !state.coverFrom || fullWanted) return;
+    fullWanted = true;
+    if (!syncing) sync();
+  }
+  const needsFull = () => !!state && !!state.coverFrom && (fullWanted || !state.base || Date.now() - fullAt > FULL_EVERY);
+
   async function sync(fresh = false) {
-    const quick = !state;
     // If the account list changed mid-sync, run again right after.
     if (syncing) { syncAgain = true; return; }
+    const kind = !state ? 'quick' : needsFull() ? 'full' : 'recent';
+    let days = kind === 'quick' ? RECENT_DAYS : kind === 'full' ? (DEMO ? DEMO_DAYS : SERVER_DAYS)
+      : Math.max(RECENT_DAYS, Math.ceil((Date.now() - lastFetchedAt) / DAY + 0.25));
+    days = Math.min(days, SERVER_DAYS);
     syncing = true;
     clearTimeout(syncTimer);
     renderStatus();
+    let ok = false;
     try {
       const wanted = JSON.stringify(myAccounts);
-      let accounts = [];
+      let answer = [];
+      let serverTime = Date.now();
       if (myAccounts.length) {
         const q = myAccounts.map((a) => `${a.platform}:${a.username}`).join(',');
-        const res = await fetch(`/api/state?accounts=${encodeURIComponent(q)}${quick ? '&days=2' : DEMO ? `&days=${DEMO_DAYS}` : ''}${fresh ? `&fresh=${Date.now()}` : ''}`);
+        const res = await fetch(`/api/state?accounts=${encodeURIComponent(q)}&days=${days}${fresh ? `&fresh=${Date.now()}` : ''}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        accounts = (await res.json()).accounts;
+        const out = await res.json();
+        answer = out.accounts;
+        if (out.serverTime) serverTime = out.serverTime;
       }
       // The account list changed while we were waiting; drop this answer.
       if (wanted !== JSON.stringify(myAccounts)) { syncAgain = true; return; }
       const now = Date.now();
-      const next = accounts.map((a) => ({ ...a, lastSyncAt: now, lastError: a.error ? { message: a.error } : null }));
+      const from = serverTime - days * DAY;
+      const next = merge(answer, { full: kind === 'full', from, serverTime, now });
       // Tell the user about games that weren't there on the last sync.
       const added = [];
-      if (state) {
+      if (state && !firstAnswer) {
         for (const a of next) {
           const prev = state.accounts.find((x) => x.id === a.id);
           if (!prev || !prev.games.length) continue;
@@ -510,15 +674,27 @@ const trainingLoaded = Promise.all([import('./training/store.mjs'), import('./re
           if (n) added.push(`${n} on ${a.username} (${PLATFORM[a.platform]})`);
         }
       }
-      state = { accounts: next };
+      if (kind === 'full') {
+        // The demo's "everything" is its last 30 days; that's all it shows.
+        state = { accounts: next, coverFrom: 0, base: null };
+        fullAt = now;
+        fullWanted = false;
+      } else if (kind === 'quick') {
+        state = { accounts: next, coverFrom: from, base: null };
+      } else {
+        state = { accounts: next, coverFrom: state.coverFrom, base: state.base };
+      }
+      lastFetchedAt = Math.max(lastFetchedAt, serverTime);
       connection = 'live';
       lastSyncAt = now;
+      firstAnswer = false;
+      ok = true;
       render();
       if (added.length) toast(`New games: ${added.join(', ')}`);
-      if (!quick) fullSyncDone = true;
-      if (!quick && !DEMO) analyzeToday();
+      saveSnapshot();
+      analyzeSoon();
       // In the demo, if nobody has played yet today, show their latest day.
-      if (!quick && DEMO && !demoMoved) {
+      if (kind === 'full' && DEMO && !demoMoved) {
         demoMoved = true;
         const latest = Math.max(0, ...state.accounts.flatMap((a) => a.games.map((g) => g.end)));
         if (latest && latest < startOfDay(Date.now())) setDay(latest);
@@ -527,7 +703,7 @@ const trainingLoaded = Promise.all([import('./training/store.mjs'), import('./re
       connection = 'offline';
     } finally {
       syncing = false;
-      if (syncAgain) { syncAgain = false; setTimeout(() => sync(true)); } else if (quick && state) setTimeout(() => sync());
+      if (syncAgain) { syncAgain = false; setTimeout(() => sync(true)); } else if (ok && needsFull()) setTimeout(() => sync());
       nextSyncAt = Date.now() + SYNC_MS;
       syncTimer = setTimeout(() => sync(), SYNC_MS);
       renderStatus();
@@ -557,7 +733,8 @@ const trainingLoaded = Promise.all([import('./training/store.mjs'), import('./re
   });
   $('#sync-now').addEventListener('click', () => sync(true));
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && (!lastSyncAt || Date.now() - lastSyncAt > SYNC_MS)) sync();
+    if (document.visibilityState !== 'visible') return;
+    if (!lastSyncAt || Date.now() - lastSyncAt > SYNC_MS) sync(); else analyzeSoon();
   });
 
   const popup = window.createAccountPopup({ getAccounts: () => myAccounts, onChange: useAccounts, max: MAX_ACCOUNTS });
@@ -629,7 +806,7 @@ const trainingLoaded = Promise.all([import('./training/store.mjs'), import('./re
           <div class="banner-actions">${extra}<a class="btn" href="/settings.html#tilt">Settings</a><button class="btn btn-solid" type="button" data-dismiss="${esc(alert.key)}">${alert.upsell ? 'Not now' : 'OK, taking a break'}</button></div></div>`);
       }
     }
-    box.innerHTML = out.join('');
+    setHTML(box, out.join(''));
   }
 
   // A desktop notification when an alert first shows up, if it's on (Pro) and allowed.
@@ -649,7 +826,7 @@ const trainingLoaded = Promise.all([import('./training/store.mjs'), import('./re
     const d = e.target.closest('[data-dismiss]');
     if (d) return dismiss(d.dataset.dismiss);
     const seenBtn = e.target.closest('[data-seen]');
-    if (seenBtn) { training.markSeen(seenBtn.dataset.seen); return renderBanners(); }
+    if (seenBtn) { markSeen(seenBtn.dataset.seen); return renderBanners(); }
     if (e.target.closest('[data-act="demo-reset"]')) { try { localStorage.removeItem(DEMO_KEY); } catch { /* */ } useAccounts(DEMO_LIST); return; }
     const r = e.target.closest('[data-act="resend"]');
     if (r) {
@@ -689,6 +866,8 @@ const trainingLoaded = Promise.all([import('./training/store.mjs'), import('./re
         if (!accountsEdited && JSON.stringify(now.accounts) !== JSON.stringify(myAccounts)) {
           myAccounts = now.accounts.slice();
           state = null;
+          lastFetchedAt = 0;
+          fullAt = 0;
           $('#sync-now').hidden = !myAccounts.length;
           render();
           if (myAccounts.length) sync(true); else popup.open();
@@ -701,8 +880,10 @@ const trainingLoaded = Promise.all([import('./training/store.mjs'), import('./re
       try { localStorage.removeItem('shohmot-accounts'); } catch { /* private mode */ }
       if (!myAccounts.length && Array.isArray(legacy) && legacy.length) fromLink = legacy.slice(0, MAX_ACCOUNTS);
     }
-    if (fromLink.length) { useAccounts(fromLink); return; }
+    if (fromLink.length) { delete document.documentElement.dataset.snap; useAccounts(fromLink); return; }
     $('#sync-now').hidden = !myAccounts.length;
+    // Last visit's copy, if it's for these accounts: the whole page at once.
+    if (!myAccounts.length || !loadSnapshot()) delete document.documentElement.dataset.snap;
     render();
     // First visit: nothing saved yet, so ask for an account straight away.
     if (myAccounts.length) sync(); else popup.open();

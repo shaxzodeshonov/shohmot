@@ -10,7 +10,8 @@ import { labelGame, buildFromSan, whiteWin } from '../review/label.mjs';
 import { gameAccuracy, ACCURACY } from '../review/analysis.mjs';
 import { loadBook, fetchWindow, windows } from '../brilliants/scan.mjs';
 import { saveScanned } from '../brilliants/store.mjs';
-import { isAnalyzed, saveScannedMistakes, mistakesOf } from './store.mjs';
+import { isAnalyzed, saveScannedMistakes } from './store.mjs';
+import { mistakesOf } from './mistakes.mjs';
 
 export const QUICK = { depth: 12, movetime: 700 };
 const epd = (fen) => fen.split(' ').slice(0, 4).join(' ');
@@ -23,7 +24,7 @@ function bookPlies(fens, book) {
 
 // One game from /api/moves ({ id, end, color, rating, speed, opponent, moves, fen?, result? }).
 // Returns { labels, accuracy, items, brilliants } or null if it can't be read.
-export async function analyzeGame(platform, username, g, { engine = 'lite', shouldStop = () => false, onPosition = () => {} } = {}) {
+export async function analyzeGame(platform, username, g, { engine = 'lite', workers, shouldStop = () => false, onPosition = () => {} } = {}) {
   const game = buildFromSan(g.moves, g.fen);
   if (!game || !game.moves.length) return null;
   const book = g.fen ? {} : await loadBook();
@@ -39,7 +40,7 @@ export async function analyzeGame(platform, username, g, { engine = 'lite', shou
   for (let i = 0; i < game.bookPlies; i++) results[i] = [{ depth: 0, score: { cp: 0 }, pv: [game.moves[i].uci] }];
   const jobs = [];
   game.fens.forEach((fen, i) => { if (!results[i]) jobs.push({ fen, i }); });
-  const pool = new EnginePool(engine);
+  const pool = new EnginePool(engine, { workers });
   let done = 0;
   try {
     await pool.run(jobs, {
@@ -71,10 +72,11 @@ export async function analyzeGame(platform, username, g, { engine = 'lite', shou
 
 // Checks many games, newest first. pick(g) chooses which (e.g. losses only).
 // onGame(platform, game, result) after each; onProgress({ done, total, note }).
-export function analyzeMany({ accounts, since, until = Date.now(), pick = () => true, engine = 'lite', onGame = () => {}, onProgress = () => {}, onDone = () => {} }) {
+// workers caps the engines (the counter passes a small number: it runs in the background).
+export function analyzeMany({ accounts, since, until = Date.now(), pick = () => true, engine = 'lite', workers, onGame = () => {}, onProgress = () => {}, onDone = () => {} }) {
   let stopped = false;
   const shouldStop = () => stopped;
-  const p = { done: 0, total: 0, note: '' };
+  const p = { done: 0, total: 0, note: '', current: null }; // current: { platform, id } being checked
   const run = async () => {
     for (const a of accounts) {
       for (const w of windows(a.platform, since, until)) {
@@ -89,8 +91,10 @@ export function analyzeMany({ accounts, since, until = Date.now(), pick = () => 
         for (const g of todo) {
           if (stopped) return;
           p.note = `Checking your game vs ${g.opponent}…`;
+          p.current = { platform: a.platform, id: g.id };
           onProgress({ ...p });
-          const out = await analyzeGame(a.platform, a.username, g, { engine, shouldStop });
+          const out = await analyzeGame(a.platform, a.username, g, { engine, workers, shouldStop });
+          p.current = null;
           if (stopped) return;
           p.done++;
           if (out) onGame(a.platform, g, out);

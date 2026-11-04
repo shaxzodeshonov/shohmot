@@ -1,7 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildFromSan, labelGame, explain } from '../web/scripts/review/label.mjs';
-import { mistakesOf, schedule, record, queue, saveScannedMistakes, saveReviewedMistakes, latestUnseen, markSeen, INTERVALS, LEARNED } from '../web/scripts/training/store.mjs';
+import { schedule, record, queue, saveScannedMistakes, saveReviewedMistakes, latestUnseen, markSeen, INTERVALS, LEARNED } from '../web/scripts/training/store.mjs';
+import { mistakesOf } from '../web/scripts/training/mistakes.mjs';
 
 // Scholar's mate, with Black to blame: 3...Nf6?? allows Qxf7#.
 function scholars() {

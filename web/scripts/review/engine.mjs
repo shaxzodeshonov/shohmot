@@ -152,9 +152,11 @@ function workerCount(kind) {
 }
 
 export class EnginePool {
-  constructor(kind = 'lite') {
+  // workers: at most this many engines (background work passes 1 or 2, so
+  // the rest of the computer, and the page, stay quick).
+  constructor(kind = 'lite', { workers = Infinity } = {}) {
     this.kind = kind;
-    this.size = workerCount(kind);
+    this.size = Math.max(1, Math.min(workers, workerCount(kind)));
     this.engines = [];
     this.stopped = false;
   }

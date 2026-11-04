@@ -29,6 +29,9 @@ const canonical = `${SITE.url}${path === '/' ? '/' : path}`;
     document.documentElement.dataset.auth = signedIn ? 'in' : 'out';
     // How many chess accounts last visit's profile had: the counter keeps room for that many rows.
     if (signedIn) try { var me = JSON.parse(localStorage.getItem('shohmot-me')); if (me && me.accounts) document.documentElement.dataset.accounts = Math.min(4, me.accounts.length); } catch (e) {}
+    // The counter has last visit's copy: it holds its content back a moment
+    // (at most 0.6 s) and shows it complete, instead of a skeleton first.
+    if (signedIn) try { if (localStorage.getItem('shohmot-counter:ready')) { var root = document.documentElement; root.dataset.snap = '1'; setTimeout(function () { delete root.dataset.snap; }, 600); } } catch (e) {}
     if (guard && !signedIn) location.replace('/login.html?next=' + encodeURIComponent(location.pathname + location.search + location.hash));
   </script>
   <title>{title}</title>
