@@ -5,7 +5,7 @@ import '../styles/pages.css';
 ---
 <Base title="Your students · Shohmot" description="See every student's games, losses and progress in one place." guard>
   <AppBar current="coach" />
-  <main class="page wide-page coach">
+  <main id="main" class="page wide-page coach">
     <h1 class="page-title">Your students</h1>
     <p class="muted">Every student’s games this week, with losses and rating changes. Open any game for a full review.</p>
     <div class="banners" id="banners" aria-live="polite"></div>
@@ -24,9 +24,9 @@ import '../styles/pages.css';
 
     <section aria-labelledby="c-list-h">
       <h2 class="sec-h" id="c-list-h">This week</h2>
-      <div class="c-table-wrap">
+      <div class="c-table-wrap" tabindex="0" role="region" aria-label="Students table, scrolls sideways">
         <table class="c-table" id="c-table">
-          <thead><tr><th>Student</th><th>Today</th><th>This week</th><th>Lost</th><th>Rating</th><th>Last game</th><th></th></tr></thead>
+          <thead><tr><th>Student</th><th>Today</th><th>This week</th><th>Lost</th><th>Rating</th><th>Last game</th><th><span class="sr-only">Remove</span></th></tr></thead>
           <tbody id="c-rows"><tr><td colspan="7" class="muted">Loading…</td></tr></tbody>
         </table>
       </div>

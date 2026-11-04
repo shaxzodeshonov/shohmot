@@ -63,9 +63,9 @@ function layout({ heading, body, button, footer }) {
   const paras = body.map((p) => `<p style="margin:0 0 16px;line-height:1.55">${esc(p)}</p>`).join('');
   const btn = button
     ? `<p style="margin:24px 0"><a href="${esc(button.url)}" style="background:#c6ceb2;color:#1d2417;font-weight:700;text-decoration:none;padding:12px 20px;border-radius:999px;display:inline-block">${esc(button.label)}</a></p>
-       <p style="margin:0 0 16px;font-size:13px;color:#806d56">Or paste this into your browser: ${esc(button.url)}</p>`
+       <p style="margin:0 0 16px;font-size:13px;color:#6f5e4a">Or paste this into your browser: ${esc(button.url)}</p>`
     : '';
-  const foot = footer ? `<p style="margin:32px 0 0;font-size:12px;color:#806d56">${footer}</p>` : '';
+  const foot = footer ? `<p style="margin:32px 0 0;font-size:12px;color:#6f5e4a">${footer}</p>` : '';
   const html = `<!doctype html><html><body style="margin:0;background:#f6f1e7;font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#1b140f">
   <div style="max-width:520px;margin:0 auto;padding:32px 24px">
     <p style="font-weight:800;font-size:18px;margin:0 0 24px">♞ Shohmot</p>

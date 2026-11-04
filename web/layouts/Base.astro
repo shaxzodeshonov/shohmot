@@ -47,6 +47,7 @@ const canonical = `${SITE.url}${path === '/' ? '/' : path}`;
   <slot name="head" />
 </head>
 <body class={bodyClass}>
+  <a class="skip-link" href="#main">Skip to content</a>
   <slot />
   <script>
   import '../scripts/track.js';

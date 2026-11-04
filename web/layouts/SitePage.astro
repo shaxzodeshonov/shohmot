@@ -10,7 +10,7 @@ const { title, description, current } = Astro.props;
 ---
 <Base title={title} description={description}>
   <SiteBar current={current} />
-  <main class="wrap">
+  <main id="main" class="wrap">
     <slot />
     <CtaBand />
   </main>

@@ -5,7 +5,7 @@ import '../styles/pages.css';
 ---
 <Base title="Admin · Shohmot" description="How Shohmot is doing." guard>
   <AppBar current="admin" />
-  <main class="page wide-page admin">
+  <main id="main" class="page wide-page admin">
     <div class="ad-head">
       <h1 class="page-title">How Shohmot is doing</h1>
       <label class="depth-pick">Range
@@ -17,8 +17,8 @@ import '../styles/pages.css';
     <dl class="ad-cards" id="ad-cards"></dl>
     <h2 class="sec-h">From visitor to regular</h2>
     <div class="ad-funnel" id="ad-funnel"></div>
-    <h2 class="sec-h">By day</h2>
-    <div class="c-table-wrap"><table class="c-table ad-table" id="ad-days-table"></table></div>
+    <h2 class="sec-h" id="ad-days-h">By day</h2>
+    <div class="c-table-wrap" tabindex="0" role="region" aria-label="Days table, scrolls sideways"><table class="c-table ad-table" id="ad-days-table"></table></div>
     <div class="ad-two">
       <section><h2 class="sec-h">Pages</h2><table class="c-table" id="ad-pages"></table></section>
       <section><h2 class="sec-h">Features used</h2><table class="c-table" id="ad-events"></table></section>

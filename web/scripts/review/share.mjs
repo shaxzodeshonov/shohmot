@@ -103,7 +103,7 @@ export async function shareCard({ title, meta, you, them, counts, fen, last, fli
   ctx.font = `800 28px ${FONT}`;
   ctx.fillText('Shohmot', left + 54, 82);
   const brandW = ctx.measureText('Shohmot').width;
-  ctx.fillStyle = '#806d56';
+  ctx.fillStyle = '#9c8569';
   ctx.font = `600 20px ${FONT}`;
   ctx.fillText('Game review', left + 54 + brandW + 14, 81);
 
@@ -126,7 +126,7 @@ export async function shareCard({ title, meta, you, them, counts, fen, last, fli
     ctx.fillStyle = highlight ? '#c6ceb2' : '#efe1c6';
     ctx.font = `800 60px ${FONT}`;
     ctx.fillText(who.acc == null ? '–' : who.acc.toFixed(1), x + 20, 340);
-    ctx.fillStyle = '#806d56';
+    ctx.fillStyle = '#9c8569';
     ctx.font = `600 18px ${FONT}`;
     ctx.fillText('accuracy', x + 22, 370);
   };
@@ -143,13 +143,13 @@ export async function shareCard({ title, meta, you, them, counts, fen, last, fli
     roundRect(ctx, cx, 412, w, 40, 20);
     ctx.fillStyle = c.n ? COLORS[c.l] : 'rgba(255, 255, 255, 0.06)';
     ctx.fill();
-    ctx.fillStyle = c.n ? '#140f0b' : '#806d56';
+    ctx.fillStyle = c.n ? '#140f0b' : '#9c8569';
     ctx.fillText(label, cx + 14, 439);
     cx += w + 10;
   }
 
   // Footer
-  ctx.fillStyle = '#806d56';
+  ctx.fillStyle = '#9c8569';
   ctx.font = `600 20px ${FONT}`;
   ctx.fillText(`Free Stockfish reviews at ${site}`, left, H - 56);
 

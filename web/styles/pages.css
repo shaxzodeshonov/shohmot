@@ -14,7 +14,7 @@
 .field { display: block; }
 .field-label { display: flex; gap: 0.5rem; align-items: center; font-weight: 600; font-size: 0.875rem; margin-bottom: 0.4375rem; }
 .field input, .field select { width: 100%; background: var(--raise); border: 1px solid var(--line-2); border-radius: 0.75rem; padding: 0.625rem 0.875rem; font-size: 1rem; }
-.field input:focus, .field select:focus { outline: none; border-color: var(--sage); }
+.field input:focus-visible, .field select:focus-visible { outline: none; border-color: var(--sage); box-shadow: 0 0 0 0.1875rem rgb(198 206 178 / 0.2); }
 .field input:disabled { opacity: 0.5; }
 .plan-now { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.03em; }
 .pro-tag { font-size: 0.625rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; padding: 0.0625rem 0.375rem; border-radius: 62.4375rem; background: var(--sage); color: var(--sage-ink); }
@@ -29,7 +29,8 @@
 .progress-bar { height: 0.375rem; border-radius: 1rem; background: var(--line); overflow: hidden; margin: 0.875rem 0 0.5rem; }
 .progress-bar i { display: block; height: 100%; width: 0; background: var(--sage); transition: width .3s var(--ease); }
 .depth-pick { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.8125rem; color: var(--muted); font-weight: 600; }
-.depth-pick select { background: var(--raise); border: 1px solid var(--line-2); border-radius: 62.4375rem; padding: 0.3125rem 0.625rem; font-size: 0.8125rem; }
+.depth-pick { max-width: 100%; }
+.depth-pick select { min-width: 0; max-width: 100%; text-overflow: ellipsis; background: var(--raise); border: 1px solid var(--line-2); border-radius: 62.4375rem; padding: 0.3125rem 0.625rem; font-size: 0.8125rem; }
 
 /* ---------- brilliant moves ---------- */
 .bz-hero { display: flex; align-items: center; gap: 1.25rem; margin-top: 2rem; }
@@ -99,7 +100,7 @@
 /* ---------- coach ---------- */
 .c-invite { display: flex; gap: 0.5rem; margin-top: 0.875rem; }
 .c-invite input { flex: 1; min-width: 0; background: var(--bg); border: 1px solid var(--line-2); border-radius: 62.4375rem; padding: 0.5rem 0.875rem; font-size: 0.9375rem; color: var(--ink); }
-.c-table-wrap { overflow-x: auto; }
+.c-table-wrap { overflow-x: auto; position: relative; } /* keeps .sr-only headers inside the scroll */
 .c-table { width: 100%; border-collapse: collapse; font-size: 0.9375rem; }
 .c-table th { text-align: left; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--faint); padding: 0 0.75rem 0.625rem 0; white-space: nowrap; }
 .c-table td { padding: 0.75rem 0.75rem 0.75rem 0; border-top: 1px solid var(--line); vertical-align: top; }
@@ -123,7 +124,7 @@
 .ad-cards div { background: var(--raise); border: 1px solid var(--line); border-radius: 1rem; padding: 1rem 1.125rem; }
 .ad-cards dt { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--faint); font-weight: 700; }
 .ad-cards dd { margin: 0.25rem 0 0.125rem; font-size: 2rem; font-weight: 800; letter-spacing: -0.03em; }
-.ad-cards small { color: var(--muted); font-size: 0.8125rem; }
+.ad-cards small { display: block; margin-top: 0.125rem; color: var(--muted); font-size: 0.8125rem; font-weight: 400; letter-spacing: 0; }
 .ad-funnel p { display: grid; grid-template-columns: 13rem 1fr 4rem; gap: 0.75rem; align-items: center; padding: 0.3125rem 0; }
 .ad-funnel i { display: block; height: 0.625rem; width: var(--w); min-width: 0.25rem; border-radius: 1rem; background: var(--sage); }
 .ad-funnel b { text-align: right; }
@@ -142,7 +143,7 @@
 .lead-s { font-size: 1.0625rem; max-width: 44rem; margin: 0.5rem 0 1.25rem; }
 .py-form { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
 .py-form input { flex: 1 1 14rem; max-width: 22rem; background: var(--raise); border: 1px solid var(--line-2); border-radius: 62.4375rem; padding: 0.625rem 1rem; font-size: 1rem; }
-.py-form input:focus { outline: none; border-color: var(--sage); }
+.py-form input:focus-visible { outline: none; border-color: var(--sage); box-shadow: 0 0 0 0.1875rem rgb(198 206 178 / 0.2); }
 .py-mine { display: flex; gap: 0.375rem; flex-wrap: wrap; align-items: center; margin-top: 0.75rem; }
 .py-mine small { color: var(--faint); }
 .py-profile { margin-top: 2rem; padding: 1.25rem; border: 1px solid var(--line-2); border-radius: 1.25rem; background: var(--raise); }

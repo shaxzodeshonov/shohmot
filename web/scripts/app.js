@@ -31,7 +31,7 @@ import { PLATFORM, BASE_SPEEDS, ALL_SPEEDS, SPEED_NAME, esc, cellLabel, gridHead
   // The no-sign-up demo (demo.html): these accounts, nothing saved to a
   // Shohmot account, no mistake checks (they'd fill this browser's training
   // with someone else's games), and a shorter history so it loads quickly.
-  const DEMO_LIST = (document.querySelector('#dashboard').dataset.demo || '').split(',').filter(Boolean)
+  const DEMO_LIST = (document.querySelector('#main').dataset.demo || '').split(',').filter(Boolean)
     .map((p) => { const [platform, username] = p.split(':'); return { platform, username }; });
   const DEMO = DEMO_LIST.length > 0;
   const DEMO_KEY = 'shohmot-demo-accounts';

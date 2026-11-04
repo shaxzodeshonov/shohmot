@@ -12,7 +12,7 @@ const demoAccounts = (demo || '').split(',').filter(Boolean).map((p) => {
   return { platform, username };
 });
 ---
-  <main id="dashboard" data-demo={demo}>
+  <main id="main" data-demo={demo}>
     <div class="banners" id="banners" aria-live="polite">{demo && (
       <div class="banner" data-kind="info" id="demo-banner">
         <p><b data-famous>This is Shohmot on Hikaru’s and Magnus Carlsen’s public games.</b><b data-picked hidden>This is Shohmot on the accounts you picked.</b> Press Review on any game for a free Stockfish review. With a free account, every game you play is checked for mistakes, turned into training, and your brilliant moves are found.</p>
@@ -60,7 +60,7 @@ const demoAccounts = (demo || '').split(',').filter(Boolean).map((p) => {
         <div class="block-head">
           <h2 id="board-title">Last 26 weeks</h2>
         </div>
-        <div class="board-wrap"><div class="board" id="board"></div></div>
+        <div class="board-wrap" tabindex="0" role="region" aria-label="Calendar of days played, scrolls sideways"><div class="board" id="board"></div></div>
         <p class="hint" id="board-hint"></p>
       </section>
     </div>
