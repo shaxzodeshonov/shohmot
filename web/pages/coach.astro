@@ -10,14 +10,14 @@ import '../styles/pages.css';
     <p class="muted">Every student’s games this week, with losses and rating changes. Open any game for a full review.</p>
     <div class="banners" id="banners" aria-live="polite"></div>
 
-    <section class="bz-scan" aria-labelledby="c-invite-h" id="invite-box" hidden>
+    <section class="bz-scan" aria-labelledby="c-invite-h" id="invite-box">
       <div class="bz-scan-top">
         <h2 id="c-invite-h">Invite link</h2>
-        <button class="btn" type="button" id="c-new">New link</button>
+        <button class="btn" type="button" id="c-new" disabled>New link</button>
       </div>
       <div class="c-invite">
-        <input id="c-link" readonly aria-label="Invite link">
-        <button class="btn btn-solid" type="button" id="c-copy">Copy</button>
+        <input id="c-link" readonly aria-label="Invite link" placeholder="Loading…">
+        <button class="btn btn-solid" type="button" id="c-copy" disabled>Copy</button>
       </div>
       <p class="muted small" id="c-seats">Send it to your students. When they open it signed in to Shohmot and say yes, they show up here. A new link stops the old one working; students who already joined stay.</p>
     </section>

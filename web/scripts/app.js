@@ -2,10 +2,14 @@ import { currentUser, freshUser, remember, features, onUser, api, unlocked } fro
 import { track } from './track.js';
 import { tiltAlerts } from './tilt.mjs';
 import { foundIn } from './brilliants/store.mjs';
-import { analyzeMany } from './training/analyze.mjs';
-import { latestUnseen, markSeen, gameInfo } from './training/store.mjs';
-import { LABELS } from './review/analysis.mjs';
 import { PLATFORM, BASE_SPEEDS, ALL_SPEEDS, SPEED_NAME, esc, cellLabel, gridHeadHtml, loadingRowsHtml } from './counter-markup.js';
+
+// The mistake check (Stockfish, chess.js, the move labeller) is only needed
+// once the games are in, so it loads alongside instead of holding up the
+// first draw of the counter. Until it's here, games just show no badges yet.
+let training = null; // { gameInfo, latestUnseen, markSeen, LABELS }
+const trainingLoaded = Promise.all([import('./training/store.mjs'), import('./review/analysis.mjs')])
+  .then(([store, analysis]) => { training = { ...store, LABELS: analysis.LABELS }; });
 
 (() => {
   'use strict';
@@ -144,10 +148,13 @@ import { PLATFORM, BASE_SPEEDS, ALL_SPEEDS, SPEED_NAME, esc, cellLabel, gridHead
     renderStatus();
   }
 
+  // Phones get the short date, so the label stays on one line.
+  const narrow = matchMedia('(max-width: 30em)');
+  narrow.addEventListener('change', () => renderDay());
   function renderDay() {
     const today = isToday();
-    $('#day-label').innerHTML = today ? `<b>Today</b>, ${esc(longDayFmt.format(day))}`
-      : isYesterday() ? `<b>Yesterday</b>, ${esc(longDayFmt.format(day))}` : `<b>${esc(longDayFmt.format(day))}</b>`;
+    const date = esc((narrow.matches ? shortDayFmt : longDayFmt).format(day));
+    $('#day-label').innerHTML = today ? `<b>Today</b>, ${date}` : isYesterday() ? `<b>Yesterday</b>, ${date}` : `<b>${date}</b>`;
     $('#day-next').disabled = today;
     $('#day-today').hidden = today;
     document.title = today ? 'Shohmot' : `Shohmot, ${shortDayFmt.format(day)}`;
@@ -264,7 +271,7 @@ import { PLATFORM, BASE_SPEEDS, ALL_SPEEDS, SPEED_NAME, esc, cellLabel, gridHead
 
   // How many mistakes a checked game had; it opens Training on that game.
   function mistakeBadge(g, a) {
-    const info = gameInfo(a.platform, g.id);
+    const info = training && training.gameInfo(a.platform, g.id);
     if (!info || !info.n) return '';
     return ` <a class="mist-badge" href="/train.html?game=${encodeURIComponent(`${a.platform}:${g.id}`)}" data-astro-prefetch="false" title="${info.n} position${info.n === 1 ? '' : 's'} to train from this game">${info.n} to train</a>`;
   }
@@ -281,12 +288,21 @@ import { PLATFORM, BASE_SPEEDS, ALL_SPEEDS, SPEED_NAME, esc, cellLabel, gridHead
   // mistakes become training positions (and a "what to work on" card here),
   // and brilliant moves are counted. Losses go first.
   let checkJob = null;
+  let fullSyncDone = false; // the 26-week sync, after which today's games get checked
+  // The training code came in after the games: draw its badges and card, and start the check.
+  trainingLoaded.then(() => {
+    if (!state) return;
+    render();
+    if (fullSyncDone && !DEMO) analyzeToday();
+  }).catch(() => { /* the counter works without it */ });
   let checking = null; // { opponent } while a game is being checked
-  function analyzeToday() {
-    if (checkJob || !state) return;
+  async function analyzeToday() {
+    if (checkJob || !state || !training) return;
     const from = startOfDay(Date.now());
-    const todo = state.accounts.filter((a) => a.games.some((g) => g.end >= from && (g.variant === 'chess' || g.variant === 'standard') && !gameInfo(a.platform, g.id)));
+    const todo = state.accounts.filter((a) => a.games.some((g) => g.end >= from && (g.variant === 'chess' || g.variant === 'standard') && !training.gameInfo(a.platform, g.id)));
     if (!todo.length) return;
+    checkJob = true; // taken while the checker loads
+    const { analyzeMany } = await import('./training/analyze.mjs');
     checkJob = analyzeMany({
       accounts: todo.map((a) => ({ platform: a.platform, username: a.username })),
       since: from,
@@ -305,8 +321,9 @@ import { PLATFORM, BASE_SPEEDS, ALL_SPEEDS, SPEED_NAME, esc, cellLabel, gridHead
 
   // The "what to work on" card for the newest game with mistakes.
   function needsWorkHtml() {
-    if (!myAccounts.length) return '';
-    const nw = latestUnseen(myAccounts, startOfDay(Date.now()) - DAY);
+    if (!myAccounts.length || !training) return '';
+    const { LABELS } = training;
+    const nw = training.latestUnseen(myAccounts, startOfDay(Date.now()) - DAY);
     if (!nw) return checking ? `<div class="banner" data-kind="info"><p><b>Checking your game vs ${esc(checking.opponent)}…</b> Stockfish is looking for your mistakes. It takes a few seconds.</p></div>` : '';
     const g = nw.g;
     const counts = {};
@@ -498,6 +515,7 @@ import { PLATFORM, BASE_SPEEDS, ALL_SPEEDS, SPEED_NAME, esc, cellLabel, gridHead
       lastSyncAt = now;
       render();
       if (added.length) toast(`New games: ${added.join(', ')}`);
+      if (!quick) fullSyncDone = true;
       if (!quick && !DEMO) analyzeToday();
       // In the demo, if nobody has played yet today, show their latest day.
       if (!quick && DEMO && !demoMoved) {
@@ -631,7 +649,7 @@ import { PLATFORM, BASE_SPEEDS, ALL_SPEEDS, SPEED_NAME, esc, cellLabel, gridHead
     const d = e.target.closest('[data-dismiss]');
     if (d) return dismiss(d.dataset.dismiss);
     const seenBtn = e.target.closest('[data-seen]');
-    if (seenBtn) { markSeen(seenBtn.dataset.seen); return renderBanners(); }
+    if (seenBtn) { training.markSeen(seenBtn.dataset.seen); return renderBanners(); }
     if (e.target.closest('[data-act="demo-reset"]')) { try { localStorage.removeItem(DEMO_KEY); } catch { /* */ } useAccounts(DEMO_LIST); return; }
     const r = e.target.closest('[data-act="resend"]');
     if (r) {
@@ -657,7 +675,6 @@ import { PLATFORM, BASE_SPEEDS, ALL_SPEEDS, SPEED_NAME, esc, cellLabel, gridHead
     sync();
     return;
   }
-  $('#sync-now').hidden = true;
   render();
   // Starts from last visit's copy of the profile (instant), then follows what
   // the server says if the accounts changed on another device.

@@ -123,14 +123,16 @@ $('#c-rows').addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.tar
 currentUser().then(async () => {
   const res = await fetch('/api/coach', { cache: 'no-store' });
   const out = await res.json().catch(() => ({}));
-  if (!res.ok) { $('#c-rows').innerHTML = `<tr><td colspan="7" class="muted">${esc(out.error || 'Couldn’t load this.')}</td></tr>`; return; }
+  if (!res.ok) { $('#invite-box').hidden = true; $('#c-rows').innerHTML = `<tr><td colspan="7" class="muted">${esc(out.error || 'Couldn’t load this.')}</td></tr>`; return; }
   if (!out.canCoach) {
+    $('#invite-box').hidden = true;
     $('#banners').innerHTML = '<div class="banner" data-kind="info"><p><b>Coaching isn’t on for your account.</b></p></div>';
     $('#c-rows').innerHTML = '';
     return;
   }
-  $('#invite-box').hidden = false;
   showInvite(out.code);
+  $('#c-new').disabled = false;
+  $('#c-copy').disabled = false;
   students = out.students || [];
   $('#c-seats').insertAdjacentText('beforeend', ` ${students.length} of ${out.seats} places used.`);
   render();

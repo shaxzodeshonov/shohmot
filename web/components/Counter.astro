@@ -40,8 +40,8 @@ const demoAccounts = (demo || '').split(',').filter(Boolean).map((p) => {
         <h2 id="accounts-title">By account</h2>
         <label class="check"><input type="checkbox" id="rated-only"> Rated games only</label>
       </div>
-      <div class="grid-head" id="grid-head" aria-hidden="true" style={demo ? `--cols:${BASE_SPEEDS.length}` : undefined} set:html={demo ? gridHeadHtml(BASE_SPEEDS) : ''}></div>
-      <div id="rows" set:html={loadingRowsHtml(demoAccounts)}></div>
+      <div class="grid-head" id="grid-head" aria-hidden="true" style={`--cols:${BASE_SPEEDS.length}`} set:html={gridHeadHtml(BASE_SPEEDS)}></div>
+      <div id="rows" set:html={demo ? loadingRowsHtml(demoAccounts) : loadingRowsHtml(Array(4).fill({ platform: '', username: '' }), BASE_SPEEDS, 'ph')}></div>
     </section>
 
     <div class="lower">

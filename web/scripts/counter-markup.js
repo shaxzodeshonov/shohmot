@@ -27,7 +27,9 @@ export function gridHeadHtml(speeds) {
 }
 
 // One row per account while its games load, with the same cells a full row has.
-export function loadingRowsHtml(accounts, speeds = BASE_SPEEDS) {
+// An account with no username draws a nameless row (the counter's HTML has four
+// of those, shown before app.js knows the accounts).
+export function loadingRowsHtml(accounts, speeds = BASE_SPEEDS, cls = '') {
   const cell = (speed, label) => `<div class="cell zero${speed === 'total' ? ' total' : ''}">${cellLabel(speed, label)}<span class="played">–</span><span class="lost">counting…</span><span class="mini"></span>${speed === 'total' ? '' : '<span class="rt">&nbsp;</span>'}</div>`;
-  return accounts.map((a) => `<div class="row loading" style="--cols:${speeds.length}"><div class="who"><span class="avatar" aria-hidden="true">${esc(a.username[0].toUpperCase())}</span><div class="who-text"><span class="who-name">${esc(a.username)}</span><span class="who-meta"><span class="site">${PLATFORM[a.platform]}</span>, loading…</span></div></div>${speeds.map((s) => cell(s, SPEED_NAME[s])).join('')}${cell('total', 'Total')}</div>`).join('');
+  return accounts.map((a) => `<div class="row loading${cls ? ` ${cls}` : ''}" style="--cols:${speeds.length}"><div class="who"><span class="avatar" aria-hidden="true">${esc((a.username[0] || '').toUpperCase())}</span><div class="who-text"><span class="who-name">${a.username ? esc(a.username) : '&nbsp;'}</span><span class="who-meta">${a.platform ? `<span class="site">${PLATFORM[a.platform]}</span>, loading…` : 'Loading…'}</span></div></div>${speeds.map((s) => cell(s, SPEED_NAME[s])).join('')}${cell('total', 'Total')}</div>`).join('');
 }

@@ -14,9 +14,14 @@ import '../styles/pages.css';
     </div>
     <p class="muted small">Counted on Shohmot’s own server, without cookies. Visitors are distinct per day, so the total adds up days.</p>
     <div class="banners" id="banners"></div>
-    <dl class="ad-cards" id="ad-cards"></dl>
+    <!-- Placeholders the numbers replace, so the page doesn't jump when they come. -->
+    <dl class="ad-cards" id="ad-cards">{['Accounts', 'Visitors', 'Sign-ups', 'Reviews', 'Training'].map((k) => (
+      <div><dt>{k}</dt><dd>–<small>Loading…</small></dd></div>
+    ))}</dl>
     <h2 class="sec-h">From visitor to regular</h2>
-    <div class="ad-funnel" id="ad-funnel"></div>
+    <div class="ad-funnel" id="ad-funnel">{['Signed up', 'Added a chess account', 'Finished a review'].map((k) => (
+      <p><span>{k}</span><i style="--w:0%"></i><b>–</b></p>
+    ))}</div>
     <h2 class="sec-h" id="ad-days-h">By day</h2>
     <div class="c-table-wrap" tabindex="0" role="region" aria-label="Days table, scrolls sideways"><table class="c-table ad-table" id="ad-days-table"></table></div>
     <div class="ad-two">

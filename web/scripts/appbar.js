@@ -7,7 +7,6 @@ function show(user) {
   const $ = (s) => document.querySelector(s);
   $('#me-name').textContent = user.name;
   $('#me-av').textContent = [...user.name][0].toUpperCase();
-  $('#me').hidden = false;
   const badge = $('#me-plan');
   // No plan names while billing is off: everyone has everything.
   badge.hidden = !features().billing || user.plan === 'free' || !user.plan;

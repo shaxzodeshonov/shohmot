@@ -23,9 +23,11 @@ const here = (k: string) => (k === current ? 'page' : undefined);
   <div class="bar-actions">
     <slot />
     <a class="btn btn-solid" href="/pricing.html" id="upgrade" hidden>Upgrade</a>
-    <a class="me-chip" href="/settings.html" id="me" title="Settings and account" aria-current={here('settings')} hidden>
-      <span class="me-av" id="me-av" aria-hidden="true"></span><span id="me-name"></span><span class="plan-badge" id="me-plan" hidden></span>
-    </a>
   </div>
+  <!-- In place from the first paint (these pages are for signed-in people), so
+       the bar doesn't grow when the name comes in. On phones it sits beside the wordmark. -->
+  <a class="me-chip" href="/settings.html" id="me" title="Settings and account" aria-current={here('settings')}>
+    <span class="me-av" id="me-av" aria-hidden="true"></span><span class="me-name" id="me-name"></span><span class="plan-badge" id="me-plan" hidden></span>
+  </a>
 </header>
 <script>import '../scripts/appbar.js';</script>
