@@ -2,11 +2,22 @@
 // A number spelled in chess material: pawn = 1, knight or bishop = 3,
 // rook = 5, queen = 9. The sets are picked by hand so neighbouring sections
 // look different (6 is two knights, not a rook and a pawn); numbers past the
-// table are made up from the biggest pieces.
+// table are made up from the biggest pieces. The icons are simple
+// silhouettes in the text's own colour (currentColor), so they read as part
+// of the label.
 interface Props { n: number }
 const { n } = Astro.props;
 const NAME: Record<string, string> = { P: 'pawn', N: 'knight', B: 'bishop', R: 'rook', Q: 'queen' };
 const SETS: Record<number, string> = { 1: 'P', 2: 'PP', 3: 'B', 4: 'BP', 5: 'R', 6: 'NN', 7: 'BBP', 8: 'RB', 9: 'Q' };
+// 24×24 silhouettes. Every piece stands on the same base.
+const BASE = 'M6 19.2h12a1 1 0 0 1 1 1V21a.8.8 0 0 1-.8.8H5.8A.8.8 0 0 1 5 21v-.8a1 1 0 0 1 1-1z';
+const ICON: Record<string, string> = {
+  P: `M12 3.6a3.1 3.1 0 0 1 2 5.5h.6a.9.9 0 0 1 0 1.8h-.9l1.3 7.2H9l1.3-7.2h-.9a.9.9 0 0 1 0-1.8h.6a3.1 3.1 0 0 1 2-5.5z ${BASE}`,
+  N: `M8.2 18.2h8.4c.2-3.7 0-7-1.2-9.6-1.1-2.4-3-4-5.2-4.6l-.2-1.4-1.4 1.8c-1.2.6-2 1.6-2.4 2.8l-1.6 3.2c-.2.5 0 1 .5 1.2l.9.4c.4.2.9.1 1.2-.2l1.4-1.2c.7 0 1.4-.2 2-.6.2 1.4-.4 2.6-1.4 3.8-.8 1-1.2 2.5-1 4.4zM9.6 6.8a.7.7 0 1 0-1.4 0 .7.7 0 0 0 1.4 0z ${BASE}`,
+  B: `M12 2.2a1.4 1.4 0 0 1 .9 2.5c2.6 1.7 3.9 4.2 3.3 6.6-.2.8-.6 1.5-1.1 2h-6.2c-.5-.5-.9-1.2-1.1-2-.6-2.4.7-4.9 3.3-6.6A1.4 1.4 0 0 1 12 2.2zm-2.6 12.1h5.2l1.1 4.1H8.3z ${BASE}`,
+  R: `M7 3.8h2.2v1.9h1.7V3.8h2.2v1.9h1.7V3.8H17v4.1l-1.6 1.4v8.9H8.6V9.3L7 7.9z ${BASE}`,
+  Q: `M4.6 7.6a1.4 1.4 0 1 1 1.6 1.4l1.6 5.3 2.3-6a1.4 1.4 0 1 1 3.8 0l2.3 6 1.6-5.3a1.4 1.4 0 1 1 1.6-1.4l-2.2 10.6H6.8z ${BASE}`,
+};
 function greedy(x: number) {
   let out = '';
   for (const [code, v] of [['Q', 9], ['R', 5], ['B', 3], ['P', 1]] as const) while (x >= v) { out += code; x -= v; }
@@ -16,5 +27,5 @@ const pieces = [...(SETS[n] || greedy(n))];
 const label = pieces.map((p) => NAME[p]).join(' + ');
 ---
 <span class="piece-count" role="img" aria-label={`${n}: ${label}`} title={`${label} = ${n}`}>
-  {pieces.map((p) => <img src={`/pieces/w${p}.svg`} alt="" width="45" height="45" loading="lazy" decoding="async" />)}
+  {pieces.map((p) => <svg viewBox="0 0 24 24" aria-hidden="true"><path d={ICON[p]} fill="currentColor" fill-rule="evenodd" /></svg>)}
 </span>
