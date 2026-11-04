@@ -7,7 +7,7 @@ import '../styles/app.css';
 <Base title="Shohmot" description="Today's games on each Chess.com and Lichess account: how many of each type you played, and how many you lost." guard>
 
   <AppBar current="counter">
-    <p class="status" id="status" aria-live="polite"><span class="status-dot"></span><span id="status-text">Connecting</span></p>
+    <p class="status" id="status" aria-live="polite" hidden><span class="status-dot"></span><span id="status-text">Connecting</span></p>
     <a class="btn" href="/analysis.html#setup" data-astro-prefetch="false">Set up position</a>
     <button class="btn" id="sync-now" type="button">Sync now</button>
     <button class="btn" id="open-accounts" type="button">Accounts</button>
