@@ -2,7 +2,7 @@
 // guard's notifications (and opens the app when one is tapped), and shows a
 // small offline page when there's no connection. It caches nothing else, so
 // a deploy is never hidden behind an old copy.
-const OFFLINE = 'shohmot-offline-v1';
+const OFFLINE = 'shohmot-offline-v2';
 const OFFLINE_HTML = `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Offline · Shohmot</title>
 <body style="margin:0;min-height:100vh;display:grid;place-items:center;background:#1b140f;color:#efe1c6;font-family:system-ui,sans-serif;padding:1rem">
 <div style="max-width:26rem"><h1 style="font-size:1.75rem;margin:0 0 .5rem">You’re offline</h1>
@@ -14,11 +14,22 @@ self.addEventListener('install', (e) => {
   self.skipWaiting();
 });
 self.addEventListener('activate', (e) => {
-  e.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((k) => k.startsWith('shohmot-offline') && k !== OFFLINE).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
+  e.waitUntil(Promise.all([
+    caches.keys().then((keys) => Promise.all(keys.filter((k) => k.startsWith('shohmot-offline') && k !== OFFLINE).map((k) => caches.delete(k)))),
+    // Navigation preload: the browser asks for the page while this worker is
+    // still starting up, so having a worker never slows a page down.
+    self.registration.navigationPreload && self.registration.navigationPreload.enable(),
+  ]).then(() => self.clients.claim()));
 });
 self.addEventListener('fetch', (e) => {
   if (e.request.mode !== 'navigate') return;
-  e.respondWith(fetch(e.request).catch(() => caches.match('/__offline')));
+  e.respondWith((async () => {
+    try {
+      return (await e.preloadResponse) || (await fetch(e.request));
+    } catch {
+      return caches.match('/__offline');
+    }
+  })());
 });
 self.addEventListener('notificationclick', (e) => {
   e.notification.close();
