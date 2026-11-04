@@ -391,6 +391,9 @@ import { LABELS } from './review/analysis.mjs';
     const el = $('#status');
     const text = $('#status-text');
     $('#sync-now').disabled = syncing;
+    // The sync clock is for admins; everyone else only hears when the server
+    // can't be reached.
+    el.hidden = !(me && me.admin) && connection !== 'offline';
     if (syncing) { el.dataset.state = 'syncing'; text.textContent = 'Syncing…'; return; }
     const next = Math.max(0, Math.round((nextSyncAt - Date.now()) / 1000));
     if (connection === 'offline') {
@@ -638,6 +641,7 @@ import { LABELS } from './review/analysis.mjs';
 
   function showUser(user) {
     me = user;
+    renderStatus();
     if (state) renderBanners();
   }
   onUser(showUser);
