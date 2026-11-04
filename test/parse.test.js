@@ -57,3 +57,18 @@ test('account list from the query string is validated and deduped', () => {
   assert.equal(parseAccounts(null).length, 0);
   assert.equal(parseAccounts('lichess:a1,lichess:b2,lichess:c3,lichess:d4,lichess:e5').length, 4);
 });
+
+test('pgnMoves keeps only the moves', () => {
+  const { pgnMoves, movesOfChesscom, movesOfLichess } = require('../src/parse');
+  const pgn = '[Event "Live Chess"]\n[White "a"]\n\n1. e4 {[%clk 0:02:59.9]} 1... e5 {[%clk 0:02:58]} 2. Nf3 $1 Nc6 3. Bb5 a6 (3... Nf6 4. O-O) 4. Ba4 1-0\n';
+  assert.deepEqual(pgnMoves(pgn), { moves: 'e4 e5 Nf3 Nc6 Bb5 a6 Ba4', fen: null });
+  assert.equal(pgnMoves('[SetUp "1"]\n[FEN "8/8/8/8/8/8/8/K6k w - - 0 1"]\n\n1. Kb2 Kg2 1/2-1/2').fen, '8/8/8/8/8/8/8/K6k w - - 0 1');
+  const cc = movesOfChesscom({ uuid: 'u1', url: 'x', end_time: 100, time_class: 'blitz', rated: true, rules: 'chess', pgn,
+    white: { username: 'Me', rating: 900, result: 'win' }, black: { username: 'b', rating: 950, result: 'resigned' } }, 'me');
+  assert.deepEqual(cc, { id: 'u1', end: 100000, color: 'w', result: 'win', rating: 900, speed: 'blitz', opponent: 'b', moves: 'e4 e5 Nf3 Nc6 Bb5 a6 Ba4' });
+  assert.equal(movesOfChesscom({ ...{ uuid: 'u2', rules: 'chess960', pgn, white: { username: 'me' }, black: {} } }, 'me'), null);
+  const li = movesOfLichess({ id: 'abcdefgh', createdAt: 1, lastMoveAt: 2, speed: 'rapid', rated: true, variant: 'standard', status: 'mate', winner: 'black',
+    moves: 'e4 e5', players: { white: { user: { id: 'me', name: 'Me' }, rating: 1500 }, black: { user: { id: 'x', name: 'X' }, rating: 1490 } } }, 'me');
+  assert.equal(li.moves, 'e4 e5');
+  assert.equal(li.color, 'w');
+});

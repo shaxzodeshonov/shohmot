@@ -5,7 +5,6 @@
 
 /* Signed in or not is known before first paint (Base.astro), so the right
    buttons show from the start. */
-html[data-auth="in"] [data-signed-out], html:not([data-auth="in"]) [data-signed-in] { display: none !important; }
 html { scroll-behavior: smooth; }
 [id] { scroll-margin-top: 5rem; }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
@@ -182,6 +181,10 @@ html { scroll-behavior: smooth; }
 .auth-status[data-kind="busy"] { color: var(--muted); }
 .auth-switch { margin-top: 1.5rem; color: var(--muted); text-align: center; }
 .auth-switch a { color: var(--sage); font-weight: 700; }
+.field-link { color: var(--sage); font-weight: 600; font-size: 0.8125rem; text-decoration: none; }
+.field-link:hover { text-decoration: underline; text-underline-offset: 0.1875rem; }
+.auth-legal { margin-top: 0.875rem; color: var(--faint); font-size: 0.8125rem; text-align: center; }
+.auth-legal a { color: var(--muted); }
 .auth-note { margin-top: 2rem; padding: 0.875rem 1rem; border-radius: 0.75rem; background: var(--raise); color: var(--faint); font-size: 0.8125rem; display: flex; gap: 0.625rem; }
 .auth-note svg { width: 1rem; height: 1rem; flex: none; margin-top: 0.125rem; color: var(--sage); }
 
@@ -203,3 +206,38 @@ html { scroll-behavior: smooth; }
   .float-chip::before { animation: none; }
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
+
+/* ---------- reading pages (legal) ---------- */
+.prose { max-width: 44rem; margin: 3.5rem auto 4rem; color: var(--muted); font-size: 1.0625rem; }
+.prose h1 { color: var(--ink); font-size: clamp(2.25rem, 1.5rem + 2.5vw, 3.25rem); font-weight: 800; letter-spacing: -0.04em; line-height: 1.05; }
+.prose-date { color: var(--faint); font-size: 0.875rem; margin: 0.75rem 0 2rem; }
+.prose h2 { color: var(--ink); font-size: 1.375rem; font-weight: 700; letter-spacing: -0.02em; margin: 2.25rem 0 0.75rem; }
+.prose p { margin: 0 0 1rem; text-wrap: pretty; }
+.prose ul { margin: 0 0 1rem; padding-left: 1.25rem; display: grid; gap: 0.5rem; }
+.prose b { color: var(--ink); font-weight: 600; }
+.prose a { color: var(--sage); }
+.lic { width: 100%; border-collapse: collapse; margin: 1.5rem 0; font-size: 0.9375rem; }
+.lic th { text-align: left; color: var(--faint); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; padding: 0 0.75rem 0.5rem 0; }
+.lic td { padding: 0.75rem 0.75rem 0.75rem 0; border-top: 1px solid var(--line); vertical-align: top; }
+@media (max-width: 40em) { .lic thead { display: none; } .lic td { display: block; border: 0; padding: 0.125rem 0; } .lic tr { display: block; border-top: 1px solid var(--line); padding: 0.75rem 0; } }
+
+/* ---------- training and brilliant-move mock-ups ---------- */
+.tm-card { background: rgb(232 135 107 / 0.08); border: 1px solid rgb(232 135 107 / 0.45); border-radius: 0.875rem; padding: 0.875rem 1rem; display: grid; gap: 0.5rem; }
+.tm-h { font-weight: 700; color: var(--loss); }
+.tm-h b { color: var(--loss); }
+.tm-row { display: flex; gap: 0.5rem; align-items: center; color: var(--muted); font-size: 0.9375rem; }
+.tm-row b { color: var(--ink); }
+.tm-train { display: grid; grid-template-columns: 9rem 1fr; gap: 1rem; margin-top: 1rem; align-items: center; }
+.tm-side { display: grid; gap: 0.375rem; }
+.tm-side small { color: var(--faint); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; font-size: 0.75rem; }
+.tm-side strong { font-size: 1.125rem; line-height: 1.2; }
+.tm-ok { color: var(--win); font-weight: 700; }
+.tm-next { color: var(--muted); font-size: 0.875rem; }
+.bm-weeks { display: grid; grid-template-columns: repeat(12, 1fr); gap: 0.25rem; height: 4rem; align-items: end; margin-bottom: 1rem; }
+.bm-weeks i { background: #1baca6; border-radius: 0.1875rem 0.1875rem 0 0; }
+.bm-item { display: grid; grid-template-columns: 8rem 1fr; gap: 1rem; align-items: center; background: var(--bg); border-radius: 0.875rem; padding: 0.75rem; }
+.bm-item strong { display: block; font-size: 1.375rem; font-weight: 800; }
+.bm-item em { font-style: normal; color: #1baca6; }
+.bm-item small { display: block; color: var(--muted); font-size: 0.875rem; }
+.auth-status a { color: var(--sage); }
+.fine a { color: var(--muted); }

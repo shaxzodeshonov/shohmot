@@ -30,11 +30,37 @@ What makes it quick:
 
 Vercel runs `astro build` and serves `dist/`, and the files in `api/` run as functions (see `vercel.json`). Import the GitHub repo in Vercel, or run `npx vercel --prod` from this folder.
 
-Accounts need a database, because Vercel functions don't keep files. In the Vercel project, open **Storage → Create → Upstash for Redis** (free tier is plenty) and connect it to the project: that sets `KV_REST_API_URL` and `KV_REST_API_TOKEN` (or `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`), which `src/store.js` reads. Redeploy. Without it, sign-up answers "Accounts aren't set up on this server yet".
+Accounts need a database, because Vercel functions don't keep files:
+
+1. Make a free Redis database at [console.upstash.com](https://console.upstash.com).
+2. Copy its REST URL and token into the Vercel project's environment variables, as `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`.
+3. Redeploy.
+
+`src/store.js` also finds Vercel's `KV_REST_API_*` names, with or without a prefix. `/api/health` says what it found or what's missing. Without a database, sign-up says so and points to `/demo.html`: the counter on well-known players' public games, which needs no database.
+
+A ready-made admin login: set `ADMIN_EMAILS` and `ADMIN_PASSWORD`, and the first sign-in with them creates the account. Or run `npm run seed -- email "Name" 'password' [lichess:user]` against any store.
+
+## Plans
+
+Everything is **free for everyone** until Stripe is set up (`STRIPE_SECRET_KEY` and `STRIPE_PRICE_PRO`). While billing is off:
+
+- every account gets every feature, with no daily limits and the full 26 weeks;
+- anyone can coach;
+- the site shows no plans, prices or Upgrade buttons.
+
+Setting the Stripe env vars switches the plans on without a code change (`src/plans.js`: `hasPro`, `canCoach`). See `LAUNCH.md` for going live, and `.env.example` for every setting.
 
 ## Pages
 
 - `/` is the landing page: a hero, a section for each feature and a footer. Each feature also has its own page at `/features/<name>.html`, generated from `web/data/features.ts` (game counter, game review, analysis board, set up & play).
+- `/review.html`, **no account needed**: paste a Lichess link or any PGN for a full review, then share it as an image (`web/scripts/review/share.mjs`) or copy its link. Pasted games never leave the browser. `/analysis.html` is open to everyone too.
+- `/privacy.html`, `/terms.html`, `/licenses.html`: the legal pages. Who runs the service and the governing law come from `PUBLIC_*` env vars (`web/data/site.ts`). `/sitemap.xml` and `/robots.txt` are generated at build time.
+- Account pages:
+  - `/train.html` (Training), `/brilliants.html` and `/settings.html`.
+  - `/coach.html`: an invite link and each student's week, with every game a click away from a review.
+  - `/join.html?code=…`: where a student accepts a coach.
+  - `/admin.html`, for emails in `ADMIN_EMAILS`: visitors, sign-ups, the funnel, and which features get used.
+- `/forgot.html`, `/reset.html` and `/verify.html`: password reset and email confirmation. The tokens travel in the link's `#hash`.
 - `/signup.html` and `/login.html`: create an account (your name, email, password) or sign in. Both send you on to the page you were going to.
 - `/app.html` is the main page, the game counter. It, `review.html` and `analysis.html` need you to be signed in (`web/layouts/Base.astro` sends you to sign in otherwise). Old `/?accounts=…` links go to `/app.html?accounts=…`.
 
@@ -86,6 +112,51 @@ What the review shows:
 - **Move sounds**: a wooden tock for a move, a brighter clack for a capture, two tocks for castling, a ping for check and promotion and a chime on mate. No sound files are copied from any chess site; these are built in the browser, sample by sample, from a click of noise and the decaying tones a wooden piece rings at (`web/scripts/review/sound.mjs`). The speaker button (or M) mutes them.
 - **Analysis board** button: opens the game on the analysis board at the move shown.
 - Keys: ← → Home End, N for your next mistake, F to flip, M for sound, Esc to drop a picked piece.
+
+## Mistakes and training
+
+**After every game.** While the counter is open, each new game gets a quick check (`web/scripts/training/analyze.mjs`):
+
+- Stockfish lite analyses every position in this tab, at depth 12 and at most 0.7 s a position, losses first. A game takes a few seconds.
+- Moves are labelled by the same code as the full review (`web/scripts/review/label.mjs`).
+- If you made mistakes, a card appears on the counter: "You lost to X. Here's what to work on." It lists up to three of your worst moves, each with what went wrong ("It allows mate in 1", "It leaves a piece to be taken") and the better move. Its buttons are **Train these positions**, **Full review** and **Dismiss**.
+- Games with mistakes get an "N to train" badge in the game list.
+- The same check also finds brilliant moves.
+
+**Training** (`/train.html`). Each mistake, miss or blunder you made becomes a position to solve: find the better move. The engine's choice counts, and so does any move nearly as good.
+
+- **Scheduling** (spaced repetition, `web/scripts/training/store.mjs`): solve a position on the first try and it comes back after 1, 3, 7 and 21 days, then it's learned. Miss it, or need a hint or a second try, and it comes back in 10 minutes.
+- **"What to work on"** counts your mistakes by kind (left a piece hanging, allowed a mate, missed a mate, lost material, missed a chance, let the position slip) and by game phase, with a tip for the most common kind.
+- **"Check older games"** goes back through your losses.
+- **Free vs Pro:** free accounts train 5 positions a day and check losses from the last 7 days. Pro has no daily limit and checks 26 weeks.
+- **Overrides:** a full review overrides the quick check for its game, but keeps your training progress.
+- **Storage:** everything is kept in the browser (`shohmot-training:v1`).
+
+## Brilliant moves
+
+**How a move becomes Brilliant** (`isBrilliant` in `web/scripts/review/analysis.mjs`), following Chess.com's published description, since its exact formula is private:
+
+- It's a **piece sacrifice** (`web/scripts/review/sacrifice.mjs`): right after the move, the opponent can win a knight, bishop, rook or queen, net of anything the move captured (2+ pawns' worth, so the exchange counts and pawn grabs don't). It's worked out with a static exchange on legal first captures, so a piece left hanging counts even when taking it would lose, which is the classic brilliant move that a check of the engine's line alone misses.
+- It's the **best move, or nearly**.
+- You're **not worse** afterwards.
+- You **weren't winning anyway**: the best other move must not have been crushing already.
+- Book moves and forced moves never count.
+- It's **more generous at lower ratings**, read from the PGN's WhiteElo/BlackElo. The thresholds are in `BRILLIANT`, one row per rating band.
+
+**Every game on your accounts** (`/brilliants.html`, scan in `web/scripts/brilliants/scan.mjs`). Checking every move with Stockfish would take hours, so:
+
+1. `GET /api/moves` returns the moves of each game, a window at a time (a month on Chess.com, a week on Lichess).
+2. chess.js replays every game and keeps your moves that sacrifice a piece. This takes a few milliseconds a game and usually finds none to three.
+3. Stockfish lite (depth 14) looks only at those positions, before and after the move.
+4. The results are kept in the browser (`shohmot-brilliants:v1`), so a game is never checked twice.
+
+A full review of a game overwrites the scan's answer for that game, because it searches deeper. The counter checks today's new games on its own, shows "!! N brilliant", and marks those games in the list. Free accounts scan the last 7 days; Pro scans all 26 weeks.
+
+**Tuning against Chess.com.** Chess.com's API returns accuracy but not move labels, so the thresholds can't be fitted automatically. To check them:
+
+1. Collect games where Chess.com's Game Review showed a Brilliant, and some where it didn't.
+2. Review those games here, and compare the moves each site marked.
+3. Adjust `BRILLIANT`.
 
 ## Analysis board
 

@@ -1,0 +1,56 @@
+---
+import Base from '../layouts/Base.astro';
+import AppBar from '../components/AppBar.astro';
+import '../styles/review.css';
+import '../styles/pages.css';
+---
+<Base title="Training · Shohmot" description="Train on the positions where you went wrong in your own games, until you find the right move every time." guard>
+  <AppBar current="train" />
+  <main class="page wide-page train">
+    <section class="tr-head">
+      <div>
+        <h1 class="page-title">Training</h1>
+        <p class="muted" id="tr-sub">The positions where you went wrong in your own games. Find the move you missed.</p>
+      </div>
+      <dl class="tr-stats" id="tr-stats"></dl>
+    </section>
+
+    <div class="banners" id="banners" aria-live="polite"></div>
+
+    <section class="tr-main" id="tr-main" aria-label="Training position">
+      <div class="tr-board-wrap">
+        <div class="tr-who" id="tr-top"></div>
+        <div class="cb" id="board" role="img" aria-label="Position"></div>
+        <div class="tr-who" id="tr-bottom"></div>
+      </div>
+      <div class="tr-panel">
+        <p class="tr-count muted small" id="tr-count"></p>
+        <h2 class="tr-prompt" id="tr-prompt">Loading…</h2>
+        <p class="muted" id="tr-context"></p>
+        <div class="tr-feedback" id="tr-feedback" aria-live="polite"></div>
+        <div class="tr-actions">
+          <button class="btn" type="button" id="tr-hint">Hint</button>
+          <button class="btn" type="button" id="tr-show">Show answer</button>
+          <button class="btn btn-solid" type="button" id="tr-next" hidden>Next position</button>
+          <a class="btn" id="tr-review" href="/review.html" data-astro-prefetch="false" hidden>See the game</a>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="tr-work-h">
+      <h2 class="sec-h" id="tr-work-h">What to work on</h2>
+      <div class="tr-work" id="tr-work"></div>
+    </section>
+
+    <section class="bz-scan" aria-labelledby="tr-old-h">
+      <div class="bz-scan-top">
+        <h2 id="tr-old-h">Check older games</h2>
+        <button class="btn" type="button" id="tr-old-go">Check my losses</button>
+      </div>
+      <p class="muted small" id="tr-old-status">The counter checks each new game on its own. This goes back through your older losses to find more positions to train.</p>
+      <div class="progress-bar" hidden id="tr-old-bar-wrap"><i id="tr-old-bar"></i></div>
+    </section>
+    <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+  </main>
+  <script>import '../scripts/training/page.js';</script>
+</Base>

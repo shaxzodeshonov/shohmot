@@ -1,6 +1,7 @@
 // The sign-up and sign-in forms. Both post JSON to the server, which sets an
 // HttpOnly session cookie, then go on to the page the visitor came for.
 import { remember, signedIn } from './session.js';
+import { track } from './track.js';
 
 (() => {
   'use strict';
@@ -47,10 +48,13 @@ import { remember, signedIn } from './session.js';
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
         say(body.error || 'Something went wrong. Try again.');
+        // No database yet: point people at what works without an account.
+        if (res.status === 503) status.insertAdjacentHTML('beforeend', ' Meanwhile, try the <a href="/demo.html">live demo</a> or the <a href="/review.html">free game review</a>.');
         submit.disabled = false;
         return;
       }
-      remember(body.user);
+      remember(body.user, body.features);
+      if (mode === 'login') track('login');
       say(mode === 'register' ? `Welcome, ${body.user.name}!` : 'Signed in.', 'ok');
       location.replace(nextPage());
     } catch {

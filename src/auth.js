@@ -9,6 +9,7 @@
 const crypto = require('crypto');
 const { promisify } = require('util');
 const { store, NotConfiguredError } = require('./store');
+const plans = require('./plans');
 
 const scrypt = promisify(crypto.scrypt);
 const SCRYPT = { N: 32768, r: 8, p: 3 };
@@ -171,7 +172,34 @@ function readCookie(req) {
 const sha256 = (s) => crypto.createHash('sha256').update(s).digest('hex');
 const userKey = (email) => `user:${email}`;
 const sessionKey = (token) => `session:${sha256(token)}`;
-const publicUser = (u) => ({ name: u.name, email: u.email, accounts: u.accounts || [], createdAt: u.createdAt });
+const USERS = 'users'; // the set of every account's email
+
+// What the browser gets to see of an account: never the hash or billing ids.
+function publicUser(u) {
+  return {
+    name: u.name,
+    email: u.email,
+    accounts: u.accounts || [],
+    createdAt: u.createdAt,
+    verified: u.verified === true,
+    plan: plans.planOf(u),
+    planRenews: u.planRenews || null,
+    planCancels: !!u.planCancels,
+    prefs: plans.prefsFor(u),
+    coach: u.coach ? { name: u.coachName || 'Your coach' } : null,
+    admin: plans.isAdmin(u),
+    // What this account can use right now (everything, while billing is off).
+    unlocked: plans.hasPro(u),
+    canCoach: plans.canCoach(u),
+    students: (u.students || []).length,
+  };
+}
+
+async function getUser(email) {
+  const raw = await store.get(userKey(email));
+  return raw ? JSON.parse(raw) : null;
+}
+const saveUser = (user) => store.set(userKey(user.email), JSON.stringify(user));
 
 async function rateLimit(key, max, windowSec, message) {
   if ((await store.incr(`rl:${key}`, windowSec)) > max) throw new HttpError(429, message);
@@ -179,21 +207,37 @@ async function rateLimit(key, max, windowSec, message) {
 
 // A new session for every sign-in; any session this browser already had is
 // deleted, so an old cookie can't outlive the sign-in that replaced it.
+// The session remembers when it started, so "sign out everywhere" and a
+// password reset can end every older one (user.sessionsAfter).
 async function startSession(req, res, email) {
   const old = readCookie(req);
   if (old) await store.del(sessionKey(old));
   const token = crypto.randomBytes(32).toString('base64url');
-  await store.set(sessionKey(token), email, { ttl: SESSION_TTL });
+  await store.set(sessionKey(token), JSON.stringify({ e: email, at: Date.now() }), { ttl: SESSION_TTL });
   res.setHeader('Set-Cookie', cookieHeaders(req, token, SESSION_TTL));
 }
 
 async function currentUser(req) {
   const token = readCookie(req);
   if (!token || !/^[A-Za-z0-9_-]{43}$/.test(token)) return null;
-  const email = await store.get(sessionKey(token));
-  if (!email) return null;
-  const raw = await store.get(userKey(email));
-  return raw ? JSON.parse(raw) : null;
+  const raw = await store.get(sessionKey(token));
+  if (!raw) return null;
+  // Sessions from before this format hold just the email.
+  let session;
+  try { session = raw.startsWith('{') ? JSON.parse(raw) : { e: raw, at: 0 }; } catch { return null; }
+  const user = await getUser(session.e);
+  if (!user || (user.sessionsAfter && session.at < user.sessionsAfter)) return null;
+  return user;
+}
+
+// Like currentUser, but answers 401 when nobody is signed in.
+async function requireUser(req, res) {
+  const user = await currentUser(req);
+  if (!user) {
+    res.setHeader('Set-Cookie', cookieHeaders(req, '', 0));
+    throw new HttpError(401, 'You’re not signed in.');
+  }
+  return user;
 }
 
 // Turn thrown errors into JSON answers.
@@ -203,7 +247,7 @@ function handler(fn) {
       await fn(req, res);
     } catch (err) {
       if (err instanceof HttpError) return send(res, err.status, { error: err.message });
-      if (err instanceof NotConfiguredError) return send(res, 503, { error: 'Accounts aren’t set up on this server yet: it needs a database (see the README).' });
+      if (err instanceof NotConfiguredError) return send(res, 503, { error: 'Accounts aren’t available yet: this site’s database isn’t connected. If you run this site, open /api/health to see what’s missing.' });
       console.error(err);
       send(res, 500, { error: 'Something went wrong on the server.' });
     }
@@ -225,13 +269,31 @@ const register = handler(async (req, res) => {
   if (await isBreached(body.password)) {
     throw new HttpError(400, 'That password has shown up in a data breach, so attackers try it first. Pick another.');
   }
-  const user ={ id: crypto.randomUUID(), name, email, hash: await hashPassword(body.password), accounts: [], createdAt: Date.now() };
+  const user = { id: crypto.randomUUID(), name, email, hash: await hashPassword(body.password), accounts: [], createdAt: Date.now(), verified: false, indexed: true };
   if (!(await store.set(userKey(email), JSON.stringify(user), { nx: true }))) {
     throw new HttpError(409, 'There’s already an account with this email. Sign in instead.');
   }
+  await store.set(`uid:${user.id}`, email);
+  await store.sadd(USERS, email);
   await startSession(req, res, email);
-  send(res, 201, { user: publicUser(user) });
+  await hooks.afterRegister(req, user);
+  send(res, 201, { user: publicUser(user), features: features() });
 });
+
+// Other modules hook in here (email verification, analytics) without auth.js
+// having to require them, which keeps the require graph a tree.
+const hooks = { afterRegister: async () => {} };
+const features = () => ({ mail: !!process.env.RESEND_API_KEY || !process.env.VERCEL, billing: plans.billingOn() });
+
+// Older accounts join the users set (and get a uid) the first time they're seen.
+async function index(user) {
+  if (user.indexed) return;
+  user.id ||= crypto.randomUUID();
+  user.indexed = true;
+  await store.sadd(USERS, user.email);
+  await store.set(`uid:${user.id}`, user.email);
+  await saveUser(user);
+}
 
 // POST /api/login { email, password }
 const login = handler(async (req, res) => {
@@ -244,7 +306,10 @@ const login = handler(async (req, res) => {
   const failKey = `rl:login-fail:${sha256(email)}`;
   if (Number(await store.get(failKey)) >= 10) throw new HttpError(429, 'Too many wrong passwords for this email. Wait 15 minutes and try again.');
   const raw = await store.get(userKey(email));
-  const user = raw ? JSON.parse(raw) : null;
+  let user = raw ? JSON.parse(raw) : null;
+  // The ready-made admin account: the first sign-in with an ADMIN_EMAILS
+  // address and ADMIN_PASSWORD creates it, so there's a login without signing up.
+  if (!user) user = await seedAdmin(email, password);
   const ok = await verifyPassword(password, user ? user.hash : await getDummyHash());
   if (!user || !ok) {
     await store.incr(failKey, 900);
@@ -252,8 +317,22 @@ const login = handler(async (req, res) => {
   }
   await store.del(failKey);
   await startSession(req, res, email);
-  send(res, 200, { user: publicUser(user) });
+  await index(user);
+  send(res, 200, { user: publicUser(user), features: features() });
 });
+
+async function seedAdmin(email, password) {
+  const want = process.env.ADMIN_PASSWORD || '';
+  if (!want || !plans.isAdmin({ email })) return null;
+  const a = Buffer.from(crypto.createHash('sha256').update(password).digest());
+  const b = Buffer.from(crypto.createHash('sha256').update(want).digest());
+  if (!crypto.timingSafeEqual(a, b)) return null;
+  const user = { id: crypto.randomUUID(), name: process.env.ADMIN_NAME || 'Admin', email, hash: await hashPassword(password), accounts: [], createdAt: Date.now(), verified: true, indexed: true };
+  if (!(await store.set(userKey(email), JSON.stringify(user), { nx: true }))) return JSON.parse(await store.get(userKey(email)));
+  await store.set(`uid:${user.id}`, email);
+  await store.sadd(USERS, email);
+  return user;
+}
 
 // POST /api/logout
 const logout = handler(async (req, res) => {
@@ -264,21 +343,25 @@ const logout = handler(async (req, res) => {
   send(res, 200, { ok: true }, { 'Set-Cookie': cookieHeaders(req, '', 0) });
 });
 
-// GET /api/me -> the signed-in user; POST /api/me { name?, accounts? } updates them.
+// GET /api/me -> the signed-in user; POST /api/me { name?, accounts?, prefs? } updates them.
 const me = handler(async (req, res) => {
   onlyMethods(req, 'GET', 'HEAD', 'POST');
-  const user = await currentUser(req);
-  if (!user) {
-    res.setHeader('Set-Cookie', cookieHeaders(req, '', 0));
-    throw new HttpError(401, 'You’re not signed in.');
-  }
+  const user = await requireUser(req, res);
   if (req.method === 'POST') {
     const body = await readJson(req);
     if (body.name !== undefined) user.name = cleanName(body.name);
     if (body.accounts !== undefined) user.accounts = cleanAccounts(body.accounts);
-    await store.set(userKey(user.email), JSON.stringify(user));
+    if (body.prefs !== undefined) user.prefs = plans.cleanPrefs(body.prefs, user);
+    await saveUser(user);
   }
-  send(res, 200, { user: publicUser(user) });
+  await index(user);
+  send(res, 200, { user: publicUser(user), features: features() });
 });
 
-module.exports = { register, login, logout, me, hashPassword, verifyPassword, isBreached, clientIp };
+module.exports = {
+  register, login, logout, me, hashPassword, verifyPassword, isBreached, clientIp,
+  // shared with the other API modules
+  HttpError, send, handler, onlyMethods, readJson, checkSameOrigin, currentUser, requireUser, startSession,
+  cookieHeaders, readCookie, rateLimit, getUser, saveUser, publicUser, userKey, sessionKey, sha256,
+  cleanName, cleanEmail, checkPassword, getDummyHash, hooks, features, USERS,
+};

@@ -1,0 +1,19 @@
+---
+import Screen from './Screen.astro';
+import MiniBoard from './MiniBoard.astro';
+---
+<Screen label="After a loss: what to work on, and the position to train">
+  <div class="tm-card">
+    <p class="tm-h">You lost to <b>Quickmate</b>. Here’s what to work on.</p>
+    <p class="tm-row"><span class="tag" style="--k:#dc4f42">??</span><b>3… Nf6</b> allows mate in 1. Better was <b>Qe7</b>.</p>
+  </div>
+  <div class="tm-train">
+    <MiniBoard id="train" fen="r1bqkbnr/pppp1ppp/2n5/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR" hl={['d8', 'e7']} arrows={['d8e7']} />
+    <div class="tm-side">
+      <small>Training</small>
+      <strong>Find the better move for Black.</strong>
+      <span class="tm-ok">Correct! Qe7 holds f7.</span>
+      <span class="tm-next">Back in 3 days</span>
+    </div>
+  </div>
+</Screen>

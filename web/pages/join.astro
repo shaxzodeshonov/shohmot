@@ -1,0 +1,22 @@
+---
+import Base from '../layouts/Base.astro';
+import Logo from '../components/Logo.astro';
+import '../styles/site.css';
+---
+<Base title="Join your coach · Shohmot" description="Join your coach on Shohmot." bodyClass="auth-page" guard>
+  <header class="auth-top">
+    <a class="wordmark" href="/app.html"><Logo /> Shohmot</a>
+  </header>
+  <main class="auth-main">
+    <div class="auth-card">
+      <h1 id="j-title">Join your coach</h1>
+      <p id="j-text">Checking the invite link…</p>
+      <div class="cta-row" id="j-actions" hidden>
+        <button class="btn btn-solid btn-lg" type="button" id="j-yes">Join</button>
+        <a class="btn btn-lg" href="/app.html">Not now</a>
+      </div>
+      <p class="auth-status" id="auth-status" aria-live="polite"></p>
+    </div>
+  </main>
+  <script>import '../scripts/join.js';</script>
+</Base>

@@ -1,0 +1,46 @@
+---
+import Base from '../layouts/Base.astro';
+import AppBar from '../components/AppBar.astro';
+import '../styles/pages.css';
+---
+<Base title="Brilliant moves · Shohmot" description="Every brilliant move you've played on Chess.com and Lichess, found by Stockfish in your browser." guard>
+  <AppBar current="brilliants" />
+  <main class="page wide-page brilliants">
+    <section class="bz-hero">
+      <span class="bz-mark" aria-hidden="true">!!</span>
+      <div>
+        <h1 class="page-title" id="bz-title">Your brilliant moves</h1>
+        <p class="muted" id="bz-sub">Sacrifices that were also the best move, in every game on your accounts.</p>
+      </div>
+    </section>
+
+    <div class="banners" id="banners" aria-live="polite"></div>
+
+    <section class="bz-scan" aria-labelledby="bz-scan-h">
+      <div class="bz-scan-top">
+        <h2 id="bz-scan-h">Scan</h2>
+        <label class="depth-pick">Engine
+          <select id="bz-engine">
+            <option value="lite">Lite (faster)</option>
+            <option value="full">Full (more accurate, 99 MB once)</option>
+          </select>
+        </label>
+        <button class="btn" type="button" id="bz-toggle">Pause</button>
+      </div>
+      <div class="progress-bar"><i id="bz-bar"></i></div>
+      <p class="muted small" id="bz-status" aria-live="polite">Starting…</p>
+      <p class="muted small">Runs in this tab: Shohmot finds every sacrifice with the rules of chess, then Stockfish checks only those. Close the tab any time; it carries on from where it stopped. Open a game’s full review for the final word on it.</p>
+    </section>
+
+    <section aria-labelledby="bz-weeks-h">
+      <h2 class="sec-h" id="bz-weeks-h">By week</h2>
+      <div class="bz-weeks" id="bz-weeks" role="img"></div>
+    </section>
+
+    <section aria-labelledby="bz-list-h">
+      <h2 class="sec-h" id="bz-list-h">Every brilliant move</h2>
+      <ol class="bz-list" id="bz-list"></ol>
+    </section>
+  </main>
+  <script>import '../scripts/brilliants/page.js';</script>
+</Base>

@@ -4,8 +4,7 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
-const handlers = require('./src/handlers');
-const auth = require('./src/auth');
+const { dispatch } = require('./src/routes');
 
 const PORT = Number(process.env.PORT) || 3001;
 const PUBLIC = path.join(__dirname, 'dist');
@@ -18,17 +17,12 @@ const TYPES = {
   '.svg': 'image/svg+xml',
   '.woff2': 'font/woff2',
   '.wasm': 'application/wasm',
+  '.png': 'image/png',
+  '.webmanifest': 'application/manifest+json',
+  '.xml': 'application/xml; charset=utf-8',
+  '.txt': 'text/plain; charset=utf-8',
 };
 
-const API = {
-  '/api/state': handlers.state,
-  '/api/check': handlers.check,
-  '/api/game': handlers.game,
-  '/api/register': auth.register,
-  '/api/login': auth.login,
-  '/api/logout': auth.logout,
-  '/api/me': auth.me,
-};
 // The headers vercel.json sets on every response (security headers and the
 // Content-Security-Policy), read from there so the two never drift apart.
 const SECURITY_HEADERS = Object.fromEntries(
@@ -59,14 +53,7 @@ http.createServer(async (req, res) => {
   const { pathname } = new URL(req.url, 'http://localhost');
   for (const [k, v] of Object.entries(SECURITY_HEADERS)) res.setHeader(k, v);
   try {
-    // The account routes check their own methods (some take POST).
-    if (API[pathname]) {
-      if (!Object.values(auth).includes(API[pathname]) && req.method !== 'GET' && req.method !== 'HEAD') {
-        res.writeHead(405);
-        return res.end();
-      }
-      return await API[pathname](req, res);
-    }
+    if (pathname.startsWith('/api/')) return await dispatch(req, res);
     if (req.method !== 'GET' && req.method !== 'HEAD') {
       res.writeHead(405);
       return res.end();

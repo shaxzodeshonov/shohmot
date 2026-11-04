@@ -1,0 +1,51 @@
+---
+import SitePage from '../layouts/SitePage.astro';
+import Prose from '../components/Prose.astro';
+import { SITE } from '../data/site';
+---
+<SitePage title="Privacy policy · Shohmot" description="What Shohmot keeps about you, why, where, and how to get it or delete it.">
+  <Prose title="Privacy policy" updated={SITE.legalUpdated}>
+    <p>Shohmot is run by {SITE.operator}. This page says what we keep about you, why, and what you can do about it. The short version: we keep as little as we can, most of your chess analysis never leaves your browser, and you can download or delete your account at any time from Settings.</p>
+
+    <h2>What we keep on our server</h2>
+    <ul>
+      <li><b>Your account:</b> your name, your email address, and your password, which is stored only as a salted scrypt hash, never in a form anyone can read.</li>
+      <li><b>Your chess usernames</b> on Chess.com and Lichess, which are public on those sites, and your settings (tilt guard, weekly email).</li>
+      <li><b>Sign-in sessions:</b> a random token in a cookie on your device. We keep only a hash of it, for up to 30 days.</li>
+      <li><b>Coaching:</b> if you join a coach, which coach. Your coach can see your chess usernames and your games, and you can leave whenever you like.</li>
+      <li><b>Short-lived security data:</b> your IP address, used to limit sign-in attempts and requests. It is kept in counters that expire after at most an hour.</li>
+      <li><b>Usage counts:</b> how many pages were viewed and how often features were used each day, with no cookies. Unique visitors are counted using a hash of your IP address and browser that changes every day, so nobody can be followed from one day to the next.</li>
+    </ul>
+
+    <h2>What stays in your browser</h2>
+    <p>Game reviews, analysis boards, your brilliant moves and your training positions are worked out by Stockfish on your own device and kept in your browser’s storage. We don’t receive them. Games you paste into the review page aren’t sent to us either. Clearing your browser’s site data deletes them.</p>
+
+    <h2>Who else is involved</h2>
+    <ul>
+      <li><b>Chess.com and Lichess:</b> we ask their public APIs for the games of the usernames you add. Your browser also asks Lichess for cloud evaluations of positions in a review.</li>
+      <li><b>Vercel</b> hosts the site and <b>Upstash</b> stores the account data above.</li>
+      <li><b>Resend</b> delivers our emails: password resets, email confirmation and the weekly recap.</li>
+      <li><b>Have I Been Pwned:</b> when you choose a password, we send the first 5 characters of its SHA-1 hash, never the password, to check it hasn’t leaked in a data breach.</li>
+      <li><b>unpkg</b> serves the Stockfish engine file your browser downloads.</li>
+    </ul>
+    <p>We don’t sell your data, show ads, or use advertising or tracking cookies.</p>
+
+    <h2>Emails</h2>
+    <p>We send account emails (confirming your address, resetting your password) and, if it’s on, a weekly recap of your games. Each recap has a one-click unsubscribe link, and you can turn it off in Settings.</p>
+
+    <h2>Your choices</h2>
+    <ul>
+      <li><b>Download</b> everything we keep about you: Settings → Your data → Download my data.</li>
+      <li><b>Delete</b> your account: Settings → Your data → Delete my account. It’s removed straight away.</li>
+      <li><b>Correct</b> your name or chess accounts in Settings at any time.</li>
+      <li>For anything else, including questions about this policy, write to <a href={`mailto:${SITE.support}`}>{SITE.support}</a>.</li>
+    </ul>
+    <p>Depending on where you live (for example under the EU and UK GDPR), you also have the right to object to how we use your data, and to complain to your data protection authority. We use your data to provide the service you signed up for (contract) and to keep it secure (legitimate interest).</p>
+
+    <h2>Children</h2>
+    <p>Shohmot isn’t meant for children under 13. If you are under the age where you can agree to this yourself where you live, ask a parent or guardian to agree for you.</p>
+
+    <h2>Changes</h2>
+    <p>If this policy changes in a way that matters, we’ll say so on the site and, for big changes, by email. The date at the top shows the last change.</p>
+  </Prose>
+</SitePage>

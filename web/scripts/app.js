@@ -1,4 +1,10 @@
-import { currentUser, freshUser, remember, signOut } from './session.js';
+import { currentUser, freshUser, remember, features, onUser, api, unlocked } from './session.js';
+import { track } from './track.js';
+import { tiltAlerts } from './tilt.mjs';
+import { foundIn } from './brilliants/store.mjs';
+import { analyzeMany } from './training/analyze.mjs';
+import { latestUnseen, markSeen, gameInfo } from './training/store.mjs';
+import { LABELS } from './review/analysis.mjs';
 
 (() => {
   'use strict';
@@ -33,6 +39,14 @@ import { currentUser, freshUser, remember, signOut } from './session.js';
 
   const SYNC_MS = 60000;
   const MAX_ACCOUNTS = 4;
+  // The no-sign-up demo (demo.html): these accounts, nothing saved to a
+  // Shohmot account, no mistake checks (they'd fill this browser's training
+  // with someone else's games), and a shorter history so it loads quickly.
+  const DEMO_LIST = (document.querySelector('#dashboard').dataset.demo || '').split(',').filter(Boolean)
+    .map((p) => { const [platform, username] = p.split(':'); return { platform, username }; });
+  const DEMO = DEMO_LIST.length > 0;
+  const DEMO_KEY = 'shohmot-demo-accounts';
+  const DEMO_DAYS = 30;
   // The chess accounts live on the signed-in Shohmot account (see startup at the bottom).
   let myAccounts = [];
   // A link like /app.html?accounts=chesscom:name,lichess:name opens straight onto those accounts.
@@ -125,6 +139,7 @@ import { currentUser, freshUser, remember, signOut } from './session.js';
       return;
     }
     renderHero();
+    renderBanners();
     renderRows();
     renderGames();
     renderBoard();
@@ -145,7 +160,8 @@ import { currentUser, freshUser, remember, signOut } from './session.js';
     const t = tally(accts.flatMap((a) => filtered(a.games)));
     const syncedOnce = accts.some((a) => a.lastSyncAt);
     const h = $('#headline');
-    const lead = isToday() ? 'Today you' : isYesterday() ? 'Yesterday you' : `On ${shortDayFmt.format(day)} you`;
+    const who = DEMO ? 'they' : 'you';
+    const lead = isToday() ? `Today ${who}` : isYesterday() ? `Yesterday ${who}` : `On ${shortDayFmt.format(day)} ${who}`;
     if (!accts.length) h.textContent = 'Add an account to start counting.';
     else if (!syncedOnce) h.textContent = 'Counting your games…';
     else if (!t.n) h.textContent = isToday() ? 'No games yet today.' : `No games ${dayWord()}.`;
@@ -155,10 +171,13 @@ import { currentUser, freshUser, remember, signOut } from './session.js';
       ? `<i class="w" style="width:${pct(t.w, t.n)}%"></i><i class="d" style="width:${pct(t.d, t.n)}%"></i><i class="l" style="width:${pct(t.l, t.n)}%"></i>`
       : '';
     $('#split').hidden = !t.n;
+    const shown = accts.flatMap((a) => filtered(a.games).map((g) => foundIn(a.platform, g.id).length));
+    const bril = shown.reduce((s, n) => s + n, 0);
     $('#hero-sub').innerHTML = t.n
       ? `<span><i class="k" style="background:var(--win)"></i><b>${t.w}</b> won</span>
          <span><i class="k" style="background:var(--draw)"></i><b>${t.d}</b> drawn</span>
-         <span><i class="k" style="background:var(--loss)"></i><b>${t.l}</b> lost, ${Math.round(pct(t.l, t.n))}%</span>`
+         <span><i class="k" style="background:var(--loss)"></i><b>${t.l}</b> lost, ${Math.round(pct(t.l, t.n))}%</span>
+         ${bril ? `<a class="bril-chip" href="/brilliants.html" data-astro-prefetch="false"><i>!!</i><b>${bril}</b> brilliant</a>` : ''}`
       : '';
   }
 
@@ -234,7 +253,7 @@ import { currentUser, freshUser, remember, signOut } from './session.js';
       <li class="game">
         <span class="res ${g.result}">${label[g.result]}</span>
         <span class="opp">
-          <span class="opp-name"><a href="${esc(g.url)}" target="_blank" rel="noopener">vs ${esc(g.opponent)}</a>${g.oppRating ? ` <small>${g.oppRating}</small>` : ''}</span>
+          <span class="opp-name"><a href="${esc(g.url)}" target="_blank" rel="noopener">vs ${esc(g.opponent)}</a>${g.oppRating ? ` <small>${g.oppRating}</small>` : ''}${brilBadge(g, a)}${mistakeBadge(g, a)}</span>
           <span class="opp-meta"><i style="--c:var(--${g.speed})">${SPEED_NAME[g.speed]}</i> on ${esc(a.username)}, ${PLATFORM[a.platform]}${g.rated ? '' : ', casual'}</span>
         </span>
         <span class="when" title="${esc(new Date(g.end).toLocaleString())}">${isToday() ? ago(g.end) : timeFmt.format(g.end)}</span>
@@ -242,10 +261,77 @@ import { currentUser, freshUser, remember, signOut } from './session.js';
       </li>`).join('') || `<li class="empty">${gamesFilter === 'loss' ? `No losses ${dayWord()}.` : `No games ${dayWord()}.`}</li>`;
   }
 
+  // How many mistakes a checked game had; it opens Training on that game.
+  function mistakeBadge(g, a) {
+    const info = gameInfo(a.platform, g.id);
+    if (!info || !info.n) return '';
+    return ` <a class="mist-badge" href="/train.html?game=${encodeURIComponent(`${a.platform}:${g.id}`)}" data-astro-prefetch="false" title="${info.n} position${info.n === 1 ? '' : 's'} to train from this game">${info.n} to train</a>`;
+  }
+
+  // "!!" on games with a brilliant move; it opens the review at the first one.
+  function brilBadge(g, a) {
+    const found = foundIn(a.platform, g.id);
+    if (!found.length) return '';
+    const qs = new URLSearchParams({ p: a.platform, u: a.username, id: g.id, t: String(g.end), ply: String(found[0].ply) });
+    return ` <a class="bril-badge" href="/review.html?${esc(qs.toString())}" data-astro-prefetch="false" title="${found.length} brilliant move${found.length === 1 ? '' : 's'}: ${esc(found.map((b) => b.san).join(', '))}">!!${found.length > 1 ? ` ${found.length}` : ''}</a>`;
+  }
+
+  // Every new game today gets a quick check by Stockfish, in this tab: your
+  // mistakes become training positions (and a "what to work on" card here),
+  // and brilliant moves are counted. Losses go first.
+  let checkJob = null;
+  let checking = null; // { opponent } while a game is being checked
+  function analyzeToday() {
+    if (checkJob || !state) return;
+    const from = startOfDay(Date.now());
+    const todo = state.accounts.filter((a) => a.games.some((g) => g.end >= from && (g.variant === 'chess' || g.variant === 'standard') && !gameInfo(a.platform, g.id)));
+    if (!todo.length) return;
+    checkJob = analyzeMany({
+      accounts: todo.map((a) => ({ platform: a.platform, username: a.username })),
+      since: from,
+      onProgress: (p) => {
+        const m = /vs (.+)…$/.exec(p.note || '');
+        checking = m ? { opponent: m[1] } : null;
+        renderBanners();
+      },
+      onGame: (platform, g, out) => {
+        if (out.brilliants.length) toast(`Brilliant move against ${g.opponent}: ${out.brilliants.map((b) => b.san).join(', ')}!`);
+        render();
+      },
+      onDone: () => { checkJob = null; checking = null; render(); },
+    });
+  }
+
+  // The "what to work on" card for the newest game with mistakes.
+  function needsWorkHtml() {
+    if (!myAccounts.length) return '';
+    const nw = latestUnseen(myAccounts, startOfDay(Date.now()) - DAY);
+    if (!nw) return checking ? `<div class="banner" data-kind="info"><p><b>Checking your game vs ${esc(checking.opponent)}…</b> Stockfish is looking for your mistakes. It takes a few seconds.</p></div>` : '';
+    const g = nw.g;
+    const counts = {};
+    for (const it of nw.items) counts[it.label] = (counts[it.label] || 0) + 1;
+    const summary = ['blunder', 'mistake', 'miss'].filter((l) => counts[l]).map((l) => plural(counts[l], LABELS[l].name.toLowerCase(), `${LABELS[l].name.toLowerCase()}${l === 'miss' ? 'es' : 's'}`)).join(', ');
+    const head = g.r === 'loss' ? `You lost to ${g.o}. Here’s what to work on.` : `Your game vs ${g.o}: room to improve.`;
+    const list = nw.items.slice(0, 3).map((it) => {
+      const no = `${Math.ceil(it.ply / 2)}${it.ply % 2 ? '.' : '…'}`;
+      return `<li><b class="nw-move" data-l="${it.label}">${no} ${esc(it.san)}${LABELS[it.label].mark}</b> ${esc(it.why)} <span class="muted">Better was <b>${esc(it.bestSan)}</b>.</span></li>`;
+    }).join('');
+    const first = nw.items[0];
+    const qs = new URLSearchParams({ p: nw.platform, u: g.u || '', id: nw.id, t: String(g.e), ply: String(first.ply) });
+    return `<div class="banner needs-work" data-kind="warn">
+      <div class="nw-body"><p><b>${esc(head)}</b> ${esc(summary)}${g.acc != null ? ` · accuracy ${Math.round(g.acc)}` : ''}.</p><ol class="nw-list">${list}</ol></div>
+      <div class="banner-actions">
+        <a class="btn btn-solid" href="/train.html?game=${encodeURIComponent(nw.key)}" data-astro-prefetch="false">Train ${nw.items.length === 1 ? 'this position' : `these ${nw.items.length} positions`}</a>
+        <a class="btn" href="/review.html?${esc(qs.toString())}" data-astro-prefetch="false">Full review</a>
+        <button class="btn" type="button" data-seen="${esc(nw.key)}">Dismiss</button>
+      </div></div>`;
+  }
+
   // Stockfish review, for standard chess only.
   function reviewLink(g, a) {
     if (g.variant !== 'chess' && g.variant !== 'standard') return '<span></span>';
     const qs = new URLSearchParams({ p: a.platform, u: a.username, id: g.id, t: String(g.end) });
+    if (DEMO) qs.set('guest', '1'); // keeps a demo player's game out of this browser's training
     return `<a class="review-link" href="/review.html?${esc(qs.toString())}" data-astro-prefetch="false">Review</a>`;
   }
 
@@ -321,9 +407,10 @@ import { currentUser, freshUser, remember, signOut } from './session.js';
   // Saving a new account list: load its games right away (behind the pop-up).
   let accountsEdited = false; // changed here since the page opened
   function useAccounts(list) {
+    if (list.length > myAccounts.length && !DEMO) track('account_added');
     accountsEdited = true;
     myAccounts = list.map(({ platform, username }) => ({ platform, username }));
-    saveAccounts();
+    if (DEMO) store.set(DEMO_KEY, myAccounts); else saveAccounts();
     state = null;
     lastSyncAt = null;
     connection = 'connecting';
@@ -361,12 +448,13 @@ import { currentUser, freshUser, remember, signOut } from './session.js';
       const res = await fetch('/api/me', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accounts: myAccounts }) });
       if (res.status === 401) location.replace('/login.html?next=/app.html');
       else if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      else remember((await res.json()).user);
+      else { const out = await res.json(); remember(out.user, out.features); }
     } catch {
       toast('Couldn’t save your accounts to Shohmot. They’ll be lost on reload.');
     }
   }
   let syncAgain = false;
+  let demoMoved = false;
   // With nothing on screen yet, first ask for just the last two days (fast),
   // then fetch the full 26 weeks for the calendar right after.
   async function sync(fresh = false) {
@@ -381,7 +469,7 @@ import { currentUser, freshUser, remember, signOut } from './session.js';
       let accounts = [];
       if (myAccounts.length) {
         const q = myAccounts.map((a) => `${a.platform}:${a.username}`).join(',');
-        const res = await fetch(`/api/state?accounts=${encodeURIComponent(q)}${quick ? '&days=2' : ''}${fresh ? `&fresh=${Date.now()}` : ''}`);
+        const res = await fetch(`/api/state?accounts=${encodeURIComponent(q)}${quick ? '&days=2' : DEMO ? `&days=${DEMO_DAYS}` : ''}${fresh ? `&fresh=${Date.now()}` : ''}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         accounts = (await res.json()).accounts;
       }
@@ -406,6 +494,13 @@ import { currentUser, freshUser, remember, signOut } from './session.js';
       lastSyncAt = now;
       render();
       if (added.length) toast(`New games: ${added.join(', ')}`);
+      if (!quick && !DEMO) analyzeToday();
+      // In the demo, if nobody has played yet today, show their latest day.
+      if (!quick && DEMO && !demoMoved) {
+        demoMoved = true;
+        const latest = Math.max(0, ...state.accounts.flatMap((a) => a.games.map((g) => g.end)));
+        if (latest && latest < startOfDay(Date.now())) setDay(latest);
+      }
     } catch {
       connection = 'offline';
     } finally {
@@ -480,17 +575,83 @@ import { currentUser, freshUser, remember, signOut } from './session.js';
   }, 1000);
   setInterval(() => { if (state && isToday()) { renderRows(); renderGames(); } }, 30000);
 
-  $('#sign-out').addEventListener('click', signOut);
+  // ---------- banners: confirm your email, and the tilt guard ----------
+  let me = null;
+  const SEEN = 'shohmot-tilt-seen';
+  const seen = () => store.get(SEEN, []);
+  function dismiss(key) { store.set(SEEN, [key, ...seen().filter((k) => k !== key)].slice(0, 40)); renderBanners(); }
+
+  function renderBanners() {
+    const box = $('#banners');
+    const out = [];
+    if (DEMO) {
+      const famous = JSON.stringify(myAccounts) === JSON.stringify(DEMO_LIST);
+      out.push(`<div class="banner" data-kind="info"><p><b>${famous ? 'This is Shohmot on Hikaru’s and Magnus Carlsen’s public games.' : 'This is Shohmot on the accounts you picked.'}</b> Press Review on any game for a free Stockfish review. With a free account, every game you play is checked for mistakes, turned into training, and your brilliant moves are found.</p>
+        <div class="banner-actions">${famous ? '' : '<button class="btn" type="button" data-act="demo-reset">Back to the famous players</button>'}<a class="btn btn-solid" href="/signup.html" data-signed-out>Create free account</a></div></div>`);
+      box.innerHTML = out.join('');
+      return;
+    }
+    if (me && !me.verified && features().mail) {
+      out.push(`<div class="banner" data-kind="info"><p><b>Confirm your email.</b> We sent a link to ${esc(me.email)}. It lets you reset your password and get your weekly recap.</p>
+        <div class="banner-actions"><button class="btn" type="button" data-act="resend">Send it again</button></div></div>`);
+    }
+    if (state) out.push(needsWorkHtml());
+    if (me && state) {
+      const games = state.accounts.flatMap((a) => a.games);
+      for (const alert of tiltAlerts(games, me.prefs || {}, { pro: unlocked(me), now: Date.now() })) {
+        if (seen().includes(alert.key)) continue;
+        notifyOnce(alert);
+        const extra = alert.upsell && features().billing ? '<a class="btn" href="/pricing.html">See Pro</a>' : '';
+        out.push(`<div class="banner" data-kind="${alert.kind}"><p><b>${esc(alert.title)}</b> ${esc(alert.text)}</p>
+          <div class="banner-actions">${extra}<a class="btn" href="/settings.html#tilt">Settings</a><button class="btn btn-solid" type="button" data-dismiss="${esc(alert.key)}">${alert.upsell ? 'Not now' : 'OK, taking a break'}</button></div></div>`);
+      }
+    }
+    box.innerHTML = out.join('');
+  }
+
+  // A desktop notification when an alert first shows up, if it's on (Pro) and allowed.
+  function notifyOnce(alert) {
+    const key = `n:${alert.key}`;
+    if (seen().includes(key)) return;
+    store.set(SEEN, [key, ...seen()].slice(0, 40));
+    if (!alert.upsell) track('tilt_alert');
+    if (!me.prefs || !me.prefs.notify || alert.upsell || !('Notification' in window) || Notification.permission !== 'granted') return;
+    const opts = { body: alert.text, icon: '/icons/icon-192.png', tag: 'shohmot-tilt', data: { url: '/app.html' } };
+    navigator.serviceWorker && navigator.serviceWorker.ready
+      ? navigator.serviceWorker.ready.then((r) => r.showNotification(alert.title, opts)).catch(() => {})
+      : new Notification(alert.title, opts);
+  }
+
+  $('#banners').addEventListener('click', async (e) => {
+    const d = e.target.closest('[data-dismiss]');
+    if (d) return dismiss(d.dataset.dismiss);
+    const seenBtn = e.target.closest('[data-seen]');
+    if (seenBtn) { markSeen(seenBtn.dataset.seen); return renderBanners(); }
+    if (e.target.closest('[data-act="demo-reset"]')) { try { localStorage.removeItem(DEMO_KEY); } catch { /* */ } useAccounts(DEMO_LIST); return; }
+    const r = e.target.closest('[data-act="resend"]');
+    if (r) {
+      r.disabled = true;
+      try { toast((await api('/api/account', { action: 'resend-verify' })).message); } catch (err) { toast(err.message); }
+      r.disabled = false;
+    }
+  });
 
   function showUser(user) {
-    $('#me-name').textContent = user.name;
-    $('#me-av').textContent = [...user.name][0].toUpperCase();
-    $('#me').hidden = false;
+    me = user;
+    if (state) renderBanners();
   }
+  onUser(showUser);
 
   syncControls();
   $('#sync-now').hidden = true;
   render();
+  if (DEMO) {
+    myAccounts = store.get(DEMO_KEY, null) || DEMO_LIST;
+    $('#sync-now').hidden = false;
+    renderBanners();
+    sync();
+    return;
+  }
   // Starts from last visit's copy of the profile (instant), then follows what
   // the server says if the accounts changed on another device.
   currentUser().then((user) => {

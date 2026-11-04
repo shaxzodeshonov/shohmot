@@ -4,26 +4,26 @@ import Mock from '../components/mocks/Mock.astro';
 import Arrow from '../components/Arrow.astro';
 import { FEATURES, plain } from '../data/features';
 ---
-<SitePage title="Shohmot · Today’s chess games, counted" description="Shohmot follows your Chess.com and Lichess accounts, counts today’s games and losses for each type, and reviews any game with Stockfish in your browser.">
+<SitePage title="Shohmot · Learn from every chess game you play" description="Free for Chess.com and Lichess players: today’s games counted, every game checked for mistakes, your mistakes turned into training, your brilliant moves found, and free Stockfish game reviews in your browser.">
   <section class="landing-hero" aria-labelledby="hero-title">
     <div class="hero-copy">
       <span class="eyebrow">For Chess.com and Lichess players</span>
-      <h1 id="hero-title">How many games did you play <em>today?</em></h1>
-      <p class="lead">Shohmot follows your Chess.com and Lichess accounts and counts today’s bullet, blitz, rapid and daily games, and the ones you lost. Then it reviews any of them with Stockfish, right in your browser.</p>
+      <h1 id="hero-title">Learn from every game you <em>play.</em></h1>
+      <p class="lead">Shohmot follows your Chess.com and Lichess accounts. After every game it tells you what went wrong and turns your mistakes into training. It also counts today’s games and finds every brilliant move you play, all with Stockfish in your browser.</p>
       <div class="cta-row">
         <a class="btn btn-solid btn-lg" href="/signup.html" data-signed-out>Create free account</a>
         <a class="btn btn-solid btn-lg" href="/app.html" data-signed-in>Open Shohmot</a>
-        <a class="btn btn-lg" href="#features">See what it does</a>
+        <a class="btn btn-lg" href="/demo.html" data-astro-prefetch="false">Try the live demo</a>
       </div>
-      <p class="fine">Free. Up to four accounts. Your accounts follow you to any device.</p>
+      <p class="fine">Free. No Chess.com or Lichess login needed. The <a href="/demo.html" data-astro-prefetch="false">demo</a> and the <a href="/review.html" data-astro-prefetch="false">game review</a> work without an account.</p>
     </div>
     <div class="hero-visual"><Mock slug="counter" seed={5} /></div>
   </section>
 
   <div id="features" class="features-intro reveal">
     <span class="eyebrow">Features</span>
-    <h2>Count it, review it, play it out.</h2>
-    <p>Four tools, one account. Everything runs in your browser, and none of it needs a Chess.com or Lichess login.</p>
+    <h2>Play, see what went wrong, train it.</h2>
+    <p>Six tools, one free account. Everything runs in your browser, and none of it needs a Chess.com or Lichess login.</p>
   </div>
 
   {FEATURES.map((f, i) => (
