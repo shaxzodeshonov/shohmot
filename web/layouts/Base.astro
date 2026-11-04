@@ -27,6 +27,8 @@ const canonical = `${SITE.url}${path === '/' ? '/' : path}`;
   <script is:inline define:vars={{ guard }}>
     var signedIn = document.cookie.split('; ').indexOf('shohmot_in=1') !== -1;
     document.documentElement.dataset.auth = signedIn ? 'in' : 'out';
+    // How many chess accounts last visit's profile had: the counter keeps room for that many rows.
+    if (signedIn) try { var me = JSON.parse(localStorage.getItem('shohmot-me')); if (me && me.accounts) document.documentElement.dataset.accounts = Math.min(4, me.accounts.length); } catch (e) {}
     if (guard && !signedIn) location.replace('/login.html?next=' + encodeURIComponent(location.pathname + location.search + location.hash));
   </script>
   <title>{title}</title>
@@ -47,6 +49,7 @@ const canonical = `${SITE.url}${path === '/' ? '/' : path}`;
   <slot name="head" />
 </head>
 <body class={bodyClass}>
+  <a class="skip-link" href="#main">Skip to content</a>
   <slot />
   <script>
   import '../scripts/track.js';

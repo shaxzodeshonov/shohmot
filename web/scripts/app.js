@@ -2,26 +2,19 @@ import { currentUser, freshUser, remember, features, onUser, api, unlocked } fro
 import { track } from './track.js';
 import { tiltAlerts } from './tilt.mjs';
 import { foundIn } from './brilliants/store.mjs';
-import { analyzeMany } from './training/analyze.mjs';
-import { latestUnseen, markSeen, gameInfo } from './training/store.mjs';
-import { LABELS } from './review/analysis.mjs';
+import { PLATFORM, BASE_SPEEDS, ALL_SPEEDS, SPEED_NAME, esc, cellLabel, gridHeadHtml, loadingRowsHtml } from './counter-markup.js';
+
+// The mistake check (Stockfish, chess.js, the move labeller) is only needed
+// once the games are in, so it loads alongside instead of holding up the
+// first draw of the counter. Until it's here, games just show no badges yet.
+let training = null; // { gameInfo, latestUnseen, markSeen, LABELS }
+const trainingLoaded = Promise.all([import('./training/store.mjs'), import('./review/analysis.mjs')])
+  .then(([store, analysis]) => { training = { ...store, LABELS: analysis.LABELS }; });
 
 (() => {
   'use strict';
 
   const $ = (sel, el = document) => el.querySelector(sel);
-  const PLATFORM = { chesscom: 'Chess.com', lichess: 'Lichess' };
-  const BASE_SPEEDS = ['bullet', 'blitz', 'rapid', 'daily'];
-  const ALL_SPEEDS = ['bullet', 'blitz', 'rapid', 'classical', 'daily', 'other'];
-  const SPEED_NAME = { bullet: 'Bullet', blitz: 'Blitz', rapid: 'Rapid', classical: 'Classical', daily: 'Daily', other: 'Other' };
-  const ICON = {
-    bullet: 'M13 2 4 14h7l-1 8 9-12h-7z',
-    blitz: 'M12 2c1 3.5-2.5 5-2.5 8.5 0 1.4.8 2.5 2 2.8-.3-1.6.6-3 2-4 .2 2.4 2.5 3.4 2.5 6 0 2.6-2.2 4.7-5 4.7S6 17.9 6 15c0-5.2 6-7.4 6-13z',
-    rapid: 'M9 1h6v2H9zM12 5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17zm1 8.4V8h-2v6.5l4.3 2.5 1-1.7z',
-    classical: 'M6 2h12v5l-4 5 4 5v5H6v-5l4-5-4-5z',
-    daily: 'M7 2v2H5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2V2h-2v2H9V2zM5 9h14v10H5z',
-    other: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z',
-  };
   const WEEKS = 26;
   const DAY = 86400000;
   const nf = new Intl.NumberFormat();
@@ -42,13 +35,14 @@ import { LABELS } from './review/analysis.mjs';
   // The no-sign-up demo (demo.html): these accounts, nothing saved to a
   // Shohmot account, no mistake checks (they'd fill this browser's training
   // with someone else's games), and a shorter history so it loads quickly.
-  const DEMO_LIST = (document.querySelector('#dashboard').dataset.demo || '').split(',').filter(Boolean)
+  const DEMO_LIST = (document.querySelector('#main').dataset.demo || '').split(',').filter(Boolean)
     .map((p) => { const [platform, username] = p.split(':'); return { platform, username }; });
   const DEMO = DEMO_LIST.length > 0;
   const DEMO_KEY = 'shohmot-demo-accounts';
   const DEMO_DAYS = 30;
   // The chess accounts live on the signed-in Shohmot account (see startup at the bottom).
   let myAccounts = [];
+  let accountsKnown = false; // false until the profile (or the demo list) is in
   // A link like /app.html?accounts=chesscom:name,lichess:name opens straight onto those accounts.
   const linked = new URLSearchParams(location.search).get('accounts');
   let fromLink = [];
@@ -67,8 +61,6 @@ import { LABELS } from './review/analysis.mjs';
   let ratedOnly = store.get('shohmot-rated', false);
   let gamesFilter = 'all';
 
-  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const icon = (speed) => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ICON[speed]}" fill="currentColor" fill-rule="evenodd"/></svg>`;
   const pct = (a, b) => (b ? (a / b) * 100 : 0);
   const plural = (n, one, many) => `${nf.format(n)} ${n === 1 ? one : many}`;
 
@@ -104,6 +96,7 @@ import { LABELS } from './review/analysis.mjs';
   }
   // The four usual types are always shown; classical/other only if ever played.
   function speedColumns() {
+    if (!state) return BASE_SPEEDS;
     const seen = new Set();
     for (const a of state.accounts) for (const g of a.games) seen.add(g.speed);
     return ALL_SPEEDS.filter((s) => BASE_SPEEDS.includes(s) || seen.has(s));
@@ -130,11 +123,20 @@ import { LABELS } from './review/analysis.mjs';
     renderDay();
     if (!state) {
       // Waiting for the first answer from the server, or for the first account.
-      $('#headline').textContent = myAccounts.length ? 'Finding your games…' : 'Add an account to see today’s games.';
-      $('#hero-sub').textContent = myAccounts.length ? 'The first look can take a few seconds.' : '';
-      $('#split').hidden = true;
-      $('#rows').innerHTML = '';
-      $('#grid-head').innerHTML = '';
+      // Until the account list is known the page keeps its "Counting…" headline,
+      // and each account gets a placeholder row, so nothing jumps when the games come.
+      if (accountsKnown) {
+        $('#headline').textContent = myAccounts.length ? `Finding ${DEMO ? 'their' : 'your'} games…` : 'Add an account to see today’s games.';
+        $('#hero-sub').textContent = myAccounts.length ? 'The first look can take a few seconds.' : '';
+      }
+      $('#split').innerHTML = '';
+      if (myAccounts.length) {
+        renderGridHead(BASE_SPEEDS);
+        $('#rows').innerHTML = loadingRowsHtml(myAccounts);
+      } else if (accountsKnown) {
+        $('#grid-head').innerHTML = '';
+        $('#rows').innerHTML = '';
+      }
       $('#games').innerHTML = '';
       return;
     }
@@ -146,10 +148,13 @@ import { LABELS } from './review/analysis.mjs';
     renderStatus();
   }
 
+  // Phones get the short date, so the label stays on one line.
+  const narrow = matchMedia('(max-width: 30em)');
+  narrow.addEventListener('change', () => renderDay());
   function renderDay() {
     const today = isToday();
-    $('#day-label').innerHTML = today ? `<b>Today</b>, ${esc(longDayFmt.format(day))}`
-      : isYesterday() ? `<b>Yesterday</b>, ${esc(longDayFmt.format(day))}` : `<b>${esc(longDayFmt.format(day))}</b>`;
+    const date = esc((narrow.matches ? shortDayFmt : longDayFmt).format(day));
+    $('#day-label').innerHTML = today ? `<b>Today</b>, ${date}` : isYesterday() ? `<b>Yesterday</b>, ${date}` : `<b>${date}</b>`;
     $('#day-next').disabled = today;
     $('#day-today').hidden = today;
     document.title = today ? 'Shohmot' : `Shohmot, ${shortDayFmt.format(day)}`;
@@ -163,14 +168,13 @@ import { LABELS } from './review/analysis.mjs';
     const who = DEMO ? 'they' : 'you';
     const lead = isToday() ? `Today ${who}` : isYesterday() ? `Yesterday ${who}` : `On ${shortDayFmt.format(day)} ${who}`;
     if (!accts.length) h.textContent = 'Add an account to start counting.';
-    else if (!syncedOnce) h.textContent = 'Counting your games…';
+    else if (!syncedOnce) h.textContent = `Counting ${DEMO ? 'their' : 'your'} games…`;
     else if (!t.n) h.textContent = isToday() ? 'No games yet today.' : `No games ${dayWord()}.`;
     else h.innerHTML = `${lead} played ${plural(t.n, 'game', 'games')} and lost <span class="n-lost">${nf.format(t.l)}</span>.`;
 
     $('#split').innerHTML = t.n
       ? `<i class="w" style="width:${pct(t.w, t.n)}%"></i><i class="d" style="width:${pct(t.d, t.n)}%"></i><i class="l" style="width:${pct(t.l, t.n)}%"></i>`
       : '';
-    $('#split').hidden = !t.n;
     const shown = accts.flatMap((a) => filtered(a.games).map((g) => foundIn(a.platform, g.id).length));
     const bril = shown.reduce((s, n) => s + n, 0);
     $('#hero-sub').innerHTML = t.n
@@ -182,7 +186,7 @@ import { LABELS } from './review/analysis.mjs';
   }
 
   function cellHtml(speed, s, rt, label) {
-    const head = `<span class="cell-label" style="--c:var(--${speed})">${speed === 'total' ? '' : icon(speed)}${label}</span>`;
+    const head = cellLabel(speed, label);
     const rating = rt && rt.rating
       ? `<span class="rt">Rating <b>${rt.rating}</b>${rt.change ? `<em class="${rt.change > 0 ? 'up' : 'down'}">${rt.change > 0 ? '+' : '−'}${Math.abs(rt.change)}</em>` : ''}</span>`
       : '';
@@ -199,11 +203,15 @@ import { LABELS } from './review/analysis.mjs';
       </div>`;
   }
 
+  function renderGridHead(speeds) {
+    $('#grid-head').setAttribute('style', `--cols:${speeds.length}`);
+    $('#grid-head').innerHTML = gridHeadHtml(speeds);
+  }
+
   function renderRows() {
     const speeds = speedColumns();
     const cols = `--cols:${speeds.length}`;
-    $('#grid-head').setAttribute('style', cols);
-    $('#grid-head').innerHTML = `<span></span>${speeds.map((s) => `<span style="--c:var(--${s})">${icon(s)}${SPEED_NAME[s]}</span>`).join('')}<span class="total-h">Total</span>`;
+    renderGridHead(speeds);
 
     if (!state.accounts.length) {
       $('#rows').innerHTML = '<p class="empty">No accounts yet. Add one with the Accounts button at the top.</p>';
@@ -263,7 +271,7 @@ import { LABELS } from './review/analysis.mjs';
 
   // How many mistakes a checked game had; it opens Training on that game.
   function mistakeBadge(g, a) {
-    const info = gameInfo(a.platform, g.id);
+    const info = training && training.gameInfo(a.platform, g.id);
     if (!info || !info.n) return '';
     return ` <a class="mist-badge" href="/train.html?game=${encodeURIComponent(`${a.platform}:${g.id}`)}" data-astro-prefetch="false" title="${info.n} position${info.n === 1 ? '' : 's'} to train from this game">${info.n} to train</a>`;
   }
@@ -280,12 +288,21 @@ import { LABELS } from './review/analysis.mjs';
   // mistakes become training positions (and a "what to work on" card here),
   // and brilliant moves are counted. Losses go first.
   let checkJob = null;
+  let fullSyncDone = false; // the 26-week sync, after which today's games get checked
+  // The training code came in after the games: draw its badges and card, and start the check.
+  trainingLoaded.then(() => {
+    if (!state) return;
+    render();
+    if (fullSyncDone && !DEMO) analyzeToday();
+  }).catch(() => { /* the counter works without it */ });
   let checking = null; // { opponent } while a game is being checked
-  function analyzeToday() {
-    if (checkJob || !state) return;
+  async function analyzeToday() {
+    if (checkJob || !state || !training) return;
     const from = startOfDay(Date.now());
-    const todo = state.accounts.filter((a) => a.games.some((g) => g.end >= from && (g.variant === 'chess' || g.variant === 'standard') && !gameInfo(a.platform, g.id)));
+    const todo = state.accounts.filter((a) => a.games.some((g) => g.end >= from && (g.variant === 'chess' || g.variant === 'standard') && !training.gameInfo(a.platform, g.id)));
     if (!todo.length) return;
+    checkJob = true; // taken while the checker loads
+    const { analyzeMany } = await import('./training/analyze.mjs');
     checkJob = analyzeMany({
       accounts: todo.map((a) => ({ platform: a.platform, username: a.username })),
       since: from,
@@ -304,8 +321,9 @@ import { LABELS } from './review/analysis.mjs';
 
   // The "what to work on" card for the newest game with mistakes.
   function needsWorkHtml() {
-    if (!myAccounts.length) return '';
-    const nw = latestUnseen(myAccounts, startOfDay(Date.now()) - DAY);
+    if (!myAccounts.length || !training) return '';
+    const { LABELS } = training;
+    const nw = training.latestUnseen(myAccounts, startOfDay(Date.now()) - DAY);
     if (!nw) return checking ? `<div class="banner" data-kind="info"><p><b>Checking your game vs ${esc(checking.opponent)}…</b> Stockfish is looking for your mistakes. It takes a few seconds.</p></div>` : '';
     const g = nw.g;
     const counts = {};
@@ -497,6 +515,7 @@ import { LABELS } from './review/analysis.mjs';
       lastSyncAt = now;
       render();
       if (added.length) toast(`New games: ${added.join(', ')}`);
+      if (!quick) fullSyncDone = true;
       if (!quick && !DEMO) analyzeToday();
       // In the demo, if nobody has played yet today, show their latest day.
       if (!quick && DEMO && !demoMoved) {
@@ -588,10 +607,11 @@ import { LABELS } from './review/analysis.mjs';
     const box = $('#banners');
     const out = [];
     if (DEMO) {
+      // The banner is in the page's HTML (Counter.astro); only its wording changes.
       const famous = JSON.stringify(myAccounts) === JSON.stringify(DEMO_LIST);
-      out.push(`<div class="banner" data-kind="info"><p><b>${famous ? 'This is Shohmot on Hikaru’s and Magnus Carlsen’s public games.' : 'This is Shohmot on the accounts you picked.'}</b> Press Review on any game for a free Stockfish review. With a free account, every game you play is checked for mistakes, turned into training, and your brilliant moves are found.</p>
-        <div class="banner-actions">${famous ? '' : '<button class="btn" type="button" data-act="demo-reset">Back to the famous players</button>'}<a class="btn btn-solid" href="/signup.html" data-signed-out>Create free account</a></div></div>`);
-      box.innerHTML = out.join('');
+      $('[data-famous]', box).hidden = !famous;
+      $('[data-picked]', box).hidden = famous;
+      $('[data-act="demo-reset"]', box).hidden = famous;
       return;
     }
     if (me && !me.verified && features().mail) {
@@ -629,7 +649,7 @@ import { LABELS } from './review/analysis.mjs';
     const d = e.target.closest('[data-dismiss]');
     if (d) return dismiss(d.dataset.dismiss);
     const seenBtn = e.target.closest('[data-seen]');
-    if (seenBtn) { markSeen(seenBtn.dataset.seen); return renderBanners(); }
+    if (seenBtn) { training.markSeen(seenBtn.dataset.seen); return renderBanners(); }
     if (e.target.closest('[data-act="demo-reset"]')) { try { localStorage.removeItem(DEMO_KEY); } catch { /* */ } useAccounts(DEMO_LIST); return; }
     const r = e.target.closest('[data-act="resend"]');
     if (r) {
@@ -647,18 +667,19 @@ import { LABELS } from './review/analysis.mjs';
   onUser(showUser);
 
   syncControls();
-  $('#sync-now').hidden = true;
-  render();
   if (DEMO) {
     myAccounts = store.get(DEMO_KEY, null) || DEMO_LIST;
-    $('#sync-now').hidden = false;
+    accountsKnown = true;
+    render();
     renderBanners();
     sync();
     return;
   }
+  render();
   // Starts from last visit's copy of the profile (instant), then follows what
   // the server says if the accounts changed on another device.
   currentUser().then((user) => {
+    accountsKnown = true;
     if (user) {
       showUser(user);
       myAccounts = user.accounts;
@@ -682,6 +703,7 @@ import { LABELS } from './review/analysis.mjs';
     }
     if (fromLink.length) { useAccounts(fromLink); return; }
     $('#sync-now').hidden = !myAccounts.length;
+    render();
     // First visit: nothing saved yet, so ask for an account straight away.
     if (myAccounts.length) sync(); else popup.open();
   });

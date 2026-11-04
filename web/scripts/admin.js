@@ -33,7 +33,7 @@ async function load() {
     ['Training', t.puzzle_solved + t.puzzle_failed, `${nf.format(t.puzzle_solved)} solved`],
   ];
   if (billing) cards.push(['Paying', out.users.pro + out.users.coach, `about ${nf.format(out.mrr)} a month`]);
-  $('#ad-cards').innerHTML = cards.map(([k, v, sub]) => `<div><dt>${esc(k)}</dt><dd>${nf.format(v)}</dd><small>${esc(sub)}</small></div>`).join('');
+  $('#ad-cards').innerHTML = cards.map(([k, v, sub]) => `<div><dt>${esc(k)}</dt><dd>${nf.format(v)}<small>${esc(sub)}</small></dd></div>`).join('');
 
   const steps = out.funnel.filter((f) => billing || !['checkout_started', 'subscribed'].includes(f.step));
   const top = Math.max(1, steps[0].count);

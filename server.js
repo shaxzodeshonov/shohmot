@@ -4,6 +4,7 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const zlib = require('zlib');
 const { dispatch } = require('./src/routes');
 
 const PORT = Number(process.env.PORT) || 3001;
@@ -29,6 +30,26 @@ const SECURITY_HEADERS = Object.fromEntries(
   require('./vercel.json').headers.find((h) => h.source === '/(.*)').headers.map((h) => [h.key, h.value]),
 );
 
+// Text files are sent compressed, as Vercel does: brotli when the browser takes
+// it, else gzip. Each file is compressed once and kept until it changes.
+const COMPRESSIBLE = new Set(['.html', '.css', '.js', '.mjs', '.json', '.svg', '.webmanifest', '.xml', '.txt', '.wasm']);
+const packed = new Map(); // `${file}:${encoding}` -> { mtimeMs, body }
+function compressed(file, st, encoding) {
+  const key = `${file}:${encoding}`;
+  const hit = packed.get(key);
+  if (hit && hit.mtimeMs === st.mtimeMs) return hit.body;
+  const raw = fs.readFileSync(file);
+  const body = encoding === 'br'
+    ? zlib.brotliCompressSync(raw, { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 11, [zlib.constants.BROTLI_PARAM_SIZE_HINT]: raw.length } })
+    : zlib.gzipSync(raw, { level: 9 });
+  packed.set(key, { mtimeMs: st.mtimeMs, body });
+  return body;
+}
+function pickEncoding(req) {
+  const accept = String(req.headers['accept-encoding'] || '');
+  return /\bbr\b/.test(accept) ? 'br' : /\bgzip\b/.test(accept) ? 'gzip' : null;
+}
+
 function serveStatic(req, res, pathname) {
   const rel = pathname === '/' ? 'index.html' : decodeURIComponent(pathname).replace(/^\/+/, '');
   const file = path.resolve(PUBLIC, rel);
@@ -43,7 +64,14 @@ function serveStatic(req, res, pathname) {
     }
     // Stockfish files and Astro's bundles have a version or hash in their name, so they never change.
     const cache = rel.startsWith('vendor/stockfish-') || rel.startsWith('_astro/') ? 'public, max-age=31536000, immutable' : 'no-cache';
-    res.writeHead(200, { 'Content-Type': TYPES[path.extname(file)] || 'application/octet-stream', 'Content-Length': st.size, 'Cache-Control': cache });
+    const headers = { 'Content-Type': TYPES[path.extname(file)] || 'application/octet-stream', 'Cache-Control': cache };
+    const encoding = COMPRESSIBLE.has(path.extname(file)) && st.size > 1024 ? pickEncoding(req) : null;
+    if (encoding) {
+      const body = compressed(file, st, encoding);
+      res.writeHead(200, { ...headers, 'Content-Encoding': encoding, 'Content-Length': body.length, Vary: 'Accept-Encoding' });
+      return res.end(req.method === 'HEAD' ? undefined : body);
+    }
+    res.writeHead(200, { ...headers, 'Content-Length': st.size });
     if (req.method === 'HEAD') return res.end();
     fs.createReadStream(file).pipe(res);
   });

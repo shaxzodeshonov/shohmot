@@ -6,13 +6,13 @@ import '../styles/pages.css';
 ---
 <Base title="Training · Shohmot" description="Train on the positions where you went wrong in your own games, until you find the right move every time." guard>
   <AppBar current="train" />
-  <main class="page wide-page train">
+  <main id="main" class="page wide-page train">
     <section class="tr-head">
       <div>
         <h1 class="page-title">Training</h1>
         <p class="muted" id="tr-sub">The positions where you went wrong in your own games. Find the move you missed.</p>
       </div>
-      <dl class="tr-stats" id="tr-stats"></dl>
+      <dl class="tr-stats" id="tr-stats"><div><dt>To train</dt><dd>–</dd></div><div><dt>Learned</dt><dd>–</dd></div><div><dt>Games checked</dt><dd>–</dd></div></dl>
     </section>
 
     <div class="banners" id="banners" aria-live="polite"></div>
