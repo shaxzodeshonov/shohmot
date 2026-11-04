@@ -10,7 +10,7 @@ const here = (k: string) => (k === current ? 'page' : undefined);
     <nav class="site-nav" aria-label="Site">
       <a href="/#features" aria-current={here('features')}>Features</a>
       <a href="/demo.html" data-astro-prefetch="false">Live demo</a>
-      <a href="/review.html" data-astro-prefetch="false" aria-current={here('review-tool')}>Free game review</a>
+      <a href="/review.html" data-astro-prefetch="false" data-review-picker="user" aria-current={here('review-tool')}>Free game review</a>
       <a href="/play-yourself.html" data-astro-prefetch="false">Play yourself</a>
     </nav>
     <div class="site-actions">

@@ -8,6 +8,12 @@ if (bar) {
   onScroll();
 }
 
+// Links that go somewhere else for signed-in people (a feature that needs an
+// account: sign up first when signed out, straight there when signed in).
+if (document.documentElement.dataset.auth === 'in') {
+  for (const a of document.querySelectorAll('[data-href-in]')) a.href = a.dataset.hrefIn;
+}
+
 // Fade sections in as they scroll into view (CSS keeps them visible without JS
 // and for people who prefer less motion).
 const reveals = document.querySelectorAll('.reveal');

@@ -25,8 +25,10 @@ What makes it quick:
 - **Smooth page changes.** Pages cross-fade with cross-document View Transitions and the top bar stays still.
 - **Less to load.** The font is self-hosted and preloaded (no Google Fonts round trip); the landing page's boards and calendars are drawn at build time, so they cost no JavaScript; the public pages ship about 1 KB of script.
 - Motion is subtle and switched off for people who ask for reduced motion.
-- **Nothing jumps while data loads.** The counter's HTML has placeholder rows (as many as last visit's accounts, which the inline head script reads) and the demo's banner and rows; the headline, the win/draw/loss bar and the app bar keep their space. `web/scripts/counter-markup.js` draws the placeholders both at build time and in the browser, so they match.
-- **The counter draws first, checks later.** The mistake checker (Stockfish, chess.js, the labeller) loads alongside the counter instead of before it.
+- **The counter opens complete, in one step.** After each sync it keeps a small copy in the browser (`shohmot-counter:v1`: today's and yesterday's games, one game per type for the rating change, and a total per day for the calendar). The next visit draws the whole page from it, card and calendar included; the main area waits for that (at most 0.6 s, set by the inline head script) rather than showing a skeleton that changes shape. Sign-out clears it.
+- **Syncs ask only for what's new.** Each minute the counter fetches the last two days (or since its last answer) and merges them in; the full 26 weeks are fetched at most twice a day, or when an older day is opened. Parts of the page are only redrawn when their markup changed.
+- **Nothing jumps on a first visit either.** The HTML has placeholder rows (as many as last visit's accounts) and the demo's banner and rows; `web/scripts/counter-markup.js` draws them both at build time and in the browser, so they match.
+- **Background work stays in the background.** The quick mistake check of new games uses one or two Stockfish workers, waits until the page has settled and is on screen, and loads chess.js only then.
 - **Below-the-fold sections cost nothing until needed** (`content-visibility: auto` on the landing page's features).
 - **The service worker uses navigation preload**, so having one never slows a page down.
 - `server.js` compresses text with brotli or gzip, as Vercel does, so local measurements match production.
@@ -59,7 +61,8 @@ Setting the Stripe env vars switches the plans on without a code change (`src/pl
 
 ## Pages
 
-- `/` is the landing page: a hero, a section for each feature and a footer. Each feature also has its own page at `/features/<name>.html`, generated from `web/data/features.ts` (game counter, game review, analysis board, set up & play).
+- `/` is the landing page: a hero, a section for each feature and a footer. Each feature also has its own page at `/features/<name>.html`, generated from `web/data/features.ts`. Every feature can be tried from its section: `account: false` features (game counter via the live demo, game review, analysis board, set up & play, play yourself) open straight away; `account: true` ones (training, brilliant moves) send signed-out visitors to sign up and then on to the feature.
+- The **review pop-up** (`web/components/ReviewPicker.astro`) opens from any link with `data-review-picker` on the public pages and the review page: pick a game from your recent Chess.com or Lichess games by username, paste a Lichess link or a PGN, or open a `.pgn` file (the first game is reviewed). Without JavaScript those links go to `/review.html`.
 - `/review.html`, **no account needed**: paste a Lichess link or any PGN for a full review, then share it as an image (`web/scripts/review/share.mjs`) or copy its link. Pasted games never leave the browser. `/analysis.html` is open to everyone too.
 - `/privacy.html`, `/terms.html`, `/licenses.html`: the legal pages. Who runs the service and the governing law come from `PUBLIC_*` env vars (`web/data/site.ts`). `/sitemap.xml` and `/robots.txt` are generated at build time.
 - Account pages:

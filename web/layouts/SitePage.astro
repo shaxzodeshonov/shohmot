@@ -4,6 +4,7 @@ import Base from './Base.astro';
 import SiteBar from '../components/SiteBar.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 import CtaBand from '../components/CtaBand.astro';
+import ReviewPicker from '../components/ReviewPicker.astro';
 import '../styles/site.css';
 interface Props { title: string; description: string; current?: string }
 const { title, description, current } = Astro.props;
@@ -15,5 +16,6 @@ const { title, description, current } = Astro.props;
     <CtaBand />
   </main>
   <SiteFooter />
+  <ReviewPicker />
   <script>import '../scripts/site.js';</script>
 </Base>

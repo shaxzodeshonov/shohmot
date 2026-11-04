@@ -11,8 +11,14 @@ export interface Feature {
   ticks: string[];
   points: [string, string][];
   steps: [string, string][];
-  /** A way to try it without an account: [label, link]. */
-  try?: [string, string];
+  /**
+   * Whether it needs a free account (it works on your own games over time).
+   * Without one, the button opens it straight away; with one, signed-out
+   * visitors are sent to sign up first and come back to it.
+   */
+  account: boolean;
+  /** The button that opens it: [label, link]. The review opens the review pop-up. */
+  open: [string, string];
 }
 
 export const FEATURES: Feature[] = [
@@ -33,6 +39,9 @@ export const FEATURES: Feature[] = [
       ['Follows you around', 'Your chess accounts are saved to your Shohmot account, so they’re there on any device you sign in on.'],
     ],
     steps: [['Create an account', 'Your name, email and a password. That’s all.'], ['Add your usernames', 'Chess.com, Lichess or both, up to four.'], ['Go play', 'Shohmot counts as you go, every minute.']],
+    // The live demo counts famous players' games, or yours: it has "Try your username".
+    account: false,
+    open: ['Try the live demo', '/demo.html'],
   },
   {
     slug: 'training',
@@ -51,6 +60,8 @@ export const FEATURES: Feature[] = [
       ['Older losses too', 'Go back through the losses you played before, and turn them into training as well.'],
     ],
     steps: [['Play a game', 'Keep Shohmot open while you play.'], ['Read the card', 'What went wrong, and the better move.'], ['Train it', 'Solve the position until it sticks.']],
+    account: true,
+    open: ['Open Training', '/train.html'],
   },
   {
     slug: 'brilliants',
@@ -69,6 +80,8 @@ export const FEATURES: Feature[] = [
       ['Straight to the review', 'Every brilliant move opens in the full review at that move.'],
     ],
     steps: [['Add your accounts', 'Chess.com, Lichess or both.'], ['Open Brilliants', 'The scan starts on its own.'], ['Share them', 'Every one opens in the review.']],
+    account: true,
+    open: ['Find your brilliant moves', '/brilliants.html'],
   },
   {
     slug: 'double',
@@ -87,7 +100,8 @@ export const FEATURES: Feature[] = [
       ['Challenge friends', 'Send a link: they play your double, and you play theirs.'],
     ],
     steps: [['Put in your username', 'Lichess or Chess.com.'], ['Meet your double', 'Your style and openings, from your games.'], ['Play it', 'Then review the game or share the challenge.']],
-    try: ['Build your double', '/play-yourself.html'],
+    account: false,
+    open: ['Build your double', '/play-yourself.html'],
   },
   {
     slug: 'review',
@@ -106,7 +120,8 @@ export const FEATURES: Feature[] = [
       ['Runs on your machine', 'The server does no engine work. Results are kept, so a game opens instantly the second time.'],
     ],
     steps: [['Pick a game', 'Paste a link or PGN, or press Review in your list.'], ['Let it run', 'Quick to Deep, Strong by default.'], ['Share it', 'Press N for your next mistake, or share the review as an image.']],
-    try: ['Review a game free', '/review.html'],
+    account: false,
+    open: ['Review a game', '/review.html'],
   },
   {
     slug: 'analysis',
@@ -125,6 +140,8 @@ export const FEATURES: Feature[] = [
       ['Picks up where you left off', 'Your analysis is kept in the browser, so it’s still there after a reload.'],
     ],
     steps: [['Open the board', 'Paste a PGN or FEN, or just start moving.'], ['Explore', 'Every side line is kept in the move tree.'], ['Check with Stockfish', 'Its lines update as you move.']],
+    account: false,
+    open: ['Open the board', '/analysis.html'],
   },
   {
     slug: 'play',
@@ -143,6 +160,8 @@ export const FEATURES: Feature[] = [
       ['Into the move tree', 'Every move goes into the tree like any other, so you can analyse the game afterwards.'],
     ],
     steps: [['Set it up', 'Place pieces, pick who moves.'], ['Analyze or play', 'Analyze shows Stockfish’s best move; Play starts a game.'], ['Review', 'Step back through the moves and try others.']],
+    account: false,
+    open: ['Set up a position', '/analysis.html#setup'],
   },
 ];
 

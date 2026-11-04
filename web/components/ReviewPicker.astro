@@ -1,0 +1,117 @@
+---
+// The review pop-up: pick a game to review, no account needed. Any link with
+// data-review-picker opens it (data-review-picker="paste" or "file" opens
+// that tab); without JavaScript the links just go to /review.html.
+// Three ways in: your Chess.com or Lichess username (then pick from your
+// recent games), a Lichess link or a PGN, or a .pgn file.
+---
+<dialog class="pop rp" id="rp" aria-labelledby="rp-title">
+  <div class="pop-card rp-card">
+    <div class="pop-head">
+      <h2 id="rp-title">Review a game</h2>
+      <button type="button" class="pop-x" id="rp-close" aria-label="Close">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <p class="rp-sub">Free, with Stockfish 19 in your browser. No account needed.</p>
+
+    <div class="rp-tabs" role="tablist" aria-label="How to find the game">
+      <button type="button" role="tab" id="rp-tab-user" aria-controls="rp-user" aria-selected="true">Your username</button>
+      <button type="button" role="tab" id="rp-tab-paste" aria-controls="rp-paste" aria-selected="false" tabindex="-1">Link or PGN</button>
+      <button type="button" role="tab" id="rp-tab-file" aria-controls="rp-file" aria-selected="false" tabindex="-1">PGN file</button>
+    </div>
+
+    <div id="rp-user" role="tabpanel" aria-labelledby="rp-tab-user"><form class="rp-panel" novalidate>
+      <div class="rp-row">
+        <label class="rp-field">
+          <span>Site</span>
+          <select id="rp-site">
+            <option value="chesscom">Chess.com</option>
+            <option value="lichess">Lichess</option>
+          </select>
+        </label>
+        <label class="rp-field rp-grow">
+          <span>Username</span>
+          <input id="rp-name" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="30" placeholder="Your username" aria-describedby="rp-user-status">
+        </label>
+        <button class="btn btn-solid rp-go" type="submit">Find my games</button>
+      </div>
+      <p class="rp-status" id="rp-user-status" role="status" aria-live="polite"></p>
+      <ol class="rp-games" id="rp-games" aria-label="Your recent games" hidden></ol>
+      <button class="btn rp-more" type="button" id="rp-more" hidden>Show older games</button>
+    </form></div>
+
+    <div id="rp-paste" role="tabpanel" aria-labelledby="rp-tab-paste" hidden><form class="rp-panel" novalidate>
+      <label class="rp-field">
+        <span>Lichess link or PGN</span>
+        <textarea id="rp-text" rows="6" spellcheck="false" autocapitalize="none" placeholder="https://lichess.org/abcd1234&#10;&#10;or the whole PGN: [Event &quot;Live Chess&quot;] … 1. e4 e5 2. Nf3 …"></textarea>
+      </label>
+      <div class="rp-row">
+        <label class="rp-field">
+          <span>I played</span>
+          <select id="rp-side"><option value="">Work it out</option><option value="w">White</option><option value="b">Black</option></select>
+        </label>
+        <button class="btn btn-solid rp-go" type="submit">Review this game</button>
+      </div>
+      <p class="rp-error" id="rp-paste-error" role="alert" hidden></p>
+      <p class="rp-note">On Chess.com, open the game, press Share, choose PGN and copy it. Or <button type="button" class="link-btn" data-rp-tab="user">find it by your username</button>.</p>
+    </form></div>
+
+    <div id="rp-file" role="tabpanel" aria-labelledby="rp-tab-file" hidden><form class="rp-panel" novalidate>
+      <label class="rp-drop" id="rp-drop">
+        <input type="file" id="rp-file-input" accept=".pgn,.txt,application/x-chess-pgn,application/vnd.chess-pgn,text/plain">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4m0 0-4 4m4-4 4 4M5 15v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <b>Choose a .pgn file</b>
+        <span>or drop it here</span>
+      </label>
+      <p class="rp-error" id="rp-file-error" role="alert" hidden></p>
+      <p class="rp-note">The file stays on your device. If it holds several games, the first one is reviewed.</p>
+    </form></div>
+  </div>
+</dialog>
+<script>import '../scripts/review-picker.js';</script>
+
+<style is:global>
+  .rp-card { width: min(36rem, calc(100vw - 2rem)); }
+  .rp-sub { color: var(--muted); margin: -0.25rem 0 1rem; }
+  .rp-tabs { display: flex; gap: 0.25rem; padding: 0.25rem; border-radius: 62.4375rem; background: var(--bg); border: 1px solid var(--line); margin-bottom: 1rem; }
+  .rp-tabs button { flex: 1; border: 0; background: none; color: var(--muted); font-weight: 600; font-size: 0.875rem; padding: 0.5rem 0.625rem; border-radius: 62.4375rem; cursor: pointer; white-space: nowrap; }
+  .rp-tabs button:hover { color: var(--ink); }
+  .rp-tabs button[aria-selected="true"] { background: var(--sage); color: var(--sage-ink); }
+  .rp-panel { display: grid; gap: 0.75rem; }
+  .rp-row { display: flex; gap: 0.625rem; align-items: flex-end; flex-wrap: wrap; }
+  .rp-field { display: grid; gap: 0.375rem; font-size: 0.8125rem; font-weight: 600; color: var(--muted); }
+  .rp-grow { flex: 1 1 10rem; min-width: 0; }
+  .rp-field input, .rp-field select, .rp-field textarea { width: 100%; background: var(--bg); border: 1px solid var(--line-2); border-radius: 0.75rem; padding: 0.625rem 0.75rem; font-size: 1rem; font-weight: 400; color: var(--ink); }
+  .rp-field input, .rp-field select { min-height: 2.75rem; }
+  .rp-field textarea { resize: vertical; min-height: 7.5rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.8125rem; }
+  .rp-field input:focus-visible, .rp-field select:focus-visible, .rp-field textarea:focus-visible { outline: none; border-color: var(--sage); box-shadow: 0 0 0 0.1875rem rgb(198 206 178 / 0.2); }
+  .rp-go { padding: 0.6875rem 1rem; font-size: 0.875rem; }
+  .rp-status { color: var(--muted); font-size: 0.875rem; min-height: 1.3125rem; }
+  .rp-status[data-kind="bad"], .rp-error { color: var(--loss); font-size: 0.875rem; }
+  .rp-note { color: var(--faint); font-size: 0.8125rem; }
+  .rp-note .link-btn { margin: 0; font-size: inherit; padding: 0; }
+  .rp-games { list-style: none; margin: 0; padding: 0; max-height: min(22rem, 45vh); overflow-y: auto; border-top: 1px solid var(--line); }
+  .rp-games li { border-bottom: 1px solid var(--line); }
+  .rp-games a, .rp-games .rp-off { display: grid; grid-template-columns: 3.5rem minmax(0, 1fr) auto; gap: 0.75rem; align-items: center; padding: 0.625rem 0.25rem; text-decoration: none; }
+  .rp-games a:hover { background: var(--raise); }
+  .rp-games .rp-off { opacity: 0.55; }
+  .rp-res { font-size: 0.75rem; font-weight: 700; text-align: center; padding: 0.125rem 0; border-radius: 0.375rem; }
+  .rp-res.win { background: rgb(166 201 122 / 0.16); color: var(--win); }
+  .rp-res.loss { background: rgb(232 135 107 / 0.14); color: var(--loss); }
+  .rp-res.draw { background: rgb(201 182 143 / 0.14); color: var(--draw); }
+  .rp-opp { min-width: 0; }
+  .rp-opp b { display: block; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rp-opp small, .rp-when { color: var(--faint); font-size: 0.8125rem; }
+  .rp-more { justify-self: start; }
+  .rp-drop { position: relative; display: grid; justify-items: center; gap: 0.25rem; padding: 2rem 1rem; border: 1.5px dashed var(--line-2); border-radius: 1rem; text-align: center; color: var(--muted); cursor: pointer; }
+  .rp-drop:hover, .rp-drop.over { border-color: var(--sage); background: var(--raise); }
+  .rp-drop:focus-within { border-color: var(--sage); box-shadow: 0 0 0 0.1875rem rgb(198 206 178 / 0.2); }
+  .rp-drop svg { width: 1.75rem; height: 1.75rem; color: var(--sage); }
+  .rp-drop b { color: var(--ink); }
+  .rp-drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  @media (max-width: 30em) {
+    .rp-tabs button { font-size: 0.8125rem; padding: 0.5rem 0.375rem; }
+    .rp-go { flex: 1 1 100%; }
+  }
+</style>

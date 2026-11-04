@@ -13,6 +13,7 @@ import { LABELS, BAD, ACCURACY, winPercent, moveAccuracy, gameAccuracy, classify
 import { labelGame } from './label.mjs';
 import { saveReviewedMistakes } from '../training/store.mjs';
 import { mistakesOf } from '../training/mistakes.mjs';
+import { reviewUrlFor, go as openReview } from './open-game.mjs';
 import { track } from '../track.js';
 import { shareCard } from './share.mjs';
 import { saveReviewed } from '../brilliants/store.mjs';
@@ -1017,37 +1018,14 @@ function hashText(t) {
 }
 
 function wirePaste() {
-  $('#paste').addEventListener('submit', (e) => {
+  $('#paste').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const text = $('#paste-text').value.trim();
-    const side = $('#paste-side').value;
     const err = $('#paste-error');
     err.hidden = true;
-    const say = (m) => { err.textContent = m; err.hidden = false; };
-    if (!text) return say('Paste a Lichess link or a PGN first.');
-    // lichess.org/abcdEFGH, /abcdEFGHxyzw (player link), /abcdEFGH/black
-    const li = /lichess\.org\/([A-Za-z0-9]{8})(?:[A-Za-z0-9]{4})?(?:\/(white|black))?/.exec(text);
-    if (li && text.length < 200) {
-      const qs = new URLSearchParams({ p: 'lichess', id: li[1] });
-      const s = side || (li[2] === 'black' ? 'b' : li[2] === 'white' ? 'w' : '');
-      if (s) qs.set('side', s);
-      location.href = `/review.html?${qs}`;
-      return;
-    }
-    if (/chess\.com\//.test(text) && text.length < 200) {
-      return say('Chess.com links can’t be opened directly. On Chess.com, open the game, press Share, choose PGN, copy it and paste it here.');
-    }
-    try {
-      const chess = new Chess();
-      chess.loadPgn(text);
-      if (!chess.history().length) throw new Error();
-    } catch {
-      return say('That isn’t a game Shohmot can read. Paste a Lichess link, or a PGN of a standard chess game.');
-    }
-    const hash = new URLSearchParams({ pgn: text });
-    if (side) hash.set('side', side);
-    location.href = `/review.html#${hash}`;
-    location.reload();
+    const out = await reviewUrlFor($('#paste-text').value, $('#paste-side').value);
+    if (out.url) return openReview(out.url);
+    err.textContent = out.error;
+    err.hidden = false;
   });
 }
 

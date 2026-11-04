@@ -3,6 +3,7 @@ import SitePage from '../layouts/SitePage.astro';
 import Mock from '../components/mocks/Mock.astro';
 import Arrow from '../components/Arrow.astro';
 import PieceCount from '../components/PieceCount.astro';
+import FeatureActions from '../components/FeatureActions.astro';
 import { FEATURES, plain } from '../data/features';
 ---
 <SitePage title="Shohmot · Learn from every chess game you play" description="Free for Chess.com and Lichess players: today’s games counted, every game checked for mistakes, your mistakes turned into training, your brilliant moves found, and free Stockfish game reviews in your browser.">
@@ -15,7 +16,7 @@ import { FEATURES, plain } from '../data/features';
         <a class="btn btn-solid btn-lg" href="/app.html" data-signed-in>Open Shohmot</a>
         <a class="btn btn-lg" href="/demo.html" data-astro-prefetch="false">Try the live demo</a>
       </div>
-      <p class="fine">Free. No Chess.com or Lichess login needed. The <a href="/demo.html" data-astro-prefetch="false">demo</a> and the <a href="/review.html" data-astro-prefetch="false">game review</a> work without an account.</p>
+      <p class="fine">Free. No Chess.com or Lichess login needed. The <a href="/demo.html" data-astro-prefetch="false">demo</a> and the <a href="/review.html" data-astro-prefetch="false" data-review-picker="user">game review</a> work without an account.</p>
     </div>
     <div class="hero-visual"><Mock slug="counter" seed={5} /></div>
   </section>
@@ -23,19 +24,30 @@ import { FEATURES, plain } from '../data/features';
   <div id="features" class="features-intro reveal">
     <span class="eyebrow">Features</span>
     <h2>Play, see what went wrong, train it.</h2>
-    <p>Seven tools, one free account. Everything runs in your browser, and none of it needs a Chess.com or Lichess login.</p>
+    <p>Seven tools, one free account. Five of them you can try right now, without an account. Everything runs in your browser, and none of it needs a Chess.com or Lichess login.</p>
   </div>
 
   {FEATURES.map((f, i) => (
     <section class="feature" id={f.slug} aria-labelledby={`${f.slug}-title`}>
       <div class="feature-copy reveal">
-        <span class="feature-num"><PieceCount n={i + 1} /><span>{f.name.toUpperCase()}</span></span>
+        <div class="feature-eyebrow">
+          <span class="feature-num"><PieceCount n={i + 1} /><span>{f.name.toUpperCase()}</span></span>
+          <span class="access" data-account={f.account ? 'yes' : 'no'}>{f.account ? 'Free account' : 'No account needed'}</span>
+        </div>
         <h3 id={`${f.slug}-title`}>{plain(f.title)}.</h3>
         <p>{f.short}</p>
         <ul class="ticks">{f.ticks.map((t) => <li>{t}</li>)}</ul>
-        <a class="more" href={`/features/${f.slug}.html`}>More about {f.name.toLowerCase()} <Arrow /></a>
+        <div class="feature-actions">
+          <FeatureActions f={f} />
+          <a class="more" href={`/features/${f.slug}.html`}>More about {f.name.toLowerCase()} <Arrow /></a>
+        </div>
       </div>
-      <div class="feature-visual reveal"><Mock slug={f.slug} seed={11} /></div>
+      <!-- The picture opens the feature too (a shortcut for the mouse; the button above is the way in for everyone). -->
+      <div class="feature-visual reveal">
+        <a class="feature-visual-link" href={f.account ? `/signup.html?next=${encodeURIComponent(f.open[1])}` : f.open[1]}
+          data-href-in={f.account ? f.open[1] : undefined} data-review-picker={f.slug === 'review' ? 'user' : undefined}
+          data-astro-prefetch="false" tabindex="-1" aria-hidden="true"><Mock slug={f.slug} seed={11} /></a>
+      </div>
     </section>
   ))}
 </SitePage>
