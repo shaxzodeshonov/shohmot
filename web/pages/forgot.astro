@@ -1,0 +1,26 @@
+---
+import Base from '../layouts/Base.astro';
+import Logo from '../components/Logo.astro';
+import '../styles/site.css';
+---
+<Base title="Reset your password · Shohmot" description="Get a link to choose a new Shohmot password." bodyClass="auth-page" noindex>
+  <header class="auth-top">
+    <a class="wordmark" href="/"><Logo /> Shohmot</a>
+  </header>
+  <main class="auth-main">
+    <div class="auth-card">
+      <h1>Forgot your password?</h1>
+      <p>Enter the email you signed up with and we’ll send you a link to choose a new one.</p>
+      <form id="acct-form" data-mode="forgot" novalidate>
+        <label class="field">
+          <span class="field-label">Email</span>
+          <input name="email" type="email" autocomplete="email" maxlength="254" required placeholder="you@example.com" autocapitalize="none" spellcheck="false">
+        </label>
+        <button type="submit" class="btn btn-solid btn-lg auth-submit">Send reset link</button>
+        <p class="auth-status" id="auth-status" aria-live="polite"></p>
+      </form>
+      <p class="auth-switch">Remembered it? <a href="/login.html">Sign in</a></p>
+    </div>
+  </main>
+  <script>import '../scripts/account-forms.js';</script>
+</Base>

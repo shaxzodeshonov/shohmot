@@ -1,6 +1,7 @@
 // Fetches recent games for one Chess.com or Lichess account. Stateless, so it
 // runs the same way in a Vercel function and in the local server.
 const { parseChesscomGame, parseLichessGame, parseNdjson, archiveMonthEnd } = require('./parse');
+const { store } = require('./store');
 
 // Both APIs reject requests without a User-Agent.
 const UA = 'Shohmot/2.0 (personal game counter)';
@@ -86,13 +87,36 @@ function errorMessage(platform, err) {
 // refetch the same account for every request.
 const cache = new Map();
 const CACHE_MS = 45000;
+// With Redis, the cache is shared by every function instance too, so however
+// many people follow the same player (a coach and their student, say),
+// Chess.com and Lichess are asked about them at most about once a minute.
+const SHARED_MAX = 600 * 1024; // Upstash values top out at 1 MB
+async function sharedGet(key) {
+  if (!store.shared) return null;
+  try {
+    const raw = await store.get(`cache:acct:${key}`);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+async function sharedSet(key, entry) {
+  if (!store.shared) return;
+  try {
+    const raw = JSON.stringify(entry);
+    if (raw.length <= SHARED_MAX) await store.set(`cache:acct:${key}`, raw, { ttl: Math.ceil(CACHE_MS / 1000) });
+  } catch { /* the cache is only a speed-up */ }
+}
 
 // `days` limits how far back to look; a short window answers much faster.
 async function fetchAccount(platform, username, { fresh = false, days = WINDOW_DAYS } = {}) {
   const id = `${platform}:${username.toLowerCase()}`;
   const key = `${id}:${days}`;
-  const hit = cache.get(key);
+  let hit = cache.get(key);
   if (!fresh && hit && Date.now() - hit.at < CACHE_MS) return hit.value;
+  if (!fresh) {
+    const shared = await sharedGet(key);
+    if (shared && Date.now() - shared.at < CACHE_MS) { cache.set(key, shared); return shared.value; }
+    if (shared && (!hit || shared.at > hit.at)) hit = shared;
+  }
 
   const since = Date.now() - days * DAY;
   let value;
@@ -106,7 +130,9 @@ async function fetchAccount(platform, username, { fresh = false, days = WINDOW_D
     value = { id, platform, username, profile: null, games: [], error: errorMessage(platform, err) };
     return value;
   }
-  cache.set(key, { at: Date.now(), value });
+  const entry = { at: Date.now(), value };
+  cache.set(key, entry);
+  await sharedSet(key, entry);
   return value;
 }
 

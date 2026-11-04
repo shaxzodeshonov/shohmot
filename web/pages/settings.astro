@@ -1,0 +1,101 @@
+---
+import Base from '../layouts/Base.astro';
+import AppBar from '../components/AppBar.astro';
+import '../styles/pages.css';
+import { PRICES } from '../data/site';
+---
+<Base title="Settings · Shohmot" description="Your Shohmot account, plan, tilt guard and emails." guard>
+  <AppBar current="settings" />
+  <main class="page settings">
+    <h1 class="page-title">Settings</h1>
+    <div class="banners" id="banners" aria-live="polite"></div>
+
+    <section class="set" aria-labelledby="s-profile">
+      <h2 id="s-profile">Profile</h2>
+      <form class="set-row" id="name-form">
+        <label class="field grow"><span class="field-label">Your name</span><input id="name" name="name" maxlength="40" required autocomplete="name"></label>
+        <button class="btn btn-solid" type="submit">Save</button>
+      </form>
+      <div class="set-row">
+        <div class="grow"><span class="field-label">Email</span><p id="email-line" class="muted"></p></div>
+        <button class="btn" type="button" id="resend" hidden>Send confirmation again</button>
+      </div>
+    </section>
+
+    <section class="set" aria-labelledby="s-plan" id="plan">
+      <h2 id="s-plan">Plan</h2>
+      <div class="set-row">
+        <div class="grow">
+          <p class="plan-now"><span id="plan-name">Free</span></p>
+          <p class="muted" id="plan-line"></p>
+        </div>
+        <a class="btn btn-solid" href="/pricing.html" id="plan-upgrade" hidden>See plans</a>
+        <button class="btn" type="button" id="plan-manage" hidden>Manage billing</button>
+      </div>
+      <p class="muted small">Pro is {PRICES.currency}{PRICES.pro} a month and Coach {PRICES.currency}{PRICES.coach} a month. Cancel any time from Manage billing; you keep the plan until the end of the month you paid for.</p>
+    </section>
+
+    <section class="set" aria-labelledby="s-tilt" id="tilt">
+      <h2 id="s-tilt">Tilt guard</h2>
+      <p class="muted">Shohmot watches today’s games while the counter is open and tells you when it’s time for a break.</p>
+      <form id="tilt-form" class="set-grid">
+        <label class="field">
+          <span class="field-label">Warn me after a losing streak of</span>
+          <select name="lossStreak" id="lossStreak">
+            <option value="0">Off</option>
+            <option value="2">2 losses</option>
+            <option value="3">3 losses</option>
+            <option value="4">4 losses</option>
+            <option value="5">5 losses</option>
+            <option value="6">6 losses</option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="field-label">Daily game limit <span class="pro-tag">Pro</span></span>
+          <input type="number" name="dailyLimit" id="dailyLimit" min="0" max="200" step="1" inputmode="numeric" placeholder="0 = no limit">
+        </label>
+        <label class="check wide"><input type="checkbox" name="notify" id="notify"> Desktop notifications for these warnings <span class="pro-tag">Pro</span></label>
+        <p class="muted small wide" id="tilt-pro-note" hidden>The daily limit and notifications come with <a href="/pricing.html">Pro</a>.</p>
+      </form>
+    </section>
+
+    <section class="set" aria-labelledby="s-email">
+      <h2 id="s-email">Emails</h2>
+      <label class="check"><input type="checkbox" id="weeklyEmail"> Weekly recap every Monday: your games, rating changes and one tip</label>
+      <p class="muted small">Only sent once your email is confirmed. Account emails (password resets) always come.</p>
+    </section>
+
+    <section class="set" aria-labelledby="s-coach" id="coach">
+      <h2 id="s-coach">Coach</h2>
+      <div id="coach-body"><p class="muted">Loading…</p></div>
+    </section>
+
+    <section class="set" aria-labelledby="s-security">
+      <h2 id="s-security">Signing in</h2>
+      <div class="set-row">
+        <p class="grow muted">Signed in on a computer you don’t use any more? Sign out everywhere ends every session, this one too.</p>
+        <button class="btn" type="button" id="sign-out">Sign out</button>
+        <button class="btn" type="button" id="sign-out-all">Sign out everywhere</button>
+      </div>
+      <p class="muted small">To change your password, sign out and use “Forgot it?” on the sign-in page.</p>
+    </section>
+
+    <section class="set" aria-labelledby="s-data">
+      <h2 id="s-data">Your data</h2>
+      <div class="set-row">
+        <p class="grow muted">Download everything Shohmot keeps about you, as a JSON file.</p>
+        <a class="btn" href="/api/account" download="shohmot-account.json">Download my data</a>
+      </div>
+      <details class="danger">
+        <summary>Delete my account</summary>
+        <form id="delete-form" class="set-row">
+          <p class="grow">This deletes your account, your saved chess accounts and settings straight away, and cancels any paid plan. It can’t be undone.</p>
+          <label class="field grow"><span class="field-label">Your password, to confirm</span><input type="password" name="password" required autocomplete="current-password" maxlength="128"></label>
+          <button class="btn btn-danger" type="submit">Delete for good</button>
+        </form>
+      </details>
+    </section>
+    <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+  </main>
+  <script>import '../scripts/settings.js';</script>
+</Base>

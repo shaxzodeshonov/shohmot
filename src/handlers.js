@@ -79,7 +79,10 @@ async function game(req, res) {
   const username = (url.searchParams.get('username') || '').trim();
   const id = url.searchParams.get('id') || '';
   const end = Number(url.searchParams.get('end')) || Date.now();
-  if (!PLATFORMS.includes(platform) || !USERNAME_RE.test(username) || !GAME_ID_RE.test(id)) {
+  // A Lichess game can be fetched by its id alone (a pasted link); Chess.com
+  // needs the player, because its games live in each player's monthly archive.
+  const needsUser = platform !== 'lichess';
+  if (!PLATFORMS.includes(platform) || (needsUser || username ? !USERNAME_RE.test(username) : false) || !GAME_ID_RE.test(id)) {
     return send(res, 400, { error: 'That game link looks broken.' });
   }
   if (await overLimit(req, 'game', 60, 600)) return send(res, 429, { error: 'That’s a lot of games at once. Wait a few minutes and try again.' });

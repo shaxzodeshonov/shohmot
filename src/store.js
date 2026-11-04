@@ -38,6 +38,16 @@ const redisStore = {
     const [, n] = await redis([['SET', key, '0', 'EX', String(ttl), 'NX'], ['INCR', key]], true);
     return n;
   },
+  async mget(keys) { return keys.length ? redis(['MGET', ...keys]) : []; },
+  // Sets, for the list of all users (weekly emails, admin numbers).
+  sadd: (key, member) => redis(['SADD', key, member]),
+  srem: (key, member) => redis(['SREM', key, member]),
+  smembers: (key) => redis(['SMEMBERS', key]),
+  scard: (key) => redis(['SCARD', key]),
+  // HyperLogLog: counts distinct visitors without keeping who they were.
+  async pfadd(key, member, ttl) { await redis([['PFADD', key, member], ['EXPIRE', key, String(ttl)]], true); },
+  async pfcount(keys) { return Promise.all(keys.map((k) => redis(['PFCOUNT', k]))); },
+  shared: true,
 };
 
 // ---------- JSON file (local) ----------
@@ -79,11 +89,35 @@ const fileStore = {
     save();
     return Number(e.v);
   },
+  async mget(keys) { return keys.map((k) => { const e = live(k); return e ? e.v : null; }); },
+  async sadd(key, member) {
+    const e = live(key) || (load()[key] = { v: [], exp: 0 });
+    if (e.v.includes(member)) return 0;
+    e.v.push(member);
+    save();
+    return 1;
+  },
+  async srem(key, member) {
+    const e = live(key);
+    if (!e || !e.v.includes(member)) return 0;
+    e.v = e.v.filter((m) => m !== member);
+    save();
+    return 1;
+  },
+  async smembers(key) { const e = live(key); return e ? e.v.slice() : []; },
+  async scard(key) { const e = live(key); return e ? e.v.length : 0; },
+  // Locally an exact set stands in for Redis's HyperLogLog.
+  async pfadd(key, member, ttl) {
+    const e = live(key) || (load()[key] = { v: [], exp: Date.now() + ttl * 1000 });
+    if (!e.v.includes(member)) { e.v.push(member); save(); }
+  },
+  async pfcount(keys) { return keys.map((k) => { const e = live(k); return e ? e.v.length : 0; }); },
+  shared: false,
 };
 
 // Vercel's file system doesn't keep anything between requests, so there it's
 // Redis or nothing.
-const missing = new Proxy({}, { get: () => async () => { throw new NotConfiguredError('No database configured'); } });
+const missing = new Proxy({}, { get: (_, k) => (k === 'shared' ? false : async () => { throw new NotConfiguredError('No database configured'); }) });
 const store = REDIS_URL && REDIS_TOKEN ? redisStore : process.env.VERCEL ? missing : fileStore;
 
 module.exports = { store, NotConfiguredError };

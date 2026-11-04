@@ -1,4 +1,6 @@
-import { currentUser, freshUser, remember, signOut } from './session.js';
+import { currentUser, freshUser, remember, features, onUser, api } from './session.js';
+import { track } from './track.js';
+import { tiltAlerts } from './tilt.mjs';
 
 (() => {
   'use strict';
@@ -125,6 +127,7 @@ import { currentUser, freshUser, remember, signOut } from './session.js';
       return;
     }
     renderHero();
+    renderBanners();
     renderRows();
     renderGames();
     renderBoard();
@@ -321,6 +324,7 @@ import { currentUser, freshUser, remember, signOut } from './session.js';
   // Saving a new account list: load its games right away (behind the pop-up).
   let accountsEdited = false; // changed here since the page opened
   function useAccounts(list) {
+    if (list.length > myAccounts.length) track('account_added');
     accountsEdited = true;
     myAccounts = list.map(({ platform, username }) => ({ platform, username }));
     saveAccounts();
@@ -361,7 +365,7 @@ import { currentUser, freshUser, remember, signOut } from './session.js';
       const res = await fetch('/api/me', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accounts: myAccounts }) });
       if (res.status === 401) location.replace('/login.html?next=/app.html');
       else if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      else remember((await res.json()).user);
+      else { const out = await res.json(); remember(out.user, out.features); }
     } catch {
       toast('Couldn’t save your accounts to Shohmot. They’ll be lost on reload.');
     }
@@ -480,13 +484,61 @@ import { currentUser, freshUser, remember, signOut } from './session.js';
   }, 1000);
   setInterval(() => { if (state && isToday()) { renderRows(); renderGames(); } }, 30000);
 
-  $('#sign-out').addEventListener('click', signOut);
+  // ---------- banners: confirm your email, and the tilt guard ----------
+  let me = null;
+  const SEEN = 'shohmot-tilt-seen';
+  const seen = () => store.get(SEEN, []);
+  function dismiss(key) { store.set(SEEN, [key, ...seen().filter((k) => k !== key)].slice(0, 40)); renderBanners(); }
+
+  function renderBanners() {
+    const box = $('#banners');
+    const out = [];
+    if (me && !me.verified && features().mail) {
+      out.push(`<div class="banner" data-kind="info"><p><b>Confirm your email.</b> We sent a link to ${esc(me.email)}. It lets you reset your password and get your weekly recap.</p>
+        <div class="banner-actions"><button class="btn" type="button" data-act="resend">Send it again</button></div></div>`);
+    }
+    if (me && state) {
+      const games = state.accounts.flatMap((a) => a.games);
+      for (const alert of tiltAlerts(games, me.prefs || {}, { pro: me.plan && me.plan !== 'free', now: Date.now() })) {
+        if (seen().includes(alert.key)) continue;
+        notifyOnce(alert);
+        const extra = alert.upsell && features().billing ? '<a class="btn" href="/pricing.html">See Pro</a>' : '';
+        out.push(`<div class="banner" data-kind="${alert.kind}"><p><b>${esc(alert.title)}</b> ${esc(alert.text)}</p>
+          <div class="banner-actions">${extra}<a class="btn" href="/settings.html#tilt">Settings</a><button class="btn btn-solid" type="button" data-dismiss="${esc(alert.key)}">${alert.upsell ? 'Not now' : 'OK, taking a break'}</button></div></div>`);
+      }
+    }
+    box.innerHTML = out.join('');
+  }
+
+  // A desktop notification when an alert first shows up, if it's on (Pro) and allowed.
+  function notifyOnce(alert) {
+    const key = `n:${alert.key}`;
+    if (seen().includes(key)) return;
+    store.set(SEEN, [key, ...seen()].slice(0, 40));
+    if (!alert.upsell) track('tilt_alert');
+    if (!me.prefs || !me.prefs.notify || alert.upsell || !('Notification' in window) || Notification.permission !== 'granted') return;
+    const opts = { body: alert.text, icon: '/icons/icon-192.png', tag: 'shohmot-tilt', data: { url: '/app.html' } };
+    navigator.serviceWorker && navigator.serviceWorker.ready
+      ? navigator.serviceWorker.ready.then((r) => r.showNotification(alert.title, opts)).catch(() => {})
+      : new Notification(alert.title, opts);
+  }
+
+  $('#banners').addEventListener('click', async (e) => {
+    const d = e.target.closest('[data-dismiss]');
+    if (d) return dismiss(d.dataset.dismiss);
+    const r = e.target.closest('[data-act="resend"]');
+    if (r) {
+      r.disabled = true;
+      try { toast((await api('/api/account', { action: 'resend-verify' })).message); } catch (err) { toast(err.message); }
+      r.disabled = false;
+    }
+  });
 
   function showUser(user) {
-    $('#me-name').textContent = user.name;
-    $('#me-av').textContent = [...user.name][0].toUpperCase();
-    $('#me').hidden = false;
+    me = user;
+    if (state) renderBanners();
   }
+  onUser(showUser);
 
   syncControls();
   $('#sync-now').hidden = true;

@@ -1,6 +1,7 @@
 // The sign-up and sign-in forms. Both post JSON to the server, which sets an
 // HttpOnly session cookie, then go on to the page the visitor came for.
 import { remember, signedIn } from './session.js';
+import { track } from './track.js';
 
 (() => {
   'use strict';
@@ -50,7 +51,8 @@ import { remember, signedIn } from './session.js';
         submit.disabled = false;
         return;
       }
-      remember(body.user);
+      remember(body.user, body.features);
+      if (mode === 'login') track('login');
       say(mode === 'register' ? `Welcome, ${body.user.name}!` : 'Signed in.', 'ok');
       location.replace(nextPage());
     } catch {

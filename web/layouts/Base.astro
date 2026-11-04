@@ -5,14 +5,19 @@
 import '@fontsource-variable/bricolage-grotesque/opsz.css';
 import fontUrl from '@fontsource-variable/bricolage-grotesque/files/bricolage-grotesque-latin-opsz-normal.woff2?url';
 import '../styles/app.css';
+import { SITE } from '../data/site';
 
 interface Props {
   title: string;
   description: string;
   guard?: boolean;
   bodyClass?: string;
+  /** Leave the page out of search engines (account pages). */
+  noindex?: boolean;
 }
-const { title, description, guard = false, bodyClass } = Astro.props;
+const { title, description, guard = false, bodyClass, noindex = guard } = Astro.props;
+const path = Astro.url.pathname.replace(/index\.html$/, '');
+const canonical = `${SITE.url}${path === '/' ? '/' : path}`;
 ---
 <!doctype html>
 <html lang="en">
@@ -26,12 +31,26 @@ const { title, description, guard = false, bodyClass } = Astro.props;
   </script>
   <title>{title}</title>
   <meta name="description" content={description}>
+  {noindex ? <meta name="robots" content="noindex"> : <link rel="canonical" href={canonical}>}
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Shohmot">
+  <meta property="og:title" content={title}>
+  <meta property="og:description" content={description}>
+  <meta property="og:url" content={canonical}>
+  <meta property="og:image" content={`${SITE.url}/og.png`}>
+  <meta name="twitter:card" content="summary_large_image">
   <meta name="theme-color" content="#1b140f">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.webmanifest">
   <link rel="preload" href={fontUrl} as="font" type="font/woff2" crossorigin>
   <slot name="head" />
 </head>
 <body class={bodyClass}>
   <slot />
+  <script>
+  import '../scripts/track.js';
+  import '../scripts/pwa.js';
+  </script>
 </body>
 </html>

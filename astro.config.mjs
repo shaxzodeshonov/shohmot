@@ -11,14 +11,11 @@ function apiRoutes() {
   return {
     name: 'shohmot-api',
     configureServer(server) {
-      const handlers = require('./src/handlers');
-      const auth = require('./src/auth');
-      const routes = { state: handlers.state, check: handlers.check, game: handlers.game, register: auth.register, login: auth.login, logout: auth.logout, me: auth.me };
+      const { dispatch } = require('./src/routes');
       server.middlewares.use(async (req, res, next) => {
-        const m = /^\/api\/([a-z]+)(?:\?|$)/.exec(req.url);
-        if (!m || !routes[m[1]]) return next();
+        if (!req.url.startsWith('/api/')) return next();
         try {
-          await routes[m[1]](req, res);
+          await dispatch(req, res);
         } catch (err) {
           next(err);
         }
