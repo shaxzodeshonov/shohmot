@@ -1,4 +1,4 @@
-import { currentUser, freshUser, remember, features, onUser, api } from './session.js';
+import { currentUser, freshUser, remember, features, onUser, api, unlocked } from './session.js';
 import { track } from './track.js';
 import { tiltAlerts } from './tilt.mjs';
 import { foundIn } from './brilliants/store.mjs';
@@ -574,7 +574,7 @@ import { LABELS } from './review/analysis.mjs';
     if (state) out.push(needsWorkHtml());
     if (me && state) {
       const games = state.accounts.flatMap((a) => a.games);
-      for (const alert of tiltAlerts(games, me.prefs || {}, { pro: me.plan && me.plan !== 'free', now: Date.now() })) {
+      for (const alert of tiltAlerts(games, me.prefs || {}, { pro: unlocked(me), now: Date.now() })) {
         if (seen().includes(alert.key)) continue;
         notifyOnce(alert);
         const extra = alert.upsell && features().billing ? '<a class="btn" href="/pricing.html">See Pro</a>' : '';

@@ -25,6 +25,9 @@ export function forget() {
 // What the server can do: { mail, billing }. Last visit's answer until /api/me says.
 export const features = () => read(FEATURES) || { mail: true, billing: false };
 
+// Can this account use Pro's features? Everyone can while billing is off.
+export const unlocked = (u) => !!u && (u.unlocked ?? (!features().billing || (!!u.plan && u.plan !== 'free')));
+
 export const signedIn = () => document.cookie.split('; ').includes('shohmot_in=1');
 
 // Pages that show the user (the app bar) hear about every change.

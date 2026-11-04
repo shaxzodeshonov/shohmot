@@ -1,0 +1,28 @@
+---
+import SitePage from '../layouts/SitePage.astro';
+import Prose from '../components/Prose.astro';
+import { SITE } from '../data/site';
+---
+<SitePage title="Licences · Shohmot" description="The open-source software and data Shohmot is built on, and their licences.">
+  <Prose title="Licences" updated={SITE.legalUpdated}>
+    <p>Shohmot is built on free and open-source work. Thank you to everyone behind it.</p>
+    <table class="lic">
+      <thead><tr><th>What</th><th>Used for</th><th>Licence</th></tr></thead>
+      <tbody>
+        <tr><td><a href="https://stockfishchess.org" rel="noopener">Stockfish 19</a>, built for the web by <a href="https://github.com/nmrugg/stockfish.js" rel="noopener">stockfish.js</a></td><td>All engine analysis, in your browser</td><td>GNU GPL v3</td></tr>
+        <tr><td><a href="https://github.com/jhlywa/chess.js" rel="noopener">chess.js</a></td><td>Chess rules, PGN and FEN</td><td>BSD 2-Clause</td></tr>
+        <tr><td><a href="https://github.com/lichess-org/chess-openings" rel="noopener">Lichess chess-openings</a></td><td>Opening names and book moves</td><td>CC0 (public domain)</td></tr>
+        <tr><td>Chess pieces by Colin M.L. Burnett, as distributed by <a href="https://github.com/lichess-org/lila" rel="noopener">Lichess</a></td><td>The board</td><td>GNU GPL v2 or later</td></tr>
+        <tr><td><a href="https://github.com/lichess-org/lila" rel="noopener">Lichess (lila)</a>’s published accuracy and win-chance formulas</td><td>Accuracy, reimplemented</td><td>The formulas, from lila’s AGPL v3 source</td></tr>
+        <tr><td><a href="https://fonts.google.com/specimen/Bricolage+Grotesque" rel="noopener">Bricolage Grotesque</a></td><td>The typeface</td><td>SIL Open Font License 1.1</td></tr>
+        <tr><td><a href="https://astro.build" rel="noopener">Astro</a></td><td>Building the site</td><td>MIT</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Stockfish’s source code</h2>
+    <p>The Stockfish builds Shohmot sends to your browser are unmodified releases of the <a href="https://www.npmjs.com/package/stockfish/v/19.0.1" rel="noopener">stockfish npm package, version 19.0.1</a>. Their complete source is at <a href="https://github.com/nmrugg/stockfish.js" rel="noopener">github.com/nmrugg/stockfish.js</a> and <a href="https://github.com/official-stockfish/Stockfish" rel="noopener">github.com/official-stockfish/Stockfish</a>. Under the GPL you’re free to use, study, change and share them. If you’d like a copy of the exact source from us, write to <a href={`mailto:${SITE.support}`}>{SITE.support}</a>.</p>
+
+    <h2>Shohmot’s own code</h2>
+    <p>Shohmot’s source is on <a href="https://github.com/shaxzodeshonov/shohmot" rel="noopener">GitHub</a>.</p>
+  </Prose>
+</SitePage>

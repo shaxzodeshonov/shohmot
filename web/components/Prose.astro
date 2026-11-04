@@ -1,0 +1,10 @@
+---
+// A plain reading page (legal pages): heading, updated date and the text.
+interface Props { title: string; updated?: string }
+const { title, updated } = Astro.props;
+---
+<article class="prose">
+  <h1>{title}</h1>
+  {updated && <p class="prose-date">Last updated {updated}</p>}
+  <slot />
+</article>

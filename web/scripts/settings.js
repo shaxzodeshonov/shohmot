@@ -1,6 +1,6 @@
 // Settings: name, email confirmation, plan and billing, tilt guard, emails,
 // coach, signing out and the account's data.
-import { currentUser, freshUser, remember, features, api, signOut, forget } from './session.js';
+import { currentUser, freshUser, remember, features, api, signOut, forget, unlocked } from './session.js';
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -20,7 +20,7 @@ function banner(kind, html) {
   $('#banners').insertAdjacentHTML('beforeend', `<div class="banner" data-kind="${kind}"><p>${html}</p></div>`);
 }
 
-const isPro = (u) => u && u.plan && u.plan !== 'free';
+const isPro = (u) => !!u && !!u.plan && u.plan !== 'free';
 
 function render(user) {
   me = user;
@@ -46,8 +46,11 @@ function render(user) {
   $('#dailyLimit').value = p.dailyLimit ? String(p.dailyLimit) : '';
   $('#notify').checked = !!p.notify;
   $('#weeklyEmail').checked = p.weeklyEmail !== false;
-  for (const el of [$('#dailyLimit'), $('#notify')]) el.disabled = !isPro(user);
-  $('#tilt-pro-note').hidden = isPro(user);
+  for (const el of [$('#dailyLimit'), $('#notify')]) el.disabled = !unlocked(user);
+  $('#tilt-pro-note').hidden = unlocked(user) || !features().billing;
+  // No plans to show until billing is switched on: everything is free.
+  $('#plan').hidden = !features().billing;
+  for (const t of document.querySelectorAll('.pro-tag')) t.hidden = !features().billing;
 }
 
 async function savePrefs(patch) {
@@ -72,8 +75,10 @@ async function renderCoach() {
     } else {
       parts.push('<p class="muted">You don’t have a coach on Shohmot. If yours sends you an invite link, open it while signed in to join.</p>');
     }
-    if (out.plan === 'coach') {
-      parts.push(`<div class="set-row"><p class="grow">You’re on the Coach plan: ${out.students.length} of ${out.seats} students.</p><a class="btn btn-solid" href="/coach.html">Open your students</a></div>`);
+    if (out.canCoach) {
+      parts.push(out.students && out.students.length
+        ? `<div class="set-row"><p class="grow">You coach ${out.students.length} of up to ${out.seats} students.</p><a class="btn btn-solid" href="/coach.html">Open your students</a></div>`
+        : '<div class="set-row"><p class="grow"><b>Do you coach?</b> Send your students an invite link and see every student’s games, losses and mistakes in one place.</p><a class="btn btn-solid" href="/coach.html">Start coaching</a></div>');
     }
     box.innerHTML = parts.join('');
     const leave = $('#coach-leave');
@@ -160,6 +165,6 @@ currentUser().then(async (user) => {
       const res = await fetch('/api/me', { cache: 'no-store' });
       if (res.ok) { const out = await res.json(); remember(out.user, out.features); render(out.user); }
     }
-    $('#up-wait').textContent = isPro(me) ? 'It’s on: the daily limit, notifications, Insights and unlimited puzzles are yours.' : 'Payment received; your plan will switch on within a few minutes. Reload this page in a bit.';
+    $('#up-wait').textContent = isPro(me) ? 'It’s on: the daily limit, notifications, unlimited training and 26 weeks of brilliant moves are yours.' : 'Payment received; your plan will switch on within a few minutes. Reload this page in a bit.';
   }
 });

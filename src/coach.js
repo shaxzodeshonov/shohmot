@@ -71,11 +71,11 @@ const coach = handler(async (req, res) => {
       if (!CODE_RE.test(code)) throw new HttpError(404, 'That invite link isn’t valid.');
       const email = await store.get(`invite:${code}`);
       const c = email && (await getUser(email));
-      if (!c || !plans.isCoach(c)) throw new HttpError(404, 'That invite link has expired. Ask your coach for a new one.');
+      if (!c || !plans.canCoach(c)) throw new HttpError(404, 'That invite link has expired. Ask your coach for a new one.');
       return send(res, 200, { coach: { name: c.name }, self: c.email === user.email, current: user.coach === c.email });
     }
-    const out = { plan: plans.planOf(user), seats: plans.COACH_SEATS, coach: user.coach ? { name: user.coachName } : null };
-    if (plans.isCoach(user)) {
+    const out = { plan: plans.planOf(user), canCoach: plans.canCoach(user), seats: plans.COACH_SEATS, coach: user.coach ? { name: user.coachName } : null };
+    if (plans.canCoach(user)) {
       out.code = user.inviteCode || (await newCode(user));
       out.students = await students(user);
     }
@@ -85,7 +85,7 @@ const coach = handler(async (req, res) => {
   const body = await readJson(req);
   switch (body.action) {
     case 'invite': {
-      if (!plans.isCoach(user)) throw new HttpError(403, 'Invite links come with the Coach plan.');
+      if (!plans.canCoach(user)) throw new HttpError(403, 'Invite links come with the Coach plan.');
       return send(res, 200, { code: await newCode(user) });
     }
     case 'join': {
@@ -93,7 +93,7 @@ const coach = handler(async (req, res) => {
       if (!CODE_RE.test(code)) throw new HttpError(404, 'That invite link isn’t valid.');
       const email = await store.get(`invite:${code}`);
       const c = email && (await getUser(email));
-      if (!c || !plans.isCoach(c)) throw new HttpError(404, 'That invite link has expired. Ask your coach for a new one.');
+      if (!c || !plans.canCoach(c)) throw new HttpError(404, 'That invite link has expired. Ask your coach for a new one.');
       if (c.email === user.email) throw new HttpError(400, 'That’s your own invite link. Send it to your students.');
       if (user.coach === c.email) return send(res, 200, { ok: true, coach: { name: c.name } });
       const list = (c.students || []).filter((e) => e !== user.email);
@@ -114,7 +114,7 @@ const coach = handler(async (req, res) => {
       return send(res, 200, { ok: true });
     }
     case 'remove': {
-      if (!plans.isCoach(user)) throw new HttpError(403, 'Only coaches can remove students.');
+      if (!plans.canCoach(user)) throw new HttpError(403, 'Only coaches can remove students.');
       const sEmail = typeof body.student === 'string' && /^[0-9a-f-]{36}$/.test(body.student) ? await store.get(`uid:${body.student}`) : null;
       const s = sEmail && (await getUser(sEmail));
       if (!s || s.coach !== user.email) throw new HttpError(404, 'That student isn’t on your list.');

@@ -32,9 +32,27 @@ Vercel runs `astro build` and serves `dist/`, and the files in `api/` run as fun
 
 Accounts need a database, because Vercel functions don't keep files. In the Vercel project, open **Storage → Create → Upstash for Redis** (free tier is plenty) and connect it to the project: that sets `KV_REST_API_URL` and `KV_REST_API_TOKEN` (or `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`), which `src/store.js` reads. Redeploy. Without it, sign-up answers "Accounts aren't set up on this server yet".
 
+## Plans
+
+Everything is **free for everyone** until Stripe is set up (`STRIPE_SECRET_KEY` and `STRIPE_PRICE_PRO`). While billing is off:
+
+- every account gets every feature, with no daily limits and the full 26 weeks;
+- anyone can coach;
+- the site shows no plans, prices or Upgrade buttons.
+
+Setting the Stripe env vars switches the plans on without a code change (`src/plans.js`: `hasPro`, `canCoach`). See `LAUNCH.md` for going live, and `.env.example` for every setting.
+
 ## Pages
 
 - `/` is the landing page: a hero, a section for each feature and a footer. Each feature also has its own page at `/features/<name>.html`, generated from `web/data/features.ts` (game counter, game review, analysis board, set up & play).
+- `/review.html`, **no account needed**: paste a Lichess link or any PGN for a full review, then share it as an image (`web/scripts/review/share.mjs`) or copy its link. Pasted games never leave the browser. `/analysis.html` is open to everyone too.
+- `/privacy.html`, `/terms.html`, `/licenses.html`: the legal pages. Who runs the service and the governing law come from `PUBLIC_*` env vars (`web/data/site.ts`). `/sitemap.xml` and `/robots.txt` are generated at build time.
+- Account pages:
+  - `/train.html` (Training), `/brilliants.html` and `/settings.html`.
+  - `/coach.html`: an invite link and each student's week, with every game a click away from a review.
+  - `/join.html?code=…`: where a student accepts a coach.
+  - `/admin.html`, for emails in `ADMIN_EMAILS`: visitors, sign-ups, the funnel, and which features get used.
+- `/forgot.html`, `/reset.html` and `/verify.html`: password reset and email confirmation. The tokens travel in the link's `#hash`.
 - `/signup.html` and `/login.html`: create an account (your name, email, password) or sign in. Both send you on to the page you were going to.
 - `/app.html` is the main page, the game counter. It, `review.html` and `analysis.html` need you to be signed in (`web/layouts/Base.astro` sends you to sign in otherwise). Old `/?accounts=…` links go to `/app.html?accounts=…`.
 

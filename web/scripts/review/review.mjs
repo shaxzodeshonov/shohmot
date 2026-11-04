@@ -12,6 +12,8 @@ import { newTree, play as playOn, toPgn } from './tree.mjs';
 import { LABELS, BAD, ACCURACY, winPercent, moveAccuracy, gameAccuracy, classify, gameRating, phases } from './analysis.mjs';
 import { labelGame } from './label.mjs';
 import { saveReviewedMistakes, mistakesOf } from '../training/store.mjs';
+import { track } from '../track.js';
+import { shareCard } from './share.mjs';
 import { saveReviewed } from '../brilliants/store.mjs';
 
 const $ = (s) => document.querySelector(s);
@@ -22,10 +24,19 @@ const store = {
 };
 
 const params = new URLSearchParams(location.search);
-const PLATFORM = params.get('p');
+// A game comes from one of the accounts (?p=&u=&id=&t=), a Lichess link
+// (?p=lichess&id=, no account needed), or a pasted PGN (#pgn=…, nothing
+// leaves the browser). ?side= or #side= says which side you played.
+const hashParams = new URLSearchParams(location.hash.slice(1));
+const PGN = hashParams.get('pgn');
+let PLATFORM = PGN ? null : params.get('p');
 const USERNAME = params.get('u') || '';
-const GAME_ID = params.get('id');
-const SITE = PLATFORM === 'lichess' ? 'Lichess' : 'Chess.com';
+let GAME_ID = PGN ? null : params.get('id');
+const SIDE = ['w', 'b'].includes(params.get('side') || hashParams.get('side')) ? (params.get('side') || hashParams.get('side')) : null;
+let SITE = PLATFORM === 'lichess' ? 'Lichess' : 'Chess.com';
+// Only games from your own accounts feed your brilliant moves and training.
+let SAVE = !!(PLATFORM && GAME_ID && USERNAME) && !params.has('coach'); // a coach looking at a student's game keeps it out of their own training
+const signedIn = () => document.cookie.split('; ').includes('shohmot_in=1');
 const PIECE_NAME = { p: 'pawn', n: 'knight', b: 'bishop', r: 'rook', q: 'queen', k: 'king' };
 // depth -> time cap per position (ms). The full network searches fewer
 // positions a second, so it gets more time to reach the same depth.
@@ -76,9 +87,17 @@ function buildGame(pgn) {
     pieces.push(countPieces(replay));
     return { san: m.san, uci: uciOf(m), from: m.from, to: m.to, color: m.color, captured: m.captured || null, piece: m.piece };
   });
-  const lower = USERNAME.toLowerCase();
-  const me = (headers.Black || '').toLowerCase() === lower ? 'b' : 'w';
-  return { headers, fens, moves, legal, pieces, me, end: endState(replay) };
+  return { headers, fens, moves, legal, pieces, me: whoAmI(headers), end: endState(replay) };
+}
+
+// Which side you played: as asked, else the side with your username (from
+// the link, or any account on your Shohmot profile), else White.
+function whoAmI(headers) {
+  if (SIDE) return SIDE;
+  const names = new Set([USERNAME.toLowerCase()].filter(Boolean));
+  try { for (const a of (JSON.parse(localStorage.getItem('shohmot-me')) || {}).accounts || []) names.add(a.username.toLowerCase()); } catch { /* */ }
+  if (names.has((headers.Black || '').toLowerCase())) return 'b';
+  return 'w';
 }
 
 function countPieces(chess) {
@@ -277,7 +296,10 @@ async function analyse() {
 function finish(depth) {
   review = buildReview();
   // The full review is the last word on this game's brilliant moves.
-  if (PLATFORM && GAME_ID) {
+  $('#share-row').hidden = false;
+  if (!signedIn()) track('guest_review');
+  track('review_finished');
+  if (SAVE) {
     const found = [];
     review.labels.forEach((l, i) => {
       if (l === 'brilliant' && game.moves[i].color === game.me) found.push({ ply: i + 1, san: game.moves[i].san, fen: game.fens[i], uci: game.moves[i].uci });
@@ -913,9 +935,14 @@ function timeControl(tc) {
 
 async function main() {
   wire();
-  if (!PLATFORM || !GAME_ID || !USERNAME) {
-    $('#title').textContent = 'No game picked';
-    return showError('Open a game from the game list on the home page.');
+  wirePaste();
+  wireShare();
+  if (!PGN && (!PLATFORM || !GAME_ID || (!USERNAME && PLATFORM !== 'lichess'))) {
+    $('#title').textContent = 'Free chess game review';
+    document.querySelector('main.review').classList.add('pasting');
+    $('#paste').hidden = false;
+    $('#paste-text').focus();
+    return;
   }
   const savedDepth = store.get('shohmot-review-depth');
   if (savedDepth && $('#depth').querySelector(`option[value="${savedDepth}"]`)) $('#depth').value = String(savedDepth);
@@ -928,14 +955,25 @@ async function main() {
   $('#engine').addEventListener('change', () => store.set('shohmot-review-engine', $('#engine').value));
 
   let data;
-  try {
-    const qs = new URLSearchParams({ platform: PLATFORM, username: USERNAME, id: GAME_ID, end: params.get('t') || '' });
-    const res = await fetch(`/api/game?${qs}`);
-    data = await res.json();
-    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-  } catch (err) {
-    $('#title').textContent = 'Could not load this game';
-    return showError(err.message);
+  if (PGN) {
+    // A pasted game: work out where it's from for the accuracy scale and the link.
+    const site = /\[Site "([^"]*)"\]/.exec(PGN);
+    const lichess = site && /lichess/i.test(site[1]);
+    PLATFORM = lichess ? 'lichess' : 'chesscom';
+    SITE = lichess ? 'Lichess' : site && /chess\.com/i.test(site[1]) ? 'Chess.com' : 'PGN';
+    GAME_ID = `pgn-${hashText(PGN)}`;
+    const url = (/\[Link "([^"]*)"\]/.exec(PGN) || site || [])[1];
+    data = { pgn: PGN, url: /^https:\/\/(www\.)?(lichess\.org|chess\.com)\//.test(url || '') ? url : null };
+  } else {
+    try {
+      const qs = new URLSearchParams({ platform: PLATFORM, username: USERNAME, id: GAME_ID, end: params.get('t') || '' });
+      const res = await fetch(`/api/game?${qs}`);
+      data = await res.json();
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    } catch (err) {
+      $('#title').textContent = 'Could not load this game';
+      return showError(err.message);
+    }
   }
   try {
     game = buildGame(data.pgn);
@@ -949,9 +987,11 @@ async function main() {
   }
   official = data.official || null;
   const link = $('#site-link');
-  link.href = data.url;
-  link.textContent = `Open on ${SITE}`;
-  link.hidden = false;
+  if (data.url) {
+    link.href = data.url;
+    link.textContent = `Open on ${SITE === 'PGN' ? 'site' : SITE}`;
+    link.hidden = false;
+  }
 
   try {
     applyBook(await fetch('/openings.json').then((r) => r.json()));
@@ -966,6 +1006,99 @@ async function main() {
   $('#panel-game').hidden = false;
   render();
   analyse();
+}
+
+// ---------- paste a game ----------
+function hashText(t) {
+  let h = 5381;
+  for (let i = 0; i < t.length; i++) h = ((h << 5) + h + t.charCodeAt(i)) >>> 0;
+  return h.toString(36);
+}
+
+function wirePaste() {
+  $('#paste').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const text = $('#paste-text').value.trim();
+    const side = $('#paste-side').value;
+    const err = $('#paste-error');
+    err.hidden = true;
+    const say = (m) => { err.textContent = m; err.hidden = false; };
+    if (!text) return say('Paste a Lichess link or a PGN first.');
+    // lichess.org/abcdEFGH, /abcdEFGHxyzw (player link), /abcdEFGH/black
+    const li = /lichess\.org\/([A-Za-z0-9]{8})(?:[A-Za-z0-9]{4})?(?:\/(white|black))?/.exec(text);
+    if (li && text.length < 200) {
+      const qs = new URLSearchParams({ p: 'lichess', id: li[1] });
+      const s = side || (li[2] === 'black' ? 'b' : li[2] === 'white' ? 'w' : '');
+      if (s) qs.set('side', s);
+      location.href = `/review.html?${qs}`;
+      return;
+    }
+    if (/chess\.com\//.test(text) && text.length < 200) {
+      return say('Chess.com links can’t be opened directly. On Chess.com, open the game, press Share, choose PGN, copy it and paste it here.');
+    }
+    try {
+      const chess = new Chess();
+      chess.loadPgn(text);
+      if (!chess.history().length) throw new Error();
+    } catch {
+      return say('That isn’t a game Shohmot can read. Paste a Lichess link, or a PGN of a standard chess game.');
+    }
+    const hash = new URLSearchParams({ pgn: text });
+    if (side) hash.set('side', side);
+    location.href = `/review.html#${hash}`;
+    location.reload();
+  });
+}
+
+// ---------- share ----------
+function wireShare() {
+  $('#copy-link').addEventListener('click', async () => {
+    let url = location.href;
+    if (PLATFORM === 'lichess' && GAME_ID && !PGN) {
+      const qs = new URLSearchParams({ p: 'lichess', id: GAME_ID, side: game.me });
+      url = `${location.origin}/review.html?${qs}`;
+    }
+    try { await navigator.clipboard.writeText(url); $('#copy-link').textContent = 'Link copied'; } catch { prompt('Copy this link:', url); }
+    setTimeout(() => { $('#copy-link').textContent = 'Copy link'; }, 2500);
+  });
+  $('#share').addEventListener('click', async () => {
+    if (!review) return;
+    const btn = $('#share');
+    btn.disabled = true;
+    try {
+      const me = game.me;
+      const opp = me === 'w' ? 'b' : 'w';
+      const count = (l) => review.labels.filter((x, i) => x === l && game.moves[i].color === me).length;
+      // Show the board at your first brilliant move, else where the game ended.
+      const bril = review.labels.findIndex((l, i) => l === 'brilliant' && game.moves[i].color === me);
+      const at = bril >= 0 ? bril + 1 : game.fens.length - 1;
+      const blob = await shareCard({
+        title: $('#title').textContent,
+        meta: $('#meta').textContent,
+        you: { name: (me === 'w' ? game.headers.White : game.headers.Black) || 'You', acc: review.accuracy[me] },
+        them: { name: (opp === 'w' ? game.headers.White : game.headers.Black) || 'Opponent', acc: review.accuracy[opp] },
+        counts: ['brilliant', 'great', 'best', 'mistake', 'blunder'].map((l) => ({ l, name: LABELS[l].name, mark: LABELS[l].mark, n: count(l) })),
+        fen: game.fens[at],
+        last: at ? game.moves[at - 1] : null,
+        flip: me === 'b',
+        caption: bril >= 0 ? `${moveNumber(bril)} ${game.moves[bril].san}!!` : 'Final position',
+        site: location.host,
+      });
+      const file = new File([blob], 'shohmot-review.png', { type: 'image/png' });
+      track('review_shared');
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: $('#title').textContent, text: `My game review on Shohmot` }).catch(() => {});
+      } else {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'shohmot-review.png';
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+      }
+    } finally {
+      btn.disabled = false;
+    }
+  });
 }
 
 main();

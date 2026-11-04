@@ -22,7 +22,7 @@ const EVENTS = [
   'checkout_started', 'subscribed', 'churned', 'coach_joined', 'install', 'client_error',
 ];
 // The pages page views are counted for, so the key space stays small.
-const PAGES = ['/', '/app', '/review', '/analysis', '/insights', '/puzzles', '/pricing', '/signup', '/login', '/settings', '/coach', '/features'];
+const PAGES = ['/', '/app', '/review', '/analysis', '/train', '/brilliants', '/pricing', '/signup', '/login', '/settings', '/coach', '/join', '/features', '/privacy', '/terms'];
 const FUNNEL = ['signup', 'account_added', 'review_finished', 'checkout_started', 'subscribed'];
 
 const dayOf = (t = Date.now()) => new Date(t).toISOString().slice(0, 10);

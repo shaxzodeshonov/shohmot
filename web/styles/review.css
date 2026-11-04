@@ -288,3 +288,15 @@ a.btn { text-decoration: none; display: inline-block; }
 @media (prefers-reduced-motion: reduce) {
   .evalbar i, .progress-bar i { transition: none; }
 }
+
+/* ---------- paste a game, share ---------- */
+.paste { display: grid; gap: 0.875rem; padding: 0 1.25rem 1.25rem; }
+.paste-field { display: grid; gap: 0.4375rem; font-weight: 600; font-size: 0.875rem; }
+.paste-field textarea { width: 100%; resize: vertical; background: var(--bg); border: 1px solid var(--line-2); border-radius: 0.75rem; padding: 0.75rem 0.875rem; font: inherit; font-size: 0.875rem; font-weight: 400; color: var(--ink); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.paste-field textarea:focus { outline: none; border-color: var(--sage); }
+.paste-row { display: flex; gap: 0.75rem; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.small-note { font-size: 0.8125rem; }
+.rv-share { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.75rem; }
+.review.pasting { grid-template-columns: minmax(0, 36rem); justify-content: center; }
+.review.pasting .panel { height: auto; }
+.review.pasting .rv-title { font-size: 2rem; }

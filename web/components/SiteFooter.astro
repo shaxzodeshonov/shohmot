@@ -1,38 +1,43 @@
 ---
 import Logo from './Logo.astro';
 import { FEATURES } from '../data/features';
+import { SITE } from '../data/site';
 ---
 <footer class="site-foot">
   <div class="wrap">
     <div class="foot-grid">
       <div>
         <a class="wordmark" href="/"><Logo /> Shohmot</a>
-        <p>Today’s games on your Chess.com and Lichess accounts, counted, and reviewed by Stockfish in your browser.</p>
+        <p>Your Chess.com and Lichess games counted, checked for mistakes and brilliant moves, and reviewed by Stockfish in your browser. Free.</p>
       </div>
       <nav aria-labelledby="foot-features">
         <h2 id="foot-features">Features</h2>
         <ul>{FEATURES.map((f) => <li><a href={`/features/${f.slug}.html`}>{f.name}</a></li>)}</ul>
       </nav>
-      <nav aria-labelledby="foot-account">
-        <h2 id="foot-account">Account</h2>
+      <nav aria-labelledby="foot-tools">
+        <h2 id="foot-tools">Free tools</h2>
         <ul>
+          <li><a href="/review.html" data-astro-prefetch="false">Game review</a></li>
+          <li><a href="/analysis.html" data-astro-prefetch="false">Analysis board</a></li>
+          <li><a href="/analysis.html#setup" data-astro-prefetch="false">Set up a position</a></li>
           <li data-signed-out><a href="/signup.html">Create account</a></li>
-          <li data-signed-out><a href="/login.html">Sign in</a></li>
           <li data-signed-in><a href="/app.html">Open Shohmot</a></li>
         </ul>
       </nav>
-      <nav aria-labelledby="foot-project">
-        <h2 id="foot-project">Project</h2>
+      <nav aria-labelledby="foot-about">
+        <h2 id="foot-about">About</h2>
         <ul>
+          <li><a href="/privacy.html">Privacy</a></li>
+          <li><a href="/terms.html">Terms</a></li>
+          <li><a href="/licenses.html">Licences</a></li>
+          <li><a href={`mailto:${SITE.support}`}>Contact</a></li>
           <li><a href="https://github.com/shaxzodeshonov/shohmot" rel="noopener">Source on GitHub</a></li>
-          <li><a href="https://stockfishchess.org" rel="noopener">Stockfish</a></li>
-          <li><a href="https://github.com/lichess-org/chess-openings" rel="noopener">Lichess openings</a></li>
         </ul>
       </nav>
     </div>
     <div class="foot-base">
       <span>© {new Date().getFullYear()} Shohmot</span>
-      <span>Not affiliated with Chess.com or Lichess.</span>
+      <span>Not affiliated with Chess.com or Lichess. Engine: Stockfish (GPL v3).</span>
     </div>
   </div>
 </footer>

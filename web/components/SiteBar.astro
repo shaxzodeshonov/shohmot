@@ -1,14 +1,16 @@
 ---
 import Logo from './Logo.astro';
-import { FEATURES } from '../data/features';
 interface Props { current?: string }
 const { current } = Astro.props;
+const here = (k: string) => (k === current ? 'page' : undefined);
 ---
 <header class="site-bar">
   <div class="wrap">
     <a class="wordmark" href="/"><Logo /> Shohmot</a>
-    <nav class="site-nav" aria-label="Features">
-      {FEATURES.map((f) => <a href={`/features/${f.slug}.html`} aria-current={f.slug === current ? 'page' : undefined}>{f.name}</a>)}
+    <nav class="site-nav" aria-label="Site">
+      <a href="/#features" aria-current={here('features')}>Features</a>
+      <a href="/review.html" data-astro-prefetch="false" aria-current={here('review-tool')}>Free game review</a>
+      <a href="/analysis.html" data-astro-prefetch="false" aria-current={here('analysis-tool')}>Analysis board</a>
     </nav>
     <div class="site-actions">
       <a class="btn" href="/login.html" data-signed-out>Sign in</a>

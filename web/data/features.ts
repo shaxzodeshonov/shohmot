@@ -1,7 +1,7 @@
 // What each feature page and landing-page section says. The pages in
 // web/pages/features/ are generated from this list, in this order.
 export interface Feature {
-  slug: 'counter' | 'review' | 'analysis' | 'play';
+  slug: 'counter' | 'training' | 'brilliants' | 'review' | 'analysis' | 'play';
   name: string;
   eyebrow: string;
   /** The page heading; the part in *stars* is drawn in sage. */
@@ -33,11 +33,47 @@ export const FEATURES: Feature[] = [
     steps: [['Create an account', 'Your name, email and a password. That’s all.'], ['Add your usernames', 'Chess.com, Lichess or both, up to four.'], ['Go play', 'Shohmot counts as you go, every minute.']],
   },
   {
+    slug: 'training',
+    name: 'Mistake training',
+    eyebrow: 'Learn from every loss',
+    title: 'Lost a game? Train the moves that *lost it.*',
+    lead: 'Every game you play is checked by Stockfish as soon as it ends. Shohmot tells you what went wrong, and turns each mistake into a position you train until you find the right move every time.',
+    short: 'After every game, Shohmot shows what went wrong and turns your mistakes into positions you train on, spaced out so they stick.',
+    ticks: ['A “what to work on” card after every game', 'Your own mistakes, as positions to solve', 'Spaced repetition, so the lesson sticks'],
+    points: [
+      ['Checked as you play', 'Each new game gets a quick Stockfish check right in your browser, losses first. It takes a few seconds.'],
+      ['Told straight', '“3… Nf6?? allows mate in 1. Better was Qe7.” Your worst moves, what went wrong and the better move.'],
+      ['Train your own mistakes', 'Each mistake becomes a position: find the better move. Two tries, a hint if you need it, then the answer and the engine’s line.'],
+      ['Spaced repetition', 'Solve it and it comes back after 1, 3, 7 and 21 days. Miss it and it’s back in 10 minutes.'],
+      ['What to work on', 'Hanging pieces, missed mates, lost material: see which kind of mistake you make most, and in which phase.'],
+      ['Older losses too', 'Go back through the losses you played before, and turn them into training as well.'],
+    ],
+    steps: [['Play a game', 'Keep Shohmot open while you play.'], ['Read the card', 'What went wrong, and the better move.'], ['Train it', 'Solve the position until it sticks.']],
+  },
+  {
+    slug: 'brilliants',
+    name: 'Brilliant moves',
+    eyebrow: 'Brilliant move finder',
+    title: 'Every brilliant move you’ve ever *played.*',
+    lead: 'Shohmot goes through all the games on your accounts and finds your brilliant moves: real piece sacrifices that were also the best move. It runs in your browser and never checks a game twice.',
+    short: 'Every brilliant move across all your games: piece sacrifices that were also the best move, found by Stockfish in your browser.',
+    ticks: ['All your games, on every account', 'Real sacrifices, checked by Stockfish', '“!!” on your game list the moment you play one'],
+    points: [
+      ['Every game', 'Up to 26 weeks of games on each Chess.com and Lichess account.'],
+      ['Real sacrifices', 'Counts a piece left hanging even when taking it loses: the classic brilliant move.'],
+      ['Fast', 'Chess rules find the sacrifices first, so Stockfish only looks at a handful of positions a game.'],
+      ['Fair at every level', 'Like Chess.com, it’s more generous at lower ratings.'],
+      ['Right on the counter', 'Play a brilliant move and the counter marks the game with “!!”.'],
+      ['Straight to the review', 'Every brilliant move opens in the full review at that move.'],
+    ],
+    steps: [['Add your accounts', 'Chess.com, Lichess or both.'], ['Open Brilliants', 'The scan starts on its own.'], ['Share them', 'Every one opens in the review.']],
+  },
+  {
     slug: 'review',
     name: 'Game review',
     eyebrow: 'Game review',
-    title: 'Find out what really happened in that *loss.*',
-    lead: 'Every game in your list has a Review button. Stockfish 19 analyses it in your browser and labels every move, Brilliant to Blunder, with accuracy on the scale of the site you played on.',
+    title: 'A free Stockfish review of any *game.*',
+    lead: 'Paste a Lichess link or any PGN, no account needed, or press Review on a game in your list. Stockfish 19 analyses it in your browser and labels every move, Brilliant to Blunder, with accuracy on the scale of the site you played on.',
     short: 'Stockfish 19 reviews any game in your browser: accuracy, a label on every move, and the better move with the reason.',
     ticks: ['Accuracy on the scale of the site you played on', 'Every move labelled, Brilliant to Blunder', 'The better move as an arrow, and why yours wasn’t'],
     points: [
@@ -48,7 +84,7 @@ export const FEATURES: Feature[] = [
       ['Deep evaluations first', 'Positions Lichess has already searched 40–60 moves deep come from its cloud, then Stockfish 19 with the full network.'],
       ['Runs on your machine', 'The server does no engine work. Results are kept, so a game opens instantly the second time.'],
     ],
-    steps: [['Pick a game', 'Every game in today’s list has a Review button.'], ['Let it run', 'Quick to Deep, Strong by default.'], ['Learn from it', 'Press N to jump to your next mistake.']],
+    steps: [['Pick a game', 'Paste a link or PGN, or press Review in your list.'], ['Let it run', 'Quick to Deep, Strong by default.'], ['Share it', 'Press N for your next mistake, or share the review as an image.']],
   },
   {
     slug: 'analysis',

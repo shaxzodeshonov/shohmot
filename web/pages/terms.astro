@@ -1,0 +1,49 @@
+---
+import SitePage from '../layouts/SitePage.astro';
+import Prose from '../components/Prose.astro';
+import { SITE } from '../data/site';
+---
+<SitePage title="Terms of use · Shohmot" description="The rules for using Shohmot.">
+  <Prose title="Terms of use" updated={SITE.legalUpdated}>
+    <p>These terms are an agreement between you and {SITE.operator}, who run Shohmot. By making an account or using the site, you agree to them. If you don’t agree, please don’t use Shohmot.</p>
+
+    <h2>The service</h2>
+    <p>Shohmot counts the games on the Chess.com and Lichess accounts you add, reviews games with the Stockfish chess engine in your browser, finds brilliant moves and mistakes, and lets you train on them. Shohmot is free to use. If we ever add paid features, we’ll tell you first, and nothing you use today will start charging without you choosing to pay.</p>
+    <p>Shohmot is not affiliated with, endorsed by or connected to Chess.com or Lichess. Their names are used only to say which sites your games come from.</p>
+
+    <h2>Your account</h2>
+    <ul>
+      <li>Give a real email address, and keep your password to yourself. You’re responsible for what happens on your account.</li>
+      <li>You may only add chess usernames that are public. Shohmot reads only public game data.</li>
+      <li>If you join a coach, they can see your chess accounts and games until you leave. If you coach, use what you see only to help your students.</li>
+    </ul>
+
+    <h2>Fair use</h2>
+    <p>Please don’t:</p>
+    <ul>
+      <li>try to get round rate limits, scrape Shohmot, or use it to put load on Chess.com or Lichess;</li>
+      <li>break in, test security without permission, or interfere with other people’s use;</li>
+      <li>use Shohmot to harass anyone, or to cheat in games that are still being played. Analysing a game while it’s in progress breaks the fair-play rules of every chess site.</li>
+    </ul>
+    <p>We may suspend or close accounts that do these things.</p>
+
+    <h2>Engine analysis</h2>
+    <p>Evaluations, accuracy numbers, move labels and ratings come from a chess engine and our own formulas. They’re a guide to help you improve, not a judgement, and they can be wrong. Accuracy and labels are similar to, but not the same as, the ones Chess.com and Lichess show.</p>
+
+    <h2>Open source</h2>
+    <p>Parts of Shohmot are other people’s free software, used under their licences; see <a href="/licenses.html">Licences</a>.</p>
+
+    <h2>No warranty</h2>
+    <p>Shohmot is provided “as is”. We do our best to keep it working and your data safe, but we can’t promise it will always be available, error-free or fit for a particular purpose. Keep your own copies of anything that matters to you.</p>
+
+    <h2>Liability</h2>
+    <p>As far as the law allows, we aren’t liable for indirect or consequential losses, or for lost data, rating points or games. Nothing in these terms limits rights you have that the law says can’t be limited.</p>
+
+    <h2>Ending</h2>
+    <p>You can stop using Shohmot and delete your account at any time in Settings. We may end the service with reasonable notice by email.</p>
+
+    <h2>Changes and law</h2>
+    <p>We may update these terms. If a change matters, we’ll say so on the site or by email before it applies. These terms are governed by the laws of {SITE.law}.</p>
+    <p>Questions: <a href={`mailto:${SITE.support}`}>{SITE.support}</a>.</p>
+  </Prose>
+</SitePage>

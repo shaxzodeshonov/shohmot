@@ -1,0 +1,13 @@
+---
+import Screen from './Screen.astro';
+import MiniBoard from './MiniBoard.astro';
+const weeks = [0, 1, 0, 2, 1, 0, 3, 1, 2, 0, 1, 4];
+---
+<Screen label="Brilliant moves found across all your games">
+  <p class="mock-head">7 brilliant moves</p>
+  <div class="bm-weeks">{weeks.map((n) => <i style={`height:${12 + n * 22}%`}></i>)}</div>
+  <div class="bm-item">
+    <MiniBoard id="bril" fen="rn1qkbnr/ppp2p1p/3p2p1/4p3/2B1P1b1/2N2N2/PPPP1PPP/R1BQK2R" arrows={['f3e5']} hl={['f3', 'e5']} />
+    <div><strong>5. Nxe5<em>!!</em></strong><small>vs Victim · Blitz</small><small>Leaves the queen. Taking it gets mated.</small></div>
+  </div>
+</Screen>

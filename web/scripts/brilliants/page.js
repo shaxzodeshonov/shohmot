@@ -1,6 +1,6 @@
 // The Brilliants page: runs the scan over your accounts and lists every
 // brilliant move found, with a little board for each.
-import { currentUser, freshUser, features } from '../session.js';
+import { currentUser, freshUser, features, unlocked } from '../session.js';
 import { scan } from './scan.mjs';
 import { brilliants, checkedCount } from './store.mjs';
 
@@ -19,7 +19,7 @@ let job = null;
 let paused = false;
 let since = 0;
 
-const isPro = (u) => u && u.plan && u.plan !== 'free';
+const isPro = (u) => unlocked(u);
 function startOfDay(t) { const d = new Date(t); d.setHours(0, 0, 0, 0); return d.getTime(); }
 function startOfWeek(t) { const d = new Date(startOfDay(t)); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d.getTime(); }
 
@@ -148,7 +148,7 @@ try { const e = localStorage.getItem('shohmot-bz-engine'); if (e) $('#bz-engine'
 function setUser(user) {
   me = user;
   since = isPro(me) ? startOfDay(Date.now()) - (WEEKS * 7 - 1) * DAY : startOfDay(Date.now()) - (FREE_DAYS - 1) * DAY;
-  $('#banners').innerHTML = isPro(me) ? '' : `<div class="banner" data-kind="info"><p><b>Free scans your last ${FREE_DAYS} days.</b> Pro checks all ${WEEKS} weeks of games on every account.</p>${features().billing ? '<div class="banner-actions"><a class="btn btn-solid" href="/pricing.html">See Pro</a></div>' : ''}</div>`;
+  $('#banners').innerHTML = isPro(me) || !features().billing ? '' : `<div class="banner" data-kind="info"><p><b>Free scans your last ${FREE_DAYS} days.</b> Pro checks all ${WEEKS} weeks of games on every account.</p>${features().billing ? '<div class="banner-actions"><a class="btn btn-solid" href="/pricing.html">See Pro</a></div>' : ''}</div>`;
   render();
 }
 

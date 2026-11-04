@@ -188,6 +188,10 @@ function publicUser(u) {
     prefs: plans.prefsFor(u),
     coach: u.coach ? { name: u.coachName || 'Your coach' } : null,
     admin: plans.isAdmin(u),
+    // What this account can use right now (everything, while billing is off).
+    unlocked: plans.hasPro(u),
+    canCoach: plans.canCoach(u),
+    students: (u.students || []).length,
   };
 }
 

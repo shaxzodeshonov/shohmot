@@ -7,7 +7,7 @@ import { boardInput } from '../review/board-input.mjs';
 import { play, soundOf } from '../review/sound.mjs';
 import { LABELS } from '../review/analysis.mjs';
 import { KINDS } from '../review/label.mjs';
-import { currentUser, freshUser, features } from '../session.js';
+import { currentUser, freshUser, features, unlocked } from '../session.js';
 import { track } from '../track.js';
 import { queue, record, stats, doneToday, LEARNED } from './store.mjs';
 import { analyzeMany } from './analyze.mjs';
@@ -35,7 +35,7 @@ let arrow = null;  // { uci, cls }
 let last = null;   // { from, to } of the move on the board
 const focusGame = new URLSearchParams(location.search).get('game');
 
-const isPro = (u) => u && u.plan && u.plan !== 'free';
+const isPro = (u) => unlocked(u);
 const limited = () => !isPro(me) && doneToday() >= FREE_PER_DAY;
 
 let toastTimer;
@@ -281,7 +281,7 @@ $('#tr-old-go').addEventListener('click', () => {
     onDone: (p) => {
       oldJob = null;
       $('#tr-old-go').textContent = p.stopped ? 'Resume' : 'Check again';
-      if (!p.stopped) $('#tr-old-status').textContent = `Done: ${p.done} losses checked from the last ${isPro(me) ? '26 weeks' : '7 days'}, ${added} new positions.${isPro(me) ? '' : ' Pro goes back 26 weeks.'}`;
+      if (!p.stopped) $('#tr-old-status').textContent = `Done: ${p.done} losses checked from the last ${isPro(me) ? '26 weeks' : '7 days'}, ${added} new positions.${isPro(me) || !features().billing ? '' : ' Pro goes back 26 weeks.'}`;
     },
   });
 });
@@ -303,7 +303,7 @@ document.addEventListener('keydown', (e) => {
 
 function setUser(u) {
   me = u;
-  $('#banners').innerHTML = isPro(me) ? '' : `<div class="banner" data-kind="info"><p><b>Free: ${FREE_PER_DAY} positions a day</b>, and older games from the last 7 days. Pro trains without a limit and checks 26 weeks of games.</p>${features().billing ? '<div class="banner-actions"><a class="btn btn-solid" href="/pricing.html">See Pro</a></div>' : ''}</div>`;
+  $('#banners').innerHTML = isPro(me) || !features().billing ? '' : `<div class="banner" data-kind="info"><p><b>Free: ${FREE_PER_DAY} positions a day</b>, and older games from the last 7 days. Pro trains without a limit and checks 26 weeks of games.</p>${features().billing ? '<div class="banner-actions"><a class="btn btn-solid" href="/pricing.html">See Pro</a></div>' : ''}</div>`;
 }
 
 currentUser().then(async (u) => {

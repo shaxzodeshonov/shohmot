@@ -1,6 +1,7 @@
 // Plans and the settings that depend on them. No I/O here, so it's easy to
 // test and every module can use it.
 //
+//   (While billing is off, every account gets everything below.)
 //   free   counter, reviews, analysis board, play, loss-streak alerts,
 //          weekly email, 10 saved puzzles
 //   pro    + daily game limit, desktop notifications, Insights, unlimited puzzles
@@ -29,6 +30,12 @@ const isCoach = (u) => planOf(u) === 'coach';
 // Billing is on once Stripe's key and at least the Pro price are set.
 const billingOn = () => !!(process.env.STRIPE_SECRET_KEY && process.env.STRIPE_PRICE_PRO);
 
+// Until billing is switched on, everything is free for everyone: Pro's
+// features are open to every account, and anyone can coach. Turning billing
+// on (the env vars above) brings the plans back without a code change.
+const hasPro = (u) => !billingOn() || isPro(u);
+const canCoach = (u) => !!u && (!billingOn() || isCoach(u));
+
 const DEFAULT_PREFS = { lossStreak: 3, dailyLimit: 0, notify: false, weeklyEmail: true };
 
 const int = (v, lo, hi, d) => {
@@ -39,7 +46,7 @@ const int = (v, lo, hi, d) => {
 // What's stored, filled in with defaults. Pro-only settings read as off on free.
 function prefsFor(u) {
   const p = { ...DEFAULT_PREFS, ...((u && u.prefs) || {}) };
-  if (!isPro(u)) { p.dailyLimit = 0; p.notify = false; }
+  if (!hasPro(u)) { p.dailyLimit = 0; p.notify = false; }
   return p;
 }
 
@@ -53,8 +60,8 @@ function cleanPrefs(raw, u) {
     notify: raw.notify === undefined ? cur.notify : raw.notify === true,
     weeklyEmail: raw.weeklyEmail === undefined ? cur.weeklyEmail : raw.weeklyEmail === true,
   };
-  if (!isPro(u)) { out.dailyLimit = 0; out.notify = false; }
+  if (!hasPro(u)) { out.dailyLimit = 0; out.notify = false; }
   return out;
 }
 
-module.exports = { PLANS, COACH_SEATS, FREE_PUZZLES, planOf, isPro, isCoach, isAdmin, billingOn, prefsFor, cleanPrefs, DEFAULT_PREFS };
+module.exports = { PLANS, COACH_SEATS, FREE_PUZZLES, planOf, isPro, isCoach, hasPro, canCoach, isAdmin, billingOn, prefsFor, cleanPrefs, DEFAULT_PREFS };

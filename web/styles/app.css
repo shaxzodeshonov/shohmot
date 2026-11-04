@@ -27,6 +27,8 @@
 }
 
 * { box-sizing: border-box; }
+/* Signed-in or signed-out only (Base.astro sets data-auth before first paint). */
+html[data-auth="in"] [data-signed-out], html:not([data-auth="in"]) [data-signed-in] { display: none !important; }
 [hidden] { display: none !important; }
 html { -webkit-text-size-adjust: 100%; }
 body {
