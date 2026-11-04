@@ -1,0 +1,16 @@
+---
+import Screen from './Screen.astro';
+import MiniBoard from './MiniBoard.astro';
+---
+<Screen label="Your chess double: your style, openings and a game against it">
+  <p class="mock-head">tester’s double</p>
+  <div class="chips"><span class="on">Attacker</span><span>Safe king</span><span>Loyal to 1.e4</span></div>
+  <div class="tm-train">
+    <MiniBoard id="double" fen="r1bqkbnr/pp1ppppp/2n5/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R" arrows={['d2d4']} hl={['b8', 'c6']} />
+    <div class="tm-side">
+      <small>Your double played</small>
+      <strong>2… Nc6</strong>
+      <span class="tm-next">You played it here in 41 of 52 games.</span>
+    </div>
+  </div>
+</Screen>

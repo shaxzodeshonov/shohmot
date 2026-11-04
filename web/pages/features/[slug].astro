@@ -16,8 +16,9 @@ const { f, next } = Astro.props;
     <h1 id="page-title"><Title text={f.title} /></h1>
     <p class="lead">{f.lead}</p>
     <div class="cta-row">
-      <a class="btn btn-solid btn-lg" href="/signup.html" data-signed-out>Create free account</a>
-      <a class="btn btn-solid btn-lg" href="/app.html" data-signed-in>Open Shohmot</a>
+      {f.try && <a class="btn btn-solid btn-lg" href={f.try[1]} data-astro-prefetch="false">{f.try[0]}</a>}
+      <a class={f.try ? 'btn btn-lg' : 'btn btn-solid btn-lg'} href="/signup.html" data-signed-out>Create free account</a>
+      <a class={f.try ? 'btn btn-lg' : 'btn btn-solid btn-lg'} href="/app.html" data-signed-in>Open Shohmot</a>
       <a class="btn btn-lg" href="/#features">All features</a>
     </div>
   </section>
