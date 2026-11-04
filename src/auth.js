@@ -283,7 +283,7 @@ const register = handler(async (req, res) => {
 // Other modules hook in here (email verification, analytics) without auth.js
 // having to require them, which keeps the require graph a tree.
 const hooks = { afterRegister: async () => {} };
-const features = () => ({ mail: !!process.env.RESEND_API_KEY || !process.env.VERCEL, billing: plans.billingOn() });
+const features = () => ({ mail: require('./mail').configured(), billing: plans.billingOn() });
 
 // Older accounts join the users set (and get a uid) the first time they're seen.
 async function index(user) {

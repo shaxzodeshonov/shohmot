@@ -1,16 +1,48 @@
-// Sending email. With RESEND_API_KEY set it goes out through Resend's API
-// (https://resend.com, free for 3,000 emails a month); MAIL_FROM is the
-// sender, e.g. "Shohmot <hello@your-domain.com>", on a domain verified there.
-// Without a key, on your own machine, emails are printed to the console and
+// Sending email, by the first of these that's set up:
+//   1. Resend's API: RESEND_API_KEY, and MAIL_FROM on a domain verified there.
+//   2. Gmail, with no domain needed: GMAIL_USER (the address) and
+//      GMAIL_APP_PASSWORD (an app password from your Google account). Gmail
+//      sends up to about 500 a day.
+//   3. Any SMTP server: SMTP_HOST, SMTP_PORT (465 or 587), SMTP_USER, SMTP_PASS.
+// With none, on your own machine, emails are printed to the console and
 // saved in data/outbox/, so password resets work while developing. On Vercel
-// without a key, nothing can be sent and callers are told so.
+// with none, nothing can be sent and callers are told so.
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
 class MailNotConfiguredError extends Error {}
 
-const configured = () => !!process.env.RESEND_API_KEY || !process.env.VERCEL;
+// The SMTP settings, from GMAIL_* or SMTP_*, or null.
+function smtpConfig(env = process.env) {
+  if (env.GMAIL_USER && env.GMAIL_APP_PASSWORD) {
+    // App passwords are shown in groups of four; the spaces don't matter.
+    return { host: 'smtp.gmail.com', port: 465, secure: true, auth: { user: env.GMAIL_USER.trim(), pass: env.GMAIL_APP_PASSWORD.replace(/\s+/g, '') }, from: env.GMAIL_USER.trim() };
+  }
+  if (env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS) {
+    const port = Number(env.SMTP_PORT) || 465;
+    return { host: env.SMTP_HOST, port, secure: port === 465, auth: { user: env.SMTP_USER, pass: env.SMTP_PASS }, from: env.SMTP_USER };
+  }
+  return null;
+}
+
+// Which way email goes: 'resend', 'gmail', 'smtp', 'outbox' (local) or null.
+function method(env = process.env) {
+  if (env.RESEND_API_KEY) return 'resend';
+  if (env.GMAIL_USER && env.GMAIL_APP_PASSWORD) return 'gmail';
+  if (smtpConfig(env)) return 'smtp';
+  return env.VERCEL ? null : 'outbox';
+}
+const configured = () => !!method();
+
+let transport = null;
+function smtpTransport(cfg) {
+  if (!transport) {
+    const nodemailer = require('nodemailer');
+    transport = nodemailer.createTransport({ host: cfg.host, port: cfg.port, secure: cfg.secure, auth: cfg.auth, connectionTimeout: 10000, greetingTimeout: 10000, socketTimeout: 15000 });
+  }
+  return transport;
+}
 
 // The address links in emails point at. Never taken from the request's Host
 // header on a live server, or a forged Host would put an attacker's domain in
@@ -55,6 +87,13 @@ async function sendMail({ to, subject, html, text, headers }) {
     if (!res.ok) throw new Error(`Resend HTTP ${res.status}: ${(await res.text()).slice(0, 200)}`);
     return;
   }
+  const smtp = smtpConfig();
+  if (smtp) {
+    // Gmail sends as the signed-in address whatever From says, so From uses it.
+    const from = process.env.MAIL_FROM && method() === 'smtp' ? process.env.MAIL_FROM : `Shohmot <${smtp.from}>`;
+    await smtpTransport(smtp).sendMail({ from, to, subject, html, text, headers });
+    return;
+  }
   if (process.env.VERCEL) throw new MailNotConfiguredError('Email is not set up on this server.');
   // Developing: show it, and keep a copy.
   const dir = path.join(process.env.SHOHMOT_DATA_DIR || path.join(__dirname, '..', 'data'), 'outbox');
@@ -63,4 +102,4 @@ async function sendMail({ to, subject, html, text, headers }) {
   if (!process.env.SHOHMOT_QUIET_MAIL) console.log(`\n[mail] to ${to}: ${subject}\n${text}\n`);
 }
 
-module.exports = { sendMail, layout, siteUrl, configured, MailNotConfiguredError, esc };
+module.exports = { sendMail, layout, siteUrl, configured, method, smtpConfig, MailNotConfiguredError, esc };

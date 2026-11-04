@@ -237,3 +237,15 @@ test('ready-made admin login, and changing a password', async () => {
   assert.equal((await call('/api/login', { body: { email: 'boss2@example.com', password: 'a-new-admin-pass-2' } })).status, 200);
   delete process.env.ADMIN_PASSWORD;
 });
+
+test('email goes by Resend, Gmail or SMTP, whichever is set', () => {
+  const { method, smtpConfig } = require('../src/mail');
+  assert.equal(method({ RESEND_API_KEY: 'x', GMAIL_USER: 'a@gmail.com', GMAIL_APP_PASSWORD: 'p' }), 'resend');
+  assert.equal(method({ VERCEL: '1', GMAIL_USER: 'a@gmail.com', GMAIL_APP_PASSWORD: 'abcd efgh ijkl mnop' }), 'gmail');
+  const g = smtpConfig({ GMAIL_USER: ' a@gmail.com ', GMAIL_APP_PASSWORD: 'abcd efgh ijkl mnop' });
+  assert.deepEqual([g.host, g.port, g.secure, g.auth.user, g.auth.pass], ['smtp.gmail.com', 465, true, 'a@gmail.com', 'abcdefghijklmnop']);
+  assert.equal(method({ VERCEL: '1', SMTP_HOST: 'smtp-relay.brevo.com', SMTP_PORT: '587', SMTP_USER: 'u', SMTP_PASS: 'p' }), 'smtp');
+  assert.equal(smtpConfig({ SMTP_HOST: 'h', SMTP_PORT: '587', SMTP_USER: 'u', SMTP_PASS: 'p' }).secure, false);
+  assert.equal(method({ VERCEL: '1' }), null);
+  assert.equal(method({}), 'outbox');
+});
