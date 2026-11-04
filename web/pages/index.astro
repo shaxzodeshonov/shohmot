@@ -2,12 +2,12 @@
 import SitePage from '../layouts/SitePage.astro';
 import Mock from '../components/mocks/Mock.astro';
 import Arrow from '../components/Arrow.astro';
+import PieceCount from '../components/PieceCount.astro';
 import { FEATURES, plain } from '../data/features';
 ---
 <SitePage title="Shohmot · Learn from every chess game you play" description="Free for Chess.com and Lichess players: today’s games counted, every game checked for mistakes, your mistakes turned into training, your brilliant moves found, and free Stockfish game reviews in your browser.">
   <section class="landing-hero" aria-labelledby="hero-title">
     <div class="hero-copy">
-      <span class="eyebrow">For Chess.com and Lichess players</span>
       <h1 id="hero-title">Learn from every game you <em>play.</em></h1>
       <p class="lead">Shohmot follows your Chess.com and Lichess accounts. After every game it tells you what went wrong and turns your mistakes into training. It also counts today’s games and finds every brilliant move you play, all with Stockfish in your browser.</p>
       <div class="cta-row">
@@ -29,7 +29,7 @@ import { FEATURES, plain } from '../data/features';
   {FEATURES.map((f, i) => (
     <section class="feature" id={f.slug} aria-labelledby={`${f.slug}-title`}>
       <div class="feature-copy reveal">
-        <span class="feature-num">0{i + 1} · {f.name.toUpperCase()}</span>
+        <span class="feature-num"><PieceCount n={i + 1} /><span>{f.name.toUpperCase()}</span></span>
         <h3 id={`${f.slug}-title`}>{plain(f.title)}.</h3>
         <p>{f.short}</p>
         <ul class="ticks">{f.ticks.map((t) => <li>{t}</li>)}</ul>

@@ -59,8 +59,10 @@ html { scroll-behavior: smooth; }
 .heat { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 1fr); gap: 0.1875rem; margin-top: 1.5rem; }
 .heat i { aspect-ratio: 1; border-radius: 0.1875rem; background: var(--line); }
 .heat i[data-l="1"] { background: #4b5a3a; } .heat i[data-l="2"] { background: #6f8a4f; } .heat i[data-l="3"] { background: var(--win); }
-.float-chip { position: absolute; right: -0.75rem; top: -1rem; background: var(--sage); color: var(--sage-ink); font-weight: 700; font-size: 0.8125rem; padding: 0.4375rem 0.875rem; border-radius: 62.4375rem; box-shadow: 0 0.75rem 1.5rem -0.5rem rgb(0 0 0 / 0.5); display: flex; align-items: center; gap: 0.4375rem; }
-.float-chip::before { content: ''; width: 0.4375rem; height: 0.4375rem; border-radius: 50%; background: #4f8a2e; animation: pulse 1.6s ease-in-out infinite; }
+/* A move label that has just landed on the mock-up, like the review's badges. */
+.float-chip { position: absolute; right: -0.75rem; top: -1rem; background: #1baca6; color: #04211f; font-weight: 700; font-size: 0.8125rem; padding: 0.3125rem 0.875rem 0.3125rem 0.3125rem; border-radius: 62.4375rem; box-shadow: 0 0.75rem 1.5rem -0.5rem rgb(0 0 0 / 0.5); display: flex; align-items: center; gap: 0.5rem; animation: chip-bob 4s ease-in-out infinite; }
+.float-chip i { font-style: normal; font-weight: 800; letter-spacing: -0.06em; width: 1.5rem; height: 1.5rem; border-radius: 50%; display: grid; place-items: center; background: #04211f; color: #2fd1c4; font-size: 0.75rem; }
+@keyframes chip-bob { 50% { transform: translateY(-0.25rem) rotate(-1deg); } }
 
 /* chessboards drawn by site.js from data-fen */
 .mini-board { position: relative; display: grid; grid-template-columns: repeat(8, 1fr); border-radius: 0.5rem; overflow: hidden; aspect-ratio: 1; width: 100%; }
@@ -104,7 +106,10 @@ html { scroll-behavior: smooth; }
 .feature { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center; padding: 5rem 0; border-bottom: 1px solid var(--line); }
 .feature:last-of-type { border-bottom: 0; }
 .feature:nth-of-type(even) .feature-copy { order: 2; }
-.feature-num { font-size: 0.8125rem; font-weight: 700; color: var(--faint); letter-spacing: 0.08em; }
+.feature-num { display: inline-flex; align-items: center; gap: 0.75rem; font-size: 0.8125rem; font-weight: 700; color: var(--faint); letter-spacing: 0.08em; }
+.piece-count { display: inline-flex; align-items: flex-end; padding: 0.25rem 0.5rem; border-radius: 0.625rem; background: var(--raise); border: 1px solid var(--line); }
+.piece-count img { width: 1.5rem; height: 1.5rem; margin-right: -0.25rem; filter: drop-shadow(0 1px 1px rgb(0 0 0 / 0.4)); }
+.piece-count img:last-child { margin-right: 0; }
 .feature h3 { font-size: clamp(1.75rem, 1.2rem + 1.8vw, 2.5rem); font-weight: 800; letter-spacing: -0.035em; line-height: 1.05; margin: 0.625rem 0 1rem; text-wrap: balance; }
 .feature-copy > p { color: var(--muted); font-size: 1.0625rem; text-wrap: pretty; }
 .ticks { list-style: none; padding: 0; margin: 1.5rem 0 1.75rem; display: grid; gap: 0.625rem; }
@@ -203,7 +208,7 @@ html { scroll-behavior: smooth; }
 .more:hover svg, .next-feature:hover svg { transform: translateX(0.25rem); }
 .next-feature svg { transition: transform .2s var(--ease); }
 @media (prefers-reduced-motion: reduce) {
-  .float-chip::before { animation: none; }
+  .float-chip { animation: none; }
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
 
