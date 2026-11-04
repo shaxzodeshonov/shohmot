@@ -5,23 +5,12 @@ import { foundIn } from './brilliants/store.mjs';
 import { analyzeMany } from './training/analyze.mjs';
 import { latestUnseen, markSeen, gameInfo } from './training/store.mjs';
 import { LABELS } from './review/analysis.mjs';
+import { PLATFORM, BASE_SPEEDS, ALL_SPEEDS, SPEED_NAME, esc, cellLabel, gridHeadHtml, loadingRowsHtml } from './counter-markup.js';
 
 (() => {
   'use strict';
 
   const $ = (sel, el = document) => el.querySelector(sel);
-  const PLATFORM = { chesscom: 'Chess.com', lichess: 'Lichess' };
-  const BASE_SPEEDS = ['bullet', 'blitz', 'rapid', 'daily'];
-  const ALL_SPEEDS = ['bullet', 'blitz', 'rapid', 'classical', 'daily', 'other'];
-  const SPEED_NAME = { bullet: 'Bullet', blitz: 'Blitz', rapid: 'Rapid', classical: 'Classical', daily: 'Daily', other: 'Other' };
-  const ICON = {
-    bullet: 'M13 2 4 14h7l-1 8 9-12h-7z',
-    blitz: 'M12 2c1 3.5-2.5 5-2.5 8.5 0 1.4.8 2.5 2 2.8-.3-1.6.6-3 2-4 .2 2.4 2.5 3.4 2.5 6 0 2.6-2.2 4.7-5 4.7S6 17.9 6 15c0-5.2 6-7.4 6-13z',
-    rapid: 'M9 1h6v2H9zM12 5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17zm1 8.4V8h-2v6.5l4.3 2.5 1-1.7z',
-    classical: 'M6 2h12v5l-4 5 4 5v5H6v-5l4-5-4-5z',
-    daily: 'M7 2v2H5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2V2h-2v2H9V2zM5 9h14v10H5z',
-    other: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z',
-  };
   const WEEKS = 26;
   const DAY = 86400000;
   const nf = new Intl.NumberFormat();
@@ -49,6 +38,7 @@ import { LABELS } from './review/analysis.mjs';
   const DEMO_DAYS = 30;
   // The chess accounts live on the signed-in Shohmot account (see startup at the bottom).
   let myAccounts = [];
+  let accountsKnown = false; // false until the profile (or the demo list) is in
   // A link like /app.html?accounts=chesscom:name,lichess:name opens straight onto those accounts.
   const linked = new URLSearchParams(location.search).get('accounts');
   let fromLink = [];
@@ -67,8 +57,6 @@ import { LABELS } from './review/analysis.mjs';
   let ratedOnly = store.get('shohmot-rated', false);
   let gamesFilter = 'all';
 
-  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const icon = (speed) => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ICON[speed]}" fill="currentColor" fill-rule="evenodd"/></svg>`;
   const pct = (a, b) => (b ? (a / b) * 100 : 0);
   const plural = (n, one, many) => `${nf.format(n)} ${n === 1 ? one : many}`;
 
@@ -104,6 +92,7 @@ import { LABELS } from './review/analysis.mjs';
   }
   // The four usual types are always shown; classical/other only if ever played.
   function speedColumns() {
+    if (!state) return BASE_SPEEDS;
     const seen = new Set();
     for (const a of state.accounts) for (const g of a.games) seen.add(g.speed);
     return ALL_SPEEDS.filter((s) => BASE_SPEEDS.includes(s) || seen.has(s));
@@ -130,11 +119,20 @@ import { LABELS } from './review/analysis.mjs';
     renderDay();
     if (!state) {
       // Waiting for the first answer from the server, or for the first account.
-      $('#headline').textContent = myAccounts.length ? 'Finding your games…' : 'Add an account to see today’s games.';
-      $('#hero-sub').textContent = myAccounts.length ? 'The first look can take a few seconds.' : '';
-      $('#split').hidden = true;
-      $('#rows').innerHTML = '';
-      $('#grid-head').innerHTML = '';
+      // Until the account list is known the page keeps its "Counting…" headline,
+      // and each account gets a placeholder row, so nothing jumps when the games come.
+      if (accountsKnown) {
+        $('#headline').textContent = myAccounts.length ? `Finding ${DEMO ? 'their' : 'your'} games…` : 'Add an account to see today’s games.';
+        $('#hero-sub').textContent = myAccounts.length ? 'The first look can take a few seconds.' : '';
+      }
+      $('#split').innerHTML = '';
+      if (myAccounts.length) {
+        renderGridHead(BASE_SPEEDS);
+        $('#rows').innerHTML = loadingRowsHtml(myAccounts);
+      } else if (accountsKnown) {
+        $('#grid-head').innerHTML = '';
+        $('#rows').innerHTML = '';
+      }
       $('#games').innerHTML = '';
       return;
     }
@@ -163,14 +161,13 @@ import { LABELS } from './review/analysis.mjs';
     const who = DEMO ? 'they' : 'you';
     const lead = isToday() ? `Today ${who}` : isYesterday() ? `Yesterday ${who}` : `On ${shortDayFmt.format(day)} ${who}`;
     if (!accts.length) h.textContent = 'Add an account to start counting.';
-    else if (!syncedOnce) h.textContent = 'Counting your games…';
+    else if (!syncedOnce) h.textContent = `Counting ${DEMO ? 'their' : 'your'} games…`;
     else if (!t.n) h.textContent = isToday() ? 'No games yet today.' : `No games ${dayWord()}.`;
     else h.innerHTML = `${lead} played ${plural(t.n, 'game', 'games')} and lost <span class="n-lost">${nf.format(t.l)}</span>.`;
 
     $('#split').innerHTML = t.n
       ? `<i class="w" style="width:${pct(t.w, t.n)}%"></i><i class="d" style="width:${pct(t.d, t.n)}%"></i><i class="l" style="width:${pct(t.l, t.n)}%"></i>`
       : '';
-    $('#split').hidden = !t.n;
     const shown = accts.flatMap((a) => filtered(a.games).map((g) => foundIn(a.platform, g.id).length));
     const bril = shown.reduce((s, n) => s + n, 0);
     $('#hero-sub').innerHTML = t.n
@@ -182,7 +179,7 @@ import { LABELS } from './review/analysis.mjs';
   }
 
   function cellHtml(speed, s, rt, label) {
-    const head = `<span class="cell-label" style="--c:var(--${speed})">${speed === 'total' ? '' : icon(speed)}${label}</span>`;
+    const head = cellLabel(speed, label);
     const rating = rt && rt.rating
       ? `<span class="rt">Rating <b>${rt.rating}</b>${rt.change ? `<em class="${rt.change > 0 ? 'up' : 'down'}">${rt.change > 0 ? '+' : '−'}${Math.abs(rt.change)}</em>` : ''}</span>`
       : '';
@@ -199,11 +196,15 @@ import { LABELS } from './review/analysis.mjs';
       </div>`;
   }
 
+  function renderGridHead(speeds) {
+    $('#grid-head').setAttribute('style', `--cols:${speeds.length}`);
+    $('#grid-head').innerHTML = gridHeadHtml(speeds);
+  }
+
   function renderRows() {
     const speeds = speedColumns();
     const cols = `--cols:${speeds.length}`;
-    $('#grid-head').setAttribute('style', cols);
-    $('#grid-head').innerHTML = `<span></span>${speeds.map((s) => `<span style="--c:var(--${s})">${icon(s)}${SPEED_NAME[s]}</span>`).join('')}<span class="total-h">Total</span>`;
+    renderGridHead(speeds);
 
     if (!state.accounts.length) {
       $('#rows').innerHTML = '<p class="empty">No accounts yet. Add one with the Accounts button at the top.</p>';
@@ -588,10 +589,11 @@ import { LABELS } from './review/analysis.mjs';
     const box = $('#banners');
     const out = [];
     if (DEMO) {
+      // The banner is in the page's HTML (Counter.astro); only its wording changes.
       const famous = JSON.stringify(myAccounts) === JSON.stringify(DEMO_LIST);
-      out.push(`<div class="banner" data-kind="info"><p><b>${famous ? 'This is Shohmot on Hikaru’s and Magnus Carlsen’s public games.' : 'This is Shohmot on the accounts you picked.'}</b> Press Review on any game for a free Stockfish review. With a free account, every game you play is checked for mistakes, turned into training, and your brilliant moves are found.</p>
-        <div class="banner-actions">${famous ? '' : '<button class="btn" type="button" data-act="demo-reset">Back to the famous players</button>'}<a class="btn btn-solid" href="/signup.html" data-signed-out>Create free account</a></div></div>`);
-      box.innerHTML = out.join('');
+      $('[data-famous]', box).hidden = !famous;
+      $('[data-picked]', box).hidden = famous;
+      $('[data-act="demo-reset"]', box).hidden = famous;
       return;
     }
     if (me && !me.verified && features().mail) {
@@ -647,18 +649,20 @@ import { LABELS } from './review/analysis.mjs';
   onUser(showUser);
 
   syncControls();
-  $('#sync-now').hidden = true;
-  render();
   if (DEMO) {
     myAccounts = store.get(DEMO_KEY, null) || DEMO_LIST;
-    $('#sync-now').hidden = false;
+    accountsKnown = true;
+    render();
     renderBanners();
     sync();
     return;
   }
+  $('#sync-now').hidden = true;
+  render();
   // Starts from last visit's copy of the profile (instant), then follows what
   // the server says if the accounts changed on another device.
   currentUser().then((user) => {
+    accountsKnown = true;
     if (user) {
       showUser(user);
       myAccounts = user.accounts;
@@ -682,6 +686,7 @@ import { LABELS } from './review/analysis.mjs';
     }
     if (fromLink.length) { useAccounts(fromLink); return; }
     $('#sync-now').hidden = !myAccounts.length;
+    render();
     // First visit: nothing saved yet, so ask for an account straight away.
     if (myAccounts.length) sync(); else popup.open();
   });

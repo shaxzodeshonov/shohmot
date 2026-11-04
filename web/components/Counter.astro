@@ -2,11 +2,23 @@
 // The counter itself (hero, accounts, games, calendar, accounts pop-up), shared
 // by the signed-in page (app.astro) and the no-sign-up demo (demo.astro).
 // demo: the accounts to show, "platform:username,…"; app.js reads it.
+import { BASE_SPEEDS, gridHeadHtml, loadingRowsHtml } from '../scripts/counter-markup.js';
 interface Props { demo?: string }
 const { demo } = Astro.props;
+// The demo's accounts are known now, so its banner and a placeholder row per
+// account are in the HTML: nothing moves when app.js and the games arrive.
+const demoAccounts = (demo || '').split(',').filter(Boolean).map((p) => {
+  const [platform, username] = p.split(':');
+  return { platform, username };
+});
 ---
   <main id="dashboard" data-demo={demo}>
-    <div class="banners" id="banners" aria-live="polite"></div>
+    <div class="banners" id="banners" aria-live="polite">{demo && (
+      <div class="banner" data-kind="info" id="demo-banner">
+        <p><b data-famous>This is Shohmot on Hikaru’s and Magnus Carlsen’s public games.</b><b data-picked hidden>This is Shohmot on the accounts you picked.</b> Press Review on any game for a free Stockfish review. With a free account, every game you play is checked for mistakes, turned into training, and your brilliant moves are found.</p>
+        <div class="banner-actions"><button class="btn" type="button" data-act="demo-reset" hidden>Back to the famous players</button><a class="btn btn-solid" href="/signup.html" data-signed-out>Create free account</a></div>
+      </div>
+    )}</div>
     <section class="hero" aria-labelledby="headline">
       <div class="day-nav">
         <button class="step" id="day-prev" type="button" aria-label="Previous day">
@@ -18,9 +30,9 @@ const { demo } = Astro.props;
         </button>
         <button class="link-btn" id="day-today" type="button" hidden>Back to today</button>
       </div>
-      <h1 class="headline" id="headline">Counting your games…</h1>
+      <h1 class="headline" id="headline">{demo ? 'Counting their games…' : 'Counting your games…'}</h1>
       <div class="split" id="split" aria-hidden="true"></div>
-      <p class="hero-sub" id="hero-sub"></p>
+      <p class="hero-sub" id="hero-sub">{demo ? 'The first look can take a few seconds.' : ''}</p>
     </section>
 
     <section class="block" aria-labelledby="accounts-title">
@@ -28,8 +40,8 @@ const { demo } = Astro.props;
         <h2 id="accounts-title">By account</h2>
         <label class="check"><input type="checkbox" id="rated-only"> Rated games only</label>
       </div>
-      <div class="grid-head" id="grid-head" aria-hidden="true"></div>
-      <div id="rows"></div>
+      <div class="grid-head" id="grid-head" aria-hidden="true" style={demo ? `--cols:${BASE_SPEEDS.length}` : undefined} set:html={demo ? gridHeadHtml(BASE_SPEEDS) : ''}></div>
+      <div id="rows" set:html={loadingRowsHtml(demoAccounts)}></div>
     </section>
 
     <div class="lower">
