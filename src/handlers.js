@@ -1,5 +1,5 @@
 // Request handlers shared by the Vercel functions in api/ and the local server.
-const { fetchAccount, lookupAccount, fetchGamePgn, WINDOW_DAYS } = require('./games');
+const { fetchAccount, lookupAccount, fetchGamePgn, fetchMoves, WINDOW_DAYS, MOVES_MAX_SPAN } = require('./games');
 const { store } = require('./store');
 const { clientIp } = require('./auth');
 
@@ -99,4 +99,31 @@ async function game(req, res) {
   send(res, 200, { platform, id, ...found }, 'public, s-maxage=86400');
 }
 
-module.exports = { state, check, game, parseAccounts };
+// GET /api/moves?platform=lichess&username=name&since=<ms>&until=<ms>
+// The moves of every game in that window (at most 35 days, inside the last
+// 26 weeks), for the brilliant-move scan, which runs in the browser.
+async function moves(req, res) {
+  const url = new URL(req.url, 'http://localhost');
+  const platform = url.searchParams.get('platform');
+  const username = (url.searchParams.get('username') || '').trim();
+  const now = Date.now();
+  const until = Math.min(now, Number(url.searchParams.get('until')) || now);
+  const since = Math.max(now - WINDOW_DAYS * 86400000, Number(url.searchParams.get('since')) || 0);
+  if (!PLATFORMS.includes(platform) || !USERNAME_RE.test(username)) return send(res, 400, { error: 'Pick an account.' });
+  if (!(since < until) || until - since > MOVES_MAX_SPAN) return send(res, 400, { error: 'Ask for at most 35 days at a time.' });
+  if (await overLimit(req, 'moves', 120, 600)) return send(res, 429, { error: 'That’s a lot of games at once. The scan will carry on in a few minutes.' });
+  const site = platform === 'lichess' ? 'Lichess' : 'Chess.com';
+  let games;
+  try {
+    games = await fetchMoves(platform, username, since, until);
+  } catch (err) {
+    if (err.status === 404) return send(res, 404, { error: `No ${site} player named ${username}.` });
+    if (err.status === 429) return send(res, 429, { error: `${site} is busy. The scan will carry on in a minute.` });
+    return send(res, 502, { error: `Could not reach ${site}. Try again in a moment.` });
+  }
+  // Finished games never change, so a window that ended over an hour ago can be kept for a day.
+  const old = now - until > 3600000;
+  send(res, 200, { platform, username, since, until, games }, old ? 'public, s-maxage=86400' : 'public, s-maxage=60');
+}
+
+module.exports = { state, check, game, moves, parseAccounts };

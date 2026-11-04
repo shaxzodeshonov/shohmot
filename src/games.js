@@ -1,6 +1,6 @@
 // Fetches recent games for one Chess.com or Lichess account. Stateless, so it
 // runs the same way in a Vercel function and in the local server.
-const { parseChesscomGame, parseLichessGame, parseNdjson, archiveMonthEnd } = require('./parse');
+const { parseChesscomGame, parseLichessGame, parseNdjson, archiveMonthEnd, archiveMonthStart, movesOfChesscom, movesOfLichess } = require('./parse');
 const { store } = require('./store');
 
 // Both APIs reject requests without a User-Agent.
@@ -187,4 +187,24 @@ async function fetchGamePgn(platform, username, id, end) {
   return null;
 }
 
-module.exports = { fetchAccount, lookupAccount, fetchGamePgn, WINDOW_DAYS };
+// Every game's moves between two times, for the brilliant-move scan. The
+// page asks one window at a time (a month on Chess.com, whose archives are
+// monthly; a week on Lichess, which streams about 20 games a second), so each
+// answer stays small and quick.
+const MOVES_MAX_SPAN = 35 * DAY;
+async function fetchMoves(platform, username, since, until) {
+  if (platform === 'lichess') {
+    const params = new URLSearchParams({
+      since: String(since), until: String(until), moves: 'true', tags: 'false', clocks: 'false', evals: 'false', opening: 'false',
+    });
+    const text = await get(`https://lichess.org/api/games/user/${encodeURIComponent(username.toLowerCase())}?${params}`, 'application/x-ndjson').then((r) => r.text());
+    return parseNdjson(text).map((g) => movesOfLichess(g, username)).filter(Boolean);
+  }
+  const base = `https://api.chess.com/pub/player/${encodeURIComponent(username.toLowerCase())}`;
+  const { archives = [] } = await get(`${base}/games/archives`).then((r) => r.json());
+  const months = archives.filter((url) => archiveMonthEnd(url) > since && archiveMonthStart(url) < until);
+  const lists = await Promise.all(months.map((url) => get(url).then((r) => r.json())));
+  return lists.flatMap((l) => l.games || []).map((g) => movesOfChesscom(g, username)).filter((g) => g && g.end >= since && g.end < until);
+}
+
+module.exports = { fetchAccount, lookupAccount, fetchGamePgn, fetchMoves, WINDOW_DAYS, MOVES_MAX_SPAN };

@@ -87,6 +87,32 @@ What the review shows:
 - **Analysis board** button: opens the game on the analysis board at the move shown.
 - Keys: ← → Home End, N for your next mistake, F to flip, M for sound, Esc to drop a picked piece.
 
+## Brilliant moves
+
+**How a move becomes Brilliant** (`isBrilliant` in `web/scripts/review/analysis.mjs`), following Chess.com's published description, since its exact formula is private:
+
+- It's a **piece sacrifice** (`web/scripts/review/sacrifice.mjs`): right after the move, the opponent can win a knight, bishop, rook or queen, net of anything the move captured (2+ pawns' worth, so the exchange counts and pawn grabs don't). It's worked out with a static exchange on legal first captures, so a piece left hanging counts even when taking it would lose, which is the classic brilliant move that a check of the engine's line alone misses.
+- It's the **best move, or nearly**.
+- You're **not worse** afterwards.
+- You **weren't winning anyway**: the best other move must not have been crushing already.
+- Book moves and forced moves never count.
+- It's **more generous at lower ratings**, read from the PGN's WhiteElo/BlackElo. The thresholds are in `BRILLIANT`, one row per rating band.
+
+**Every game on your accounts** (`/brilliants.html`, scan in `web/scripts/brilliants/scan.mjs`). Checking every move with Stockfish would take hours, so:
+
+1. `GET /api/moves` returns the moves of each game, a window at a time (a month on Chess.com, a week on Lichess).
+2. chess.js replays every game and keeps your moves that sacrifice a piece. This takes a few milliseconds a game and usually finds none to three.
+3. Stockfish lite (depth 14) looks only at those positions, before and after the move.
+4. The results are kept in the browser (`shohmot-brilliants:v1`), so a game is never checked twice.
+
+A full review of a game overwrites the scan's answer for that game, because it searches deeper. The counter checks today's new games on its own, shows "!! N brilliant", and marks those games in the list. Free accounts scan the last 7 days; Pro scans all 26 weeks.
+
+**Tuning against Chess.com.** Chess.com's API returns accuracy but not move labels, so the thresholds can't be fitted automatically. To check them:
+
+1. Collect games where Chess.com's Game Review showed a Brilliant, and some where it didn't.
+2. Review those games here, and compare the moves each site marked.
+3. Adjust `BRILLIANT`.
+
 ## Analysis board
 
 `analysis.html` (the "Analysis board" button on the main page) is a free board for playing out any position:

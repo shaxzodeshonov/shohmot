@@ -108,4 +108,46 @@ function archiveMonthEnd(url) {
   return Date.UTC(Number(m[1]), Number(m[2]), 1);
 }
 
-module.exports = { normSpeed, parseChesscomGame, parseLichessGame, parseNdjson, archiveMonthEnd };
+// Start of a Chess.com archive month.
+function archiveMonthStart(url) {
+  const m = /\/(\d{4})\/(\d{2})$/.exec(url);
+  if (!m) return 0;
+  return Date.UTC(Number(m[1]), Number(m[2]) - 1, 1);
+}
+
+// The moves of a PGN as plain SAN separated by spaces, without headers,
+// comments ({[%clk 0:02:59]}), move numbers, NAGs or the result. Plus the
+// starting position when the game didn't start from the usual one.
+function pgnMoves(pgn) {
+  const text = String(pgn || '');
+  const fen = /\[SetUp "1"\]/.test(text) ? (/\[FEN "([^"]+)"\]/.exec(text) || [])[1] || null : null;
+  const body = text.replace(/^\s*\[[^\]]*\]\s*$/gm, '');
+  const moves = body
+    .replace(/\{[^}]*\}/g, ' ')
+    .replace(/\([^()]*\)/g, ' ')
+    .replace(/\$\d+/g, ' ')
+    .replace(/\d+\.(\.\.)?/g, ' ')
+    .replace(/(1-0|0-1|1\/2-1\/2|\*)\s*$/, ' ')
+    .split(/\s+/)
+    .filter((t) => t && !/^(1-0|0-1|1\/2-1\/2|\*)$/.test(t));
+  return { moves: moves.join(' '), fen };
+}
+
+// The compact game the brilliant-move scan needs:
+// { id, end, color: 'w'|'b', rating, speed, opponent, moves, fen? }
+function movesOfChesscom(g, username) {
+  const base = parseChesscomGame(g, username);
+  if (!base || base.variant !== 'chess' || !g.pgn) return null;
+  const { moves, fen } = pgnMoves(g.pgn);
+  if (!moves) return null;
+  return { id: base.id, end: base.end, color: base.color[0], rating: base.rating, speed: base.speed, opponent: base.opponent, moves, ...(fen ? { fen } : {}) };
+}
+
+function movesOfLichess(g, username) {
+  const base = parseLichessGame(g, username);
+  if (!base || !['standard', 'fromPosition'].includes(g.variant) || !g.moves) return null;
+  if (g.variant === 'fromPosition' && !g.initialFen) return null;
+  return { id: base.id, end: base.end, color: base.color[0], rating: base.rating, speed: base.speed, opponent: base.opponent, moves: g.moves, ...(g.initialFen ? { fen: g.initialFen } : {}) };
+}
+
+module.exports = { normSpeed, parseChesscomGame, parseLichessGame, parseNdjson, archiveMonthEnd, archiveMonthStart, pgnMoves, movesOfChesscom, movesOfLichess };

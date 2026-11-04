@@ -91,6 +91,39 @@ export function gameAccuracy(wins, whiteMovesFirst = true, { a, floor, mix } = A
   return { white: mean(sums.white), black: mean(sums.black) };
 }
 
+// When a sacrifice counts as Brilliant. Chess.com describes its rule as: a
+// piece sacrifice, the best move or nearly, not leaving you worse, and not
+// when you'd have been completely winning anyway; and it says it's more
+// generous with beginners. Its exact numbers are private, so these are ours,
+// by the mover's rating (from the PGN; unknown counts as the middle band):
+//   nearly   how much win chance (0–1) the move may give up next to the best move
+//   afterMin the least win chance (0–100) you may be left with
+//   cap      the alternatives must be below this, or you were winning anyway
+// Tune them against games Chess.com reviewed (see README, "Brilliant moves").
+export const BRILLIANT = [
+  { below: 800, nearly: 0.05, afterMin: 35, cap: 97 },
+  { below: 1200, nearly: 0.04, afterMin: 40, cap: 96 },
+  { below: 1800, nearly: 0.03, afterMin: 45, cap: 95 },
+  { below: Infinity, nearly: 0.02, afterMin: 50, cap: 92 },
+];
+export function brilliantRule(rating) {
+  const r = Number(rating);
+  return BRILLIANT.find((b) => (Number.isFinite(r) && r > 0 ? r : 1500) < b.below);
+}
+
+// Brilliant or not, on top of the other checks in classify.
+export function isBrilliant(m) {
+  if (!m.sacrifice || m.book || m.legal === 1) return false;
+  const rule = brilliantRule(m.rating);
+  const loss = Math.max(0, m.before - m.after) / 100;
+  if (!m.isBest && loss >= rule.nearly) return false;
+  if (m.after < rule.afterMin) return false;
+  // The best thing you could have done instead: the engine's second choice
+  // when you played its first, else its first.
+  const alt = m.isBest ? (m.second ?? m.before) : m.before;
+  return alt < rule.cap;
+}
+
 // A move's label. All win chances are the mover's, 0–100.
 //   before: win chance with the engine's best move
 //   after: win chance after the move played
@@ -98,27 +131,23 @@ export function gameAccuracy(wins, whiteMovesFirst = true, { a, floor, mix } = A
 //   isBest: the move played is the engine's choice (or ties with it)
 //   legal: how many legal moves there were
 //   book: the position after the move is a named opening line
-//   sacrifice: the move gives up material (2+ pawns' worth) once the captures settle
+//   sacrifice: the move gives up a piece (see sacrifice.mjs)
+//   rating: the mover's rating, if known (Brilliant is easier at lower ratings)
 //   recapture: the move takes back on the square the opponent just captured on
 //   oppLabel: the label of the opponent's previous move
 export function classify(m) {
   if (m.book) return 'book';
   if (m.legal === 1) return 'forced';
   const loss = Math.max(0, m.before - m.after) / 100;
+  if (isBrilliant(m)) return 'brilliant';
 
   if (m.isBest) {
-    // Brilliant: a good sacrifice, when you weren't already completely winning
-    // and aren't worse after it.
-    if (m.sacrifice && m.before < 95 && m.after >= 45) return 'brilliant';
     // Great: the only good move, the other choices were clearly worse.
-    if (m.isBest && m.second != null && !m.recapture
+    if (m.second != null && !m.recapture
       && (m.before - m.second) / 100 >= 0.15 && m.second < 90 && m.before > 10) return 'great';
     return 'best';
   }
-  if (loss < 0.02) {
-    if (m.sacrifice && m.before < 95 && m.after >= 45) return 'brilliant';
-    return 'excellent';
-  }
+  if (loss < 0.02) return 'excellent';
   if (loss < 0.05) return 'good';
   // Miss: the opponent just slipped and you didn't make them pay, without
   // going on to lose the position yourself.

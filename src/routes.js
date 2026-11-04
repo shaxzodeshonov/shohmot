@@ -23,6 +23,7 @@ const ROUTES = {
   state: getOnly(handlers.state),
   check: getOnly(handlers.check),
   game: getOnly(handlers.game),
+  moves: getOnly(handlers.moves),
   register: auth.register,
   login: auth.login,
   logout: auth.logout,

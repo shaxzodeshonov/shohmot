@@ -1,6 +1,8 @@
 import { currentUser, freshUser, remember, features, onUser, api } from './session.js';
 import { track } from './track.js';
 import { tiltAlerts } from './tilt.mjs';
+import { scan } from './brilliants/scan.mjs';
+import { foundIn, isChecked } from './brilliants/store.mjs';
 
 (() => {
   'use strict';
@@ -158,10 +160,13 @@ import { tiltAlerts } from './tilt.mjs';
       ? `<i class="w" style="width:${pct(t.w, t.n)}%"></i><i class="d" style="width:${pct(t.d, t.n)}%"></i><i class="l" style="width:${pct(t.l, t.n)}%"></i>`
       : '';
     $('#split').hidden = !t.n;
+    const shown = accts.flatMap((a) => filtered(a.games).map((g) => foundIn(a.platform, g.id).length));
+    const bril = shown.reduce((s, n) => s + n, 0);
     $('#hero-sub').innerHTML = t.n
       ? `<span><i class="k" style="background:var(--win)"></i><b>${t.w}</b> won</span>
          <span><i class="k" style="background:var(--draw)"></i><b>${t.d}</b> drawn</span>
-         <span><i class="k" style="background:var(--loss)"></i><b>${t.l}</b> lost, ${Math.round(pct(t.l, t.n))}%</span>`
+         <span><i class="k" style="background:var(--loss)"></i><b>${t.l}</b> lost, ${Math.round(pct(t.l, t.n))}%</span>
+         ${bril ? `<a class="bril-chip" href="/brilliants.html" data-astro-prefetch="false"><i>!!</i><b>${bril}</b> brilliant</a>` : ''}`
       : '';
   }
 
@@ -237,12 +242,36 @@ import { tiltAlerts } from './tilt.mjs';
       <li class="game">
         <span class="res ${g.result}">${label[g.result]}</span>
         <span class="opp">
-          <span class="opp-name"><a href="${esc(g.url)}" target="_blank" rel="noopener">vs ${esc(g.opponent)}</a>${g.oppRating ? ` <small>${g.oppRating}</small>` : ''}</span>
+          <span class="opp-name"><a href="${esc(g.url)}" target="_blank" rel="noopener">vs ${esc(g.opponent)}</a>${g.oppRating ? ` <small>${g.oppRating}</small>` : ''}${brilBadge(g, a)}</span>
           <span class="opp-meta"><i style="--c:var(--${g.speed})">${SPEED_NAME[g.speed]}</i> on ${esc(a.username)}, ${PLATFORM[a.platform]}${g.rated ? '' : ', casual'}</span>
         </span>
         <span class="when" title="${esc(new Date(g.end).toLocaleString())}">${isToday() ? ago(g.end) : timeFmt.format(g.end)}</span>
         ${reviewLink(g, a)}
       </li>`).join('') || `<li class="empty">${gamesFilter === 'loss' ? `No losses ${dayWord()}.` : `No games ${dayWord()}.`}</li>`;
+  }
+
+  // "!!" on games with a brilliant move; it opens the review at the first one.
+  function brilBadge(g, a) {
+    const found = foundIn(a.platform, g.id);
+    if (!found.length) return '';
+    const qs = new URLSearchParams({ p: a.platform, u: a.username, id: g.id, t: String(g.end), ply: String(found[0].ply) });
+    return ` <a class="bril-badge" href="/review.html?${esc(qs.toString())}" data-astro-prefetch="false" title="${found.length} brilliant move${found.length === 1 ? '' : 's'}: ${esc(found.map((b) => b.san).join(', '))}">!!${found.length > 1 ? ` ${found.length}` : ''}</a>`;
+  }
+
+  // Today's new games get checked for brilliant moves on their own (only the
+  // positions with a piece sacrifice ever reach Stockfish, so it's quick).
+  let brilJob = null;
+  function scanToday() {
+    if (brilJob || !state) return;
+    const from = startOfDay(Date.now());
+    const todo = state.accounts.filter((a) => a.games.some((g) => g.end >= from && (g.variant === 'chess' || g.variant === 'standard') && !isChecked(a.platform, g.id)));
+    if (!todo.length) return;
+    brilJob = scan({
+      accounts: todo.map((a) => ({ platform: a.platform, username: a.username })),
+      since: from,
+      onFound: () => { render(); toast('You played a brilliant move!'); },
+      onDone: () => { brilJob = null; render(); },
+    });
   }
 
   // Stockfish review, for standard chess only.
@@ -410,6 +439,7 @@ import { tiltAlerts } from './tilt.mjs';
       lastSyncAt = now;
       render();
       if (added.length) toast(`New games: ${added.join(', ')}`);
+      if (!quick) scanToday();
     } catch {
       connection = 'offline';
     } finally {

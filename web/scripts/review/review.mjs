@@ -10,6 +10,8 @@ import { play, soundOf, isMuted, setMuted } from './sound.mjs';
 import { cloudEvals } from './cloud.mjs';
 import { newTree, play as playOn, toPgn } from './tree.mjs';
 import { LABELS, BAD, ACCURACY, winPercent, moveAccuracy, gameAccuracy, classify, gameRating, phases } from './analysis.mjs';
+import { sacrificeOf } from './sacrifice.mjs';
+import { saveReviewed } from '../brilliants/store.mjs';
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -204,11 +206,16 @@ function buildReview() {
     const isBest = best === m.uci || (lines[1] && lines[1].pv[0] === m.uci && second >= before - 1);
     const prev = game.moves[i - 1];
     const drop = materialDrop(i);
+    // A sacrifice: a piece the opponent can win right now (even if taking it
+    // loses, which the engine's line wouldn't show), or a piece the engine's
+    // line wins once the captures settle.
+    const sac = sacrificeOf(game.fens[i], m.uci);
+    const rating = Number(white ? game.headers.WhiteElo : game.headers.BlackElo) || null;
     const label = classify({
-      before, after, second, isBest,
+      before, after, second, isBest, rating,
       legal: game.legal[i],
       book: i < game.bookPlies,
-      sacrifice: drop >= 2,
+      sacrifice: (sac && sac.net >= 2 && !!sac.piece) || drop >= 3,
       recapture: !!(prev && prev.captured && m.captured && prev.to === m.to),
       oppLabel: labels[i - 1] || null,
     });
@@ -314,6 +321,15 @@ async function analyse() {
 
 function finish(depth) {
   review = buildReview();
+  // The full review is the last word on this game's brilliant moves.
+  if (PLATFORM && GAME_ID) {
+    const found = [];
+    review.labels.forEach((l, i) => {
+      if (l === 'brilliant' && game.moves[i].color === game.me) found.push({ ply: i + 1, san: game.moves[i].san, fen: game.fens[i], uci: game.moves[i].uci });
+    });
+    const h = game.headers;
+    saveReviewed(PLATFORM, GAME_ID, { end: Number(params.get('t')) || Date.now(), username: USERNAME, opponent: game.me === 'w' ? h.Black : h.White, found });
+  }
   $('#progress').hidden = true;
   $('#progress').dataset.depth = depth;
   render();
@@ -984,7 +1000,8 @@ async function main() {
     game.bookPlies = 0;
   }
   flipped = game.me === 'b';
-  ply = 0;
+  // ?ply=N opens the game at that move (links from the brilliant-move list).
+  ply = Math.min(game.fens.length - 1, Math.max(0, Number(params.get('ply')) || 0));
   renderHead();
   $('#grid').hidden = false;
   $('#panel-game').hidden = false;
