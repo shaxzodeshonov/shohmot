@@ -134,8 +134,10 @@ export function sayable(text) {
 // Voices that sound calm, best first. Names differ by system; any English voice will do after these.
 const SOFT = [/natural.*(aria|jenny|ava|emma|sonia|libby|michelle)/i, /(ava|samantha|allison|serena|karen|moira|tessa|fiona)/i, /google uk english female/i, /(aria|jenny|zira|hazel)/i, /google us english/i];
 
-// onTalk(true/false): Fischer's mouth moves while it speaks.
-export function createVoice({ key = 'shohmot-coach-voice', onTalk = () => {} } = {}) {
+// onTalk(true/false): Fischer is speaking. lip (lipsync.mjs): the mouth
+// follows the words: start(text, rate), boundary(charIndex) as each word is
+// reached, end().
+export function createVoice({ key = 'shohmot-coach-voice', onTalk = () => {}, lip = null } = {}) {
   const synth = typeof speechSynthesis !== 'undefined' ? speechSynthesis : null;
   let on = false;
   try { on = !!synth && localStorage.getItem(key) === '1'; } catch { /* private mode */ }
@@ -152,10 +154,11 @@ export function createVoice({ key = 'shohmot-coach-voice', onTalk = () => {} } =
   let current = null;
   // Some browsers don't always say when speech ends (or was cut off), so a
   // timer from the length of the text closes the mouth anyway.
-  const talking = (on, words = '') => {
+  const talking = (on, words = '', rate = 1) => {
     clearTimeout(guard);
     onTalk(on);
-    if (on) guard = setTimeout(() => onTalk(false), 1500 + words.length * 90);
+    if (lip) { if (on) lip.start(words, rate); else lip.end(true); }
+    if (on) guard = setTimeout(() => talking(false), 1500 + words.length * 90);
   };
   return {
     supported: !!synth,
@@ -182,8 +185,10 @@ export function createVoice({ key = 'shohmot-coach-voice', onTalk = () => {} } =
         u.volume = 0.85;
         current = u;
         // A cut-off earlier utterance reports its end late: only the current one moves the mouth.
-        u.onstart = () => { if (current === u) talking(true, words); };
+        u.onstart = () => { if (current === u) talking(true, words, u.rate); };
         u.onend = u.onerror = () => { if (current === u) talking(false); };
+        // Each word as the voice reaches it, so the mouth says that word now.
+        u.onboundary = (e) => { if (current === u && lip && (!e.name || e.name === 'word')) lip.boundary(e.charIndex); };
         synth.speak(u);
       }, 280);
     },

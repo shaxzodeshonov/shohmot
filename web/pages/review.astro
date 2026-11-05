@@ -3,6 +3,14 @@ import Base from '../layouts/Base.astro';
 import '../styles/review.css';
 import ReviewPicker from '../components/ReviewPicker.astro';
 import filPortrait from '../assets/fil.webp';
+
+// Fischer's drawn frames, if they're in web/assets/fischer/ (made by
+// scripts/fischer-frames.mjs): fischer-rest, -blink, -talk-1…5, and the moods.
+// With rest and at least one talk frame, the face is the frames; otherwise the
+// portrait with a drawn mouth.
+const found = import.meta.glob('../assets/fischer/fischer-*.webp', { eager: true });
+const frames = Object.entries(found).map(([file, mod]) => ({ name: file.replace(/^.*fischer-|\.webp$/g, ''), src: mod.default.src }));
+const useFrames = frames.some((f) => f.name === 'rest') && frames.some((f) => f.name.startsWith('talk-'));
 ---
 <Base title="Free chess game review · Shohmot" description="Paste a Lichess link or any PGN for a free Stockfish 19 game review: accuracy, every move labelled Brilliant to Blunder, the best moves and the evaluation graph. No account needed." bodyClass="rv-page">
 
@@ -87,35 +95,41 @@ import filPortrait from '../assets/fil.webp';
 
       <div class="panel-game" id="panel-game" hidden>
         <!-- Fischer, the coach: talks you through each move. Its head moves with the move (data-mood). -->
-        <section class="coach" id="coach" data-mood="thinking" aria-label="Coach">
+        <section class="coach" id="coach" data-mood="thinking" data-frames={useFrames ? '' : undefined} aria-label="Coach">
           <!-- Fischer's portrait, with eyelids that blink and a mouth that moves while Fischer talks. -->
           <div class="coach-face" aria-hidden="true">
-            <div class="fil-head">
-              <img src={filPortrait.src} alt="" width="256" height="256" decoding="async">
-              <i class="fil-lid fil-lid-l"></i><i class="fil-lid fil-lid-r"></i>
-              <!-- Drawn in the original image's pixel coordinates: skin over the
-                   drawn lips, then a mouth whose lower half opens while Fischer talks. -->
-              <svg class="fil-mouth" viewBox="628 356 136 64">
-                <defs>
-                  <filter id="fil-soft" x="-20%" y="-50%" width="140%" height="200%"><feGaussianBlur stdDeviation="2.4"/></filter>
-                  <clipPath id="fil-mouth-clip"><path d="M-50 0 Q0 6 50 0 Q30 30 0 32 Q-30 30 -50 0Z"/></clipPath>
-                </defs>
-                <ellipse class="fil-skin" cx="695" cy="387" rx="62" ry="23" transform="rotate(-5 695 387)" filter="url(#fil-soft)"/>
-                <!-- The mouth, level in its own frame (the line between the lips is y = 0), turned to the drawing's smile. -->
-                <g transform="translate(694.5 376) rotate(-4.6)">
-                  <g class="fil-jaw">
-                    <path class="fil-lowerlip" d="M-46 6 Q-28 34 0 36 Q28 34 46 4 Q30 44 0 46 Q-30 44 -46 6Z"/>
-                    <path class="fil-hole" d="M-50 0 Q0 6 50 0 Q30 30 0 32 Q-30 30 -50 0Z"/>
-                    <g clip-path="url(#fil-mouth-clip)">
-                      <path class="fil-teeth" d="M-56 0 Q0 14 56 0 L56 8 Q0 22 -56 8Z"/>
-                      <ellipse class="fil-tongue" cx="2" cy="31" rx="25" ry="10"/>
+            {useFrames ? (
+              <div class="fil-head">
+                {frames.map((f) => <img class:list={['fil-frame', { on: f.name === 'rest' }]} data-f={f.name} src={f.src} alt="" width="256" height="256" decoding="async">)}
+              </div>
+            ) : (
+              <div class="fil-head">
+                <img src={filPortrait.src} alt="" width="256" height="256" decoding="async">
+                <i class="fil-lid fil-lid-l"></i><i class="fil-lid fil-lid-r"></i>
+                <!-- Drawn in the original image's pixel coordinates: skin over the
+                     drawn lips, then a mouth whose lower half opens while Fischer talks. -->
+                <svg class="fil-mouth" viewBox="628 356 136 64">
+                  <defs>
+                    <filter id="fil-soft" x="-20%" y="-50%" width="140%" height="200%"><feGaussianBlur stdDeviation="2.4"/></filter>
+                    <clipPath id="fil-mouth-clip"><path d="M-50 0 Q0 6 50 0 Q30 30 0 32 Q-30 30 -50 0Z"/></clipPath>
+                  </defs>
+                  <ellipse class="fil-skin" cx="695" cy="387" rx="62" ry="23" transform="rotate(-5 695 387)" filter="url(#fil-soft)"/>
+                  <!-- The mouth, level in its own frame (the line between the lips is y = 0), turned to the drawing's smile. -->
+                  <g transform="translate(694.5 376) rotate(-4.6)"><g class="fil-lips">
+                    <g class="fil-jaw">
+                      <path class="fil-lowerlip" d="M-46 6 Q-28 34 0 36 Q28 34 46 4 Q30 44 0 46 Q-30 44 -46 6Z"/>
+                      <path class="fil-hole" d="M-50 0 Q0 6 50 0 Q30 30 0 32 Q-30 30 -50 0Z"/>
+                      <g clip-path="url(#fil-mouth-clip)">
+                        <path class="fil-teeth" d="M-56 0 Q0 14 56 0 L56 8 Q0 22 -56 8Z"/>
+                        <ellipse class="fil-tongue" cx="2" cy="31" rx="25" ry="10"/>
+                      </g>
+                      <path class="fil-rim" d="M-50 0 Q-30 30 0 32 Q30 30 50 0"/>
                     </g>
-                    <path class="fil-rim" d="M-50 0 Q-30 30 0 32 Q30 30 50 0"/>
-                  </g>
-                  <path class="fil-upper" d="M-53 1 Q-27 -8 0 -4 Q27 -9 53 -1 Q26 5 0 4 Q-26 5 -53 1Z"/>
-                </g>
-              </svg>
-            </div>
+                    <path class="fil-upper" d="M-53 1 Q-27 -8 0 -4 Q27 -9 53 -1 Q26 5 0 4 Q-26 5 -53 1Z"/>
+                  </g></g>
+                </svg>
+              </div>
+            )}
             <span class="fil-dots"><i></i><i></i><i></i></span>
           </div>
           <div class="coach-bubble">

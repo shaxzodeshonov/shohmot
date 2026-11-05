@@ -13,6 +13,7 @@ import { LABELS, BAD, ACCURACY, winPercent, moveAccuracy, gameAccuracy, classify
 import { labelGame, explain } from './label.mjs';
 import { coachFor, summaryFor, setMood, createVoice } from './coach.mjs';
 import { createFil } from './fil-chat.mjs';
+import { createLipSync } from './lipsync.mjs';
 import { saveReviewedMistakes } from '../training/store.mjs';
 import { mistakesOf } from '../training/mistakes.mjs';
 import { reviewUrlFor, go as openReview } from './open-game.mjs';
@@ -656,15 +657,62 @@ function renderNote() {
 }
 
 // ---------- Fischer, the coach (coach.mjs, fil-chat.mjs) ----------
-// Fischer's mouth moves while it talks: aloud, or while an AI reply is coming in.
-const talkingNow = new Set();
-function setTalking(source, on) {
-  if (on) talkingNow.add(source); else talkingNow.delete(source);
-  $('#coach').classList.toggle('talking', talkingNow.size > 0);
+// Fischer's mouth says the words: in time with the voice, or reading an AI
+// reply along as it comes in when the voice is off (lipsync.mjs).
+const lip = createLipSync(showViseme, {
+  onLive: (on) => {
+    $('#coach').classList.toggle('talking', on);
+    if (!on && $('#coach').hasAttribute('data-frames')) idleFrame();
+  },
+});
+const voice = createVoice({ lip });
+
+// One mouth shape on the face. With drawn frames (web/assets/fischer/), the
+// frame for that shape; otherwise the drawn mouth over the portrait (review.css).
+const FRAME_FOR = { rest: 'rest', mbp: 'rest', fv: 'talk-1', eh: 'talk-2', ah: 'talk-3', oo: 'talk-4', ee: 'talk-5' };
+const FRAME_ELSE = { 'talk-1': ['talk-2', 'talk-4'], 'talk-2': ['talk-1', 'talk-3'], 'talk-3': ['talk-2', 'talk-1'], 'talk-4': ['talk-1', 'talk-2'], 'talk-5': ['talk-2', 'talk-1'] };
+let frames = null;
+function frameEls() {
+  if (frames === null) {
+    frames = {};
+    for (const img of document.querySelectorAll('#coach .fil-frame')) frames[img.dataset.f] = img;
+  }
+  return frames;
 }
-const voice = createVoice({ onTalk: (on) => setTalking('voice', on) });
+function showFrame(name) {
+  const f = frameEls();
+  const pick = [name, ...(FRAME_ELSE[name] || []), 'rest'].find((n) => f[n]);
+  for (const [n, img] of Object.entries(f)) img.classList.toggle('on', n === pick);
+}
+// Idle: the mood's frame if there is one (happy, wow, worried, thinking), else rest.
+function idleFrame() {
+  const mood = $('#coach').dataset.mood;
+  showFrame(frameEls()[mood] ? mood : 'rest');
+}
+function showViseme(v) {
+  const c = $('#coach');
+  c.dataset.viseme = v;
+  if (!c.hasAttribute('data-frames')) return;
+  if (lip.playing) showFrame(FRAME_FOR[v] || 'rest'); else idleFrame();
+}
+// Frames: a blink now and then, while Fischer isn't talking.
+function wireBlink() {
+  const c = $('#coach');
+  if (!c.hasAttribute('data-frames') || !frameEls().blink || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const blink = () => {
+    const on = frameEls().rest.classList.contains('on');
+    if (on && !lip.playing) {
+      showFrame('blink');
+      setTimeout(() => { if (!lip.playing && frameEls().blink.classList.contains('on')) idleFrame(); }, 140);
+    }
+    setTimeout(blink, 3200 + Math.random() * 3600);
+  };
+  setTimeout(blink, 2500);
+}
+
 function coach(mood, tip, spoken = '') {
   setMood($('#coach'), mood);
+  if ($('#coach').hasAttribute('data-frames') && !lip.playing) idleFrame();
   const t = $('#coach-tip');
   t.textContent = tip;
   t.hidden = !tip;
@@ -728,7 +776,8 @@ function wireFil() {
     where: () => (vply ? 'a line you are trying' : ply === 0 ? 'the starting position' : `ply ${ply}, after ${moveNumber(ply - 1)} ${game.moves[ply - 1].san}`),
     show: (p) => go(p),
     speak: (text) => voice.say(text),
-    talking: (on) => setTalking('reply', on),
+    // With the voice off, the mouth reads the reply along as it arrives.
+    reading: (more) => { if (!voice.on) { if (more) lip.read(more); else lip.end(); } },
     summary: () => gameSummary().tip,
     track,
   });
@@ -1046,6 +1095,7 @@ function timeControl(tc) {
 async function main() {
   wire();
   wireCoach();
+  wireBlink();
   wireFil();
   wirePaste();
   wireShare();
