@@ -344,3 +344,35 @@ a.btn { text-decoration: none; display: inline-block; }
 @media (prefers-reduced-motion: reduce) {
   .coach .m * { animation: none !important; }
 }
+
+/* ---------- Fil's Coach tab: the conversation ---------- */
+.fil { display: flex; flex-direction: column; gap: 0.75rem; }
+.fil-log { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.5rem; }
+.fil-msg { font-size: 0.9375rem; line-height: 1.5; padding: 0.625rem 0.75rem; border-radius: 0.875rem; max-width: 92%; white-space: pre-wrap; overflow-wrap: anywhere; }
+.fil-msg[data-who="fil"] { background: var(--bg); border: 1px solid var(--line); border-top-left-radius: 0.25rem; justify-self: start; }
+.fil-msg[data-who="you"] { background: var(--sage); color: var(--sage-ink); border-top-right-radius: 0.25rem; justify-self: end; font-weight: 600; }
+.fil-msg.error { border-color: rgb(232 135 107 / 0.55); color: var(--loss); }
+/* Three dots while Fil is thinking (still for reduced motion). */
+.fil-msg.thinking { min-width: 3.5rem; min-height: 2.5rem; }
+.fil-msg.thinking::after { content: '•••'; letter-spacing: 0.2em; color: var(--muted); animation: fil-dots 1.2s infinite; }
+@keyframes fil-dots { 50% { opacity: 0.3; } }
+.fil-start { display: grid; gap: 0.625rem; }
+.fil-start-actions, .fil-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.fil-ai-note { color: var(--faint); font-size: 0.8125rem; }
+.fil-chip { font-size: 0.8125rem; }
+.fil-form { display: flex; gap: 0.5rem; }
+/* The quick replies and the question box stay at the bottom while the talk scrolls. */
+.fil-foot { position: sticky; bottom: -1rem; margin: 0 -1.125rem -1rem; padding: 0.625rem 1.125rem 1rem; background: var(--raise); border-top: 1px solid var(--line); display: grid; gap: 0.5rem; }
+.fil-foot:not(:has(> :not([hidden]))) { display: none; }
+/* On the Coach tab Fil is the focus: the engine lines wait on the other tabs. */
+.panel[data-tab="coach"] .lines { display: none; }
+/* Narrow screens: the page scrolls and the move buttons are pinned below, so
+   Fil's quick replies and question box just follow the conversation. */
+@media (max-width: 56.249em) {
+  .fil-foot { position: static; margin: 0; padding: 0.625rem 0 0; background: none; }
+}
+.fil-form input { flex: 1; min-width: 0; background: var(--bg); border: 1px solid var(--line-2); border-radius: 62.4375rem; padding: 0.5rem 0.875rem; font-size: 0.9375rem; color: var(--ink); }
+.fil-form input:focus-visible { outline: none; border-color: var(--sage); box-shadow: 0 0 0 0.1875rem rgb(198 206 178 / 0.2); }
+@media (prefers-reduced-motion: reduce) {
+  .fil-msg.thinking::after { animation: none; }
+}

@@ -136,11 +136,33 @@ import ReviewPicker from '../components/ReviewPicker.astro';
         </section>
 
         <div class="toggle" role="group" aria-label="View" id="tabs">
+          <button type="button" data-tab="coach" aria-pressed="false">Coach</button>
           <button type="button" data-tab="report" aria-pressed="true">Report</button>
           <button type="button" data-tab="moves" aria-pressed="false">Moves</button>
         </div>
 
         <div class="panel-body">
+          <!-- Fil, coaching you through the game (fil-chat.mjs). -->
+          <div id="tab-coach" class="tab fil" hidden>
+            <ol class="fil-log" id="fil-log" aria-label="Fil, your coach"></ol>
+            <p class="sr-only" id="fil-said" aria-live="polite"></p>
+            <div class="fil-start" id="fil-start" hidden>
+              <div class="fil-start-actions">
+                <button class="btn btn-solid" id="fil-go" type="button" hidden>Coach me through it</button>
+                <button class="btn" id="fil-tour" type="button">Step through the key moments</button>
+              </div>
+              <p class="fil-ai-note" id="fil-ai-note" hidden>Fil’s coaching is written by Claude, an AI from Anthropic. When you start, this game’s moves and Stockfish’s notes on them are sent to answer you; nothing is kept. AI can make mistakes: Stockfish’s numbers are the ones to trust.</p>
+            </div>
+            <div class="fil-foot">
+              <div class="fil-chips" id="fil-chips" hidden></div>
+              <form class="fil-form" id="fil-form" hidden>
+                <label class="sr-only" for="fil-input">Ask Fil about this game</label>
+                <input id="fil-input" type="text" maxlength="500" autocomplete="off" placeholder="Ask Fil about this game">
+                <button class="btn btn-solid" type="submit">Ask</button>
+              </form>
+            </div>
+          </div>
+
           <div id="tab-report" class="tab">
             <div class="acc" id="acc"></div>
             <table class="counts" id="counts"></table>

@@ -18,7 +18,10 @@ import { SITE } from '../data/site';
     </ul>
 
     <h2>What stays in your browser</h2>
-    <p>Game reviews, analysis boards, your brilliant moves and your training positions are worked out by Stockfish on your own device and kept in your browser’s storage. We don’t receive them. Games you paste into the review page aren’t sent to us either. Clearing your browser’s site data deletes them.</p>
+    <p>Game reviews, analysis boards, your brilliant moves and your training positions are worked out by Stockfish on your own device and kept in your browser’s storage. We don’t receive them. Games you paste into the review page aren’t sent to us either, unless you ask Fil for AI coaching (below). Clearing your browser’s site data deletes them.</p>
+
+    <h2>Fil’s AI coaching</h2>
+    <p>In a game review, Fil can coach you with AI. Nothing is sent until you choose “Coach me through it” (your choice is remembered in your browser). Then, for each message, we send the game’s moves, Stockfish’s notes on them and your question to <b>Anthropic</b>, whose Claude model writes Fil’s reply. We don’t store the conversation; your browser keeps it until you leave the page. Anthropic handles the request under its own commercial terms and doesn’t use it to train its models. Fil can make mistakes: Stockfish’s evaluations are the ones to trust.</p>
 
     <h2>Who else is involved</h2>
     <ul>
@@ -27,6 +30,7 @@ import { SITE } from '../data/site';
       <li><b>Resend</b> delivers our emails: password resets, email confirmation and the weekly recap.</li>
       <li><b>Have I Been Pwned:</b> when you choose a password, we send the first 5 characters of its SHA-1 hash, never the password, to check it hasn’t leaked in a data breach.</li>
       <li><b>unpkg</b> serves the Stockfish engine file your browser downloads.</li>
+      <li><b>Anthropic</b> writes Fil’s AI coaching, only when you ask for it (see above).</li>
     </ul>
     <p>We don’t sell your data, show ads, or use advertising or tracking cookies.</p>
 
