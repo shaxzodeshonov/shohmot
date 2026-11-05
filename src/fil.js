@@ -1,18 +1,18 @@
-// Fil, the review's coach, as an AI agent (Claude, through Anthropic's API).
+// Fischer, the review's coach, as an AI agent (Claude, through Anthropic's API).
 //
-//   GET  /api/fil  -> { on }   whether Fil can talk (ANTHROPIC_API_KEY is set)
+//   GET  /api/fil  -> { on }   whether Fischer can talk (ANTHROPIC_API_KEY is set)
 //   POST /api/fil  { game, messages, say } -> a stream of server-sent events:
-//        { type: 'text', text }        Fil's words, as they're written
-//        { type: 'show', ply }         put the board on this move (Fil's show_move tool)
+//        { type: 'text', text }        Fischer's words, as they're written
+//        { type: 'show', ply }         put the board on this move (Fischer's show_move tool)
 //        { type: 'done', messages }    the turns to keep and send back next time
 //        { type: 'error', message }
 //
-// Fil only knows the game through what the review page sends: Stockfish's
+// Fischer only knows the game through what the review page sends: Stockfish's
 // verdict on every move (label, evaluation, best line, what went wrong). The
 // instructions tell it to teach from those facts and not to invent analysis.
 // Nothing is stored here; the page keeps the conversation.
 //
-// Settings: ANTHROPIC_API_KEY (Fil is off without it), FIL_MODEL (default
+// Settings: ANTHROPIC_API_KEY (Fischer is off without it), FIL_MODEL (default
 // claude-opus-5-5), FIL_DAILY_LIMIT (messages a day for the whole site,
 // default 2000), FIL_HOURLY_LIMIT (per visitor, default 40).
 const { HttpError, send, handler, readJson, clientIp } = require('./auth');
@@ -32,8 +32,8 @@ function api() {
 // Tests swap in a stand-in.
 function setClient(c) { client = c; }
 
-// ---------- what Fil is told ----------
-const PERSONA = `You are Fil, the chess coach on Shohmot, a free site for Chess.com and Lichess players. You are going through one game with the player who played it. In the facts below, "you" is the player and "your opponent" is the other side. You are a friendly, patient bot: warm, encouraging and plain-spoken, never condescending.
+// ---------- what Fischer is told ----------
+const PERSONA = `You are Fischer, the chess coach on Shohmot, a free site for Chess.com and Lichess players. You are going through one game with the player who played it. In the facts below, "you" is the player and "your opponent" is the other side. You are a friendly, patient coach: warm, encouraging and plain-spoken, never condescending. You are Shohmot's own coach character, not a real person: if asked, say you're Shohmot's coach, not the real Bobby Fischer, and don't speak for him or any other real player.
 
 How to coach:
 - Teach, don't just report. For each moment: what happened, why it mattered, the better move, and a lesson the player can use in their next game.
@@ -72,7 +72,7 @@ const BLOCKS = new Set(['text', 'tool_use', 'tool_result', 'thinking', 'redacted
 
 const clip = (s, n) => String(s ?? '').slice(0, n);
 
-// { header, plies: [fact for ply 1, ply 2, ...] } -> the facts Fil reads.
+// { header, plies: [fact for ply 1, ply 2, ...] } -> the facts Fischer reads.
 function readGame(game) {
   if (!game || typeof game !== 'object' || !Array.isArray(game.plies) || !game.plies.length) throw new HttpError(400, 'Send the reviewed game.');
   const plies = game.plies.slice(0, MAX_FACTS).map((p) => clip(p, MAX_FACT_CHARS).replace(/\s+/g, ' ').trim());
@@ -88,9 +88,9 @@ function readHistory(messages) {
   if (!Array.isArray(messages) || messages.length > MAX_HISTORY) throw new HttpError(400, 'That conversation is too long. Start a new one.');
   if (JSON.stringify(messages).length > MAX_HISTORY_CHARS) throw new HttpError(400, 'That conversation is too long. Start a new one.');
   return messages.map((m) => {
-    if (!m || (m.role !== 'user' && m.role !== 'assistant')) throw new HttpError(400, 'That conversation isn’t one Fil can read.');
+    if (!m || (m.role !== 'user' && m.role !== 'assistant')) throw new HttpError(400, 'That conversation isn’t one Fischer can read.');
     if (typeof m.content === 'string') return { role: m.role, content: m.content };
-    if (!Array.isArray(m.content) || !m.content.every((b) => b && BLOCKS.has(b.type))) throw new HttpError(400, 'That conversation isn’t one Fil can read.');
+    if (!Array.isArray(m.content) || !m.content.every((b) => b && BLOCKS.has(b.type))) throw new HttpError(400, 'That conversation isn’t one Fischer can read.');
     return { role: m.role, content: m.content };
   });
 }
@@ -113,8 +113,8 @@ async function count(key, windowSec) {
 async function checkLimits(req) {
   const perHour = Number(process.env.FIL_HOURLY_LIMIT) || 40;
   const perDay = Number(process.env.FIL_DAILY_LIMIT) || 2000;
-  if ((await count(`rl:fil:${clientIp(req)}`, 3600)) > perHour) throw new HttpError(429, 'Fil needs a breather: that’s a lot of questions for one hour. Try again a little later.');
-  if ((await count(`rl:fil-day:${new Date().toISOString().slice(0, 10)}`, 86400)) > perDay) throw new HttpError(429, 'Fil has coached so many games today that it’s resting until tomorrow. The move-by-move notes still work.');
+  if ((await count(`rl:fil:${clientIp(req)}`, 3600)) > perHour) throw new HttpError(429, 'Fischer needs a breather: that’s a lot of questions for one hour. Try again a little later.');
+  if ((await count(`rl:fil-day:${new Date().toISOString().slice(0, 10)}`, 86400)) > perDay) throw new HttpError(429, 'Fischer has coached so many games today that it’s resting until tomorrow. The move-by-move notes still work.');
 }
 
 // ---------- one turn ----------
@@ -160,7 +160,7 @@ async function converse({ game, history, say, emit }) {
     added.push(turn);
 
     if (message.stop_reason === 'refusal') {
-      emit({ type: 'error', message: 'Fil can’t help with that one. Ask about the game instead.' });
+      emit({ type: 'error', message: 'Fischer can’t help with that one. Ask about the game instead.' });
       break;
     }
     const calls = content.filter((b) => b.type === 'tool_use');
@@ -187,12 +187,12 @@ async function converse({ game, history, say, emit }) {
 const fil = handler(async (req, res) => {
   if (req.method === 'GET' || req.method === 'HEAD') return send(res, 200, { on: on(), model: on() ? MODEL() : null });
   if (req.method !== 'POST') throw new HttpError(405, 'Method not allowed.');
-  if (!on()) throw new HttpError(503, 'Fil’s AI coaching isn’t switched on for this site.');
+  if (!on()) throw new HttpError(503, 'Fischer’s AI coaching isn’t switched on for this site.');
   const body = await readJson(req);
   const game = readGame(body.game);
   const history = readHistory(body.messages);
   const say = clip(body.say, MAX_SAY).trim();
-  if (!say) throw new HttpError(400, 'Say something to Fil first.');
+  if (!say) throw new HttpError(400, 'Say something to Fischer first.');
   await checkLimits(req);
 
   res.statusCode = 200;
@@ -211,21 +211,21 @@ const fil = handler(async (req, res) => {
 
 function errorMessage(err) {
   const { default: Anthropic } = require('@anthropic-ai/sdk');
-  if (err instanceof Anthropic.RateLimitError) return 'Fil is busy right now. Try again in a minute.';
+  if (err instanceof Anthropic.RateLimitError) return 'Fischer is busy right now. Try again in a minute.';
   if (err instanceof Anthropic.AuthenticationError || err instanceof Anthropic.PermissionDeniedError) {
-    console.error('Fil: the Anthropic API key was refused.', err.message);
-    return 'Fil isn’t set up correctly on this site.';
+    console.error('Fischer: the Anthropic API key was refused.', err.message);
+    return 'Fischer isn’t set up correctly on this site.';
   }
   if (err instanceof Anthropic.BadRequestError) {
-    console.error('Fil: request refused.', err.message);
-    return 'Fil couldn’t follow that conversation. Start a new one.';
+    console.error('Fischer: request refused.', err.message);
+    return 'Fischer couldn’t follow that conversation. Start a new one.';
   }
   if (err instanceof Anthropic.APIError) {
-    console.error('Fil: API error.', err.status, err.message);
-    return 'Fil couldn’t answer just now. Try again in a moment.';
+    console.error('Fischer: API error.', err.status, err.message);
+    return 'Fischer couldn’t answer just now. Try again in a moment.';
   }
-  console.error('Fil:', err);
-  return 'Fil couldn’t answer just now. Try again in a moment.';
+  console.error('Fischer:', err);
+  return 'Fischer couldn’t answer just now. Try again in a moment.';
 }
 
 module.exports = { fil, converse, readGame, readHistory, setClient, PERSONA, TOOLS };

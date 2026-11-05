@@ -1,10 +1,10 @@
-// Fil in the review's Coach tab: it greets you as soon as a review starts,
+// Fischer in the review's Coach tab: it greets you as soon as a review starts,
 // and once Stockfish is done it coaches you through the game.
 //
-// With AI on for the site (/api/fil, Claude), Fil is an agent: it leads the
+// With AI on for the site (/api/fil, Claude), Fischer is an agent: it leads the
 // review moment by moment, moving the board itself (show_move), and answers
 // questions. The first time, it asks before sending the game anywhere; that
-// choice is remembered. Without AI, or if you'd rather not, Fil steps through
+// choice is remembered. Without AI, or if you'd rather not, Fischer steps through
 // the key moments with the notes the review already has.
 
 const OK = 'shohmot-fil-ok';
@@ -14,7 +14,7 @@ const store = {
 };
 
 // hooks: facts() -> { header, plies }, moments() -> [{ ply, text }], where() -> "14...Nxe4",
-// show(ply), speak(text), summary() -> text, track(name)
+// show(ply), speak(text), talking(on), summary() -> text, track(name)
 export function createFil(hooks) {
   const $ = (s) => document.querySelector(s);
   const log = $('#fil-log');
@@ -62,7 +62,7 @@ export function createFil(hooks) {
     log.innerHTML = '';
     history = [];
     mode = null;
-    bubble('fil', 'Hi, I’m Fil, your coach. I’m going through this game with Stockfish now, move by move. When it’s done, I’ll take you through the moments that matter.');
+    bubble('fil', 'Hi, I’m Fischer, your coach. I’m going through this game with Stockfish now, move by move. When it’s done, I’ll take you through the moments that matter.');
     start.hidden = true;
     chips.hidden = true;
     form.hidden = true;
@@ -113,7 +113,7 @@ export function createFil(hooks) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ game: hooks.facts(), messages: history, say: `[The board is on ${hooks.where()}.] ${text}` }),
       });
-      if (!res.ok || !res.body) throw new Error((await res.json().catch(() => ({}))).error || 'Fil couldn’t answer just now. Try again in a moment.');
+      if (!res.ok || !res.body) throw new Error((await res.json().catch(() => ({}))).error || 'Fischer couldn’t answer just now. Try again in a moment.');
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buf = '';
@@ -129,6 +129,7 @@ export function createFil(hooks) {
             if (!line.startsWith('data: ')) continue;
             const ev = JSON.parse(line.slice(6));
             if (ev.type === 'text') {
+              if (!words) hooks.talking(true);
               words += ev.text;
               reply.classList.remove('thinking');
               reply.textContent = clean(words);
@@ -150,6 +151,7 @@ export function createFil(hooks) {
       reply.classList.add('error');
       reply.textContent = err.message;
     } finally {
+      hooks.talking(false);
       busy = false;
       form.querySelector('button').disabled = false;
       for (const b of chips.querySelectorAll('button')) b.disabled = false;
@@ -175,7 +177,7 @@ export function createFil(hooks) {
     if (at > 0) list.push(['Previous', '#prev']);
     if (at < tour.length - 1) list.push(['Next moment', '#next']);
     else list.push(['That’s all: start again', '#again']);
-    if (aiOn) list.push(['Ask Fil (AI)', '#ai']);
+    if (aiOn) list.push(['Ask Fischer (AI)', '#ai']);
     setChips(list);
   }
 
@@ -203,7 +205,7 @@ export function createFil(hooks) {
   return {
     greet,
     done,
-    // Fil is talking through the game: the move notes stay quiet so they don't talk over it.
+    // Fischer is talking through the game: the move notes stay quiet so they don't talk over it.
     get talking() { return mode === 'ai'; },
   };
 }
