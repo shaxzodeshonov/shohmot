@@ -1,4 +1,4 @@
-// Fil's agent loop (src/fil.js) against a stand-in for Anthropic's API.
+// Fischer's agent loop (src/fil.js) against a stand-in for Anthropic's API.
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { converse, readGame, readHistory, setClient, fil } = require('../src/fil');
@@ -79,7 +79,7 @@ test('only conversations this endpoint could have produced are accepted', () => 
   assert.throws(() => readGame({ plies: [] }), /reviewed game/);
 });
 
-test('without an API key Fil says it is off', async () => {
+test('without an API key Fischer says it is off', async () => {
   delete process.env.ANTHROPIC_API_KEY;
   const out = {};
   const res = { statusCode: 0, headers: {}, setHeader(k, v) { this.headers[k] = v; }, end(b) { out.body = b; } };

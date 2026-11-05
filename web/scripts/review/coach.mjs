@@ -1,9 +1,9 @@
-// Fil, the review's coach: what it says about each move, how its face looks,
-// and (if you turn it on) its voice. Fil is Shohmot's own character: the
-// name is the bishop's, in Uzbek. The facts (the label, what was lost, the
-// better move) come from the review; Fil adds the lesson in plain words.
+// Fischer, the review's coach: what it says about each move, how its face looks,
+// and (if you turn it on) its voice. Fischer is Shohmot's own coach character.
+// The facts (the label, what was lost, the better move) come from the review;
+// Fischer adds the lesson in plain words.
 
-// ---------- what Fil says ----------
+// ---------- what Fischer says ----------
 
 // The same move always gets the same line, so stepping back and forth
 // doesn't reshuffle the text.
@@ -68,7 +68,7 @@ const THEIR_GOOD = {
   great: ['Your opponent found the only move. A tough one to see coming.'],
 };
 
-// What Fil adds for one move: { mood, tip }.
+// What Fischer adds for one move: { mood, tip }.
 // label: the review's label; kind: explain()'s kind for bad moves; mine: it was your move.
 export function coachFor({ label, kind, mine, ply }) {
   if (label === 'inaccuracy') kind = 'inaccuracy';
@@ -85,7 +85,7 @@ export function coachFor({ label, kind, mine, ply }) {
   return { mood: 'happy', tip: pick(PRAISE[label] || PRAISE.good, ply) };
 }
 
-// Fil's greeting once the review is done.
+// Fischer's greeting once the review is done.
 export function summaryFor({ accuracy, theirs, mistakes, blunders, brilliants }) {
   const acc = accuracy != null ? `You played with ${accuracy.toFixed(1)} accuracy${theirs != null ? `, your opponent ${theirs.toFixed(1)}` : ''}. ` : '';
   const praise = brilliants ? `And you found ${brilliants === 1 ? 'a brilliant move' : `${brilliants} brilliant moves`}! ` : '';
@@ -95,13 +95,13 @@ export function summaryFor({ accuracy, theirs, mistakes, blunders, brilliants })
   return { mood: blunders ? 'calm' : 'happy', tip: `${acc}${praise}${todo}` };
 }
 
-// ---------- Fil's face ----------
+// ---------- Fischer's face ----------
 // One drawing; data-mood on the coach box picks the eyes and mouth (review.css).
 export function setMood(el, mood) {
   if (el && el.dataset.mood !== mood) el.dataset.mood = mood;
 }
 
-// ---------- Fil's voice ----------
+// ---------- Fischer's voice ----------
 // The browser's own speech, nothing sent anywhere. Off until you turn it on;
 // a calm, natural voice if the device has one, a little slower and quieter
 // than usual.
@@ -134,7 +134,7 @@ export function sayable(text) {
 // Voices that sound calm, best first. Names differ by system; any English voice will do after these.
 const SOFT = [/natural.*(aria|jenny|ava|emma|sonia|libby|michelle)/i, /(ava|samantha|allison|serena|karen|moira|tessa|fiona)/i, /google uk english female/i, /(aria|jenny|zira|hazel)/i, /google us english/i];
 
-// onTalk(true/false): Fil's mouth moves while it speaks.
+// onTalk(true/false): Fischer's mouth moves while it speaks.
 export function createVoice({ key = 'shohmot-coach-voice', onTalk = () => {} } = {}) {
   const synth = typeof speechSynthesis !== 'undefined' ? speechSynthesis : null;
   let on = false;

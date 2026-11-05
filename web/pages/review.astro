@@ -86,20 +86,41 @@ import filPortrait from '../assets/fil.webp';
       </form>
 
       <div class="panel-game" id="panel-game" hidden>
-        <!-- Fil, the coach: talks you through each move. Its head moves with the move (data-mood). -->
+        <!-- Fischer, the coach: talks you through each move. Its head moves with the move (data-mood). -->
         <section class="coach" id="coach" data-mood="thinking" aria-label="Coach">
-          <!-- Fil's portrait, with eyelids that blink and a mouth that moves while Fil talks. -->
+          <!-- Fischer's portrait, with eyelids that blink and a mouth that moves while Fischer talks. -->
           <div class="coach-face" aria-hidden="true">
             <div class="fil-head">
               <img src={filPortrait.src} alt="" width="256" height="256" decoding="async">
               <i class="fil-lid fil-lid-l"></i><i class="fil-lid fil-lid-r"></i>
-              <i class="fil-mouth"></i>
+              <!-- Drawn in the original image's pixel coordinates: skin over the
+                   drawn lips, then a mouth whose lower half opens while Fischer talks. -->
+              <svg class="fil-mouth" viewBox="628 356 136 64">
+                <defs>
+                  <filter id="fil-soft" x="-20%" y="-50%" width="140%" height="200%"><feGaussianBlur stdDeviation="2.4"/></filter>
+                  <clipPath id="fil-mouth-clip"><path d="M-50 0 Q0 6 50 0 Q30 30 0 32 Q-30 30 -50 0Z"/></clipPath>
+                </defs>
+                <ellipse class="fil-skin" cx="695" cy="387" rx="62" ry="23" transform="rotate(-5 695 387)" filter="url(#fil-soft)"/>
+                <!-- The mouth, level in its own frame (the line between the lips is y = 0), turned to the drawing's smile. -->
+                <g transform="translate(694.5 376) rotate(-4.6)">
+                  <g class="fil-jaw">
+                    <path class="fil-lowerlip" d="M-46 6 Q-28 34 0 36 Q28 34 46 4 Q30 44 0 46 Q-30 44 -46 6Z"/>
+                    <path class="fil-hole" d="M-50 0 Q0 6 50 0 Q30 30 0 32 Q-30 30 -50 0Z"/>
+                    <g clip-path="url(#fil-mouth-clip)">
+                      <path class="fil-teeth" d="M-56 0 Q0 14 56 0 L56 8 Q0 22 -56 8Z"/>
+                      <ellipse class="fil-tongue" cx="2" cy="31" rx="25" ry="10"/>
+                    </g>
+                    <path class="fil-rim" d="M-50 0 Q-30 30 0 32 Q30 30 50 0"/>
+                  </g>
+                  <path class="fil-upper" d="M-53 1 Q-27 -8 0 -4 Q27 -9 53 -1 Q26 5 0 4 Q-26 5 -53 1Z"/>
+                </g>
+              </svg>
             </div>
             <span class="fil-dots"><i></i><i></i><i></i></span>
           </div>
           <div class="coach-bubble">
             <div class="coach-top">
-              <b class="coach-name">Fil</b><span class="coach-role">your coach</span>
+              <b class="coach-name">Fischer</b><span class="coach-role">your coach</span>
               <button class="icon-btn coach-voice" id="coach-voice" type="button" aria-pressed="false" title="Read aloud (V)" hidden>
                 <svg class="on" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4zm12.5 3a4.5 4.5 0 0 0-2-3.7v7.4a4.5 4.5 0 0 0 2-3.7zM14.5 4.3v2.1a7 7 0 0 1 0 11.2v2.1a9 9 0 0 0 0-15.4z" fill="currentColor"/></svg>
                 <svg class="off" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4zm12.6 3 2.7-2.7-1.4-1.4-2.7 2.7-2.7-2.7-1.4 1.4 2.7 2.7-2.7 2.7 1.4 1.4 2.7-2.7 2.7 2.7 1.4-1.4z" fill="currentColor"/></svg>
@@ -135,22 +156,22 @@ import filPortrait from '../assets/fil.webp';
         </div>
 
         <div class="panel-body">
-          <!-- Fil, coaching you through the game (fil-chat.mjs). -->
+          <!-- Fischer, coaching you through the game (fil-chat.mjs). -->
           <div id="tab-coach" class="tab fil" hidden>
-            <ol class="fil-log" id="fil-log" aria-label="Fil, your coach"></ol>
+            <ol class="fil-log" id="fil-log" aria-label="Fischer, your coach"></ol>
             <p class="sr-only" id="fil-said" aria-live="polite"></p>
             <div class="fil-start" id="fil-start" hidden>
               <div class="fil-start-actions">
                 <button class="btn btn-solid" id="fil-go" type="button" hidden>Coach me through it</button>
                 <button class="btn" id="fil-tour" type="button">Step through the key moments</button>
               </div>
-              <p class="fil-ai-note" id="fil-ai-note" hidden>Fil’s coaching is written by Claude, an AI from Anthropic. When you start, this game’s moves and Stockfish’s notes on them are sent to answer you; nothing is kept. AI can make mistakes: Stockfish’s numbers are the ones to trust.</p>
+              <p class="fil-ai-note" id="fil-ai-note" hidden>Fischer’s coaching is written by Claude, an AI from Anthropic. When you start, this game’s moves and Stockfish’s notes on them are sent to answer you; nothing is kept. AI can make mistakes: Stockfish’s numbers are the ones to trust.</p>
             </div>
             <div class="fil-foot">
               <div class="fil-chips" id="fil-chips" hidden></div>
               <form class="fil-form" id="fil-form" hidden>
-                <label class="sr-only" for="fil-input">Ask Fil about this game</label>
-                <input id="fil-input" type="text" maxlength="500" autocomplete="off" placeholder="Ask Fil about this game">
+                <label class="sr-only" for="fil-input">Ask Fischer about this game</label>
+                <input id="fil-input" type="text" maxlength="500" autocomplete="off" placeholder="Ask Fischer about this game">
                 <button class="btn btn-solid" type="submit">Ask</button>
               </form>
             </div>

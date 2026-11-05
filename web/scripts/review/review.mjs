@@ -639,7 +639,7 @@ function renderNote() {
     if (l === 'miss') said.push(`${who === 'You' ? 'Your opponent' : 'You'} had just slipped, and this lets them off the hook.`);
     const bestScore = lines[0].score;
     if (bestScore.mate > 0) said.push(`There was mate in ${bestScore.mate}.`);
-    // Nothing more to say than the numbers (shown in the corner): Fil's lesson says the rest.
+    // Nothing more to say than the numbers (shown in the corner): Fischer's lesson says the rest.
   }
   let best = '';
   if (!['best', 'book', 'forced', 'brilliant', 'great'].includes(l) && info.best) {
@@ -647,7 +647,7 @@ function renderNote() {
     best = `<p class="best-line"><span>Best was</span> <b>${esc(line[0] || info.best)}</b>${line.length > 1 ? ` <small>${esc(line.slice(1).join(' '))}</small>` : ''}</p>`;
   }
   el.innerHTML = `<p class="note-h" data-l="${l}">${badge(l)}<span>${head}</span><small class="ev">${evalText(ply)}</small></p>${said.length ? `<p>${said.join(' ')}</p>` : ''}${best}`;
-  // Fil: a face for the move, and the lesson in it.
+  // Fischer: a face for the move, and the lesson in it.
   const kind = BAD.has(l) && lines && lines[0] ? explain(game, results, l, i).kind : null;
   const c = coachFor({ label: l, kind, mine: m.color === game.me, ply });
   const bestSan = best ? (sanLine(game.fens[i], lines[0].pv)[0] || info.best) : '';
@@ -655,8 +655,8 @@ function renderNote() {
   coach(c.mood, c.tip, spoken);
 }
 
-// ---------- Fil, the coach (coach.mjs, fil-chat.mjs) ----------
-// Fil's mouth moves while it talks: aloud, or while an AI reply is coming in.
+// ---------- Fischer, the coach (coach.mjs, fil-chat.mjs) ----------
+// Fischer's mouth moves while it talks: aloud, or while an AI reply is coming in.
 const talkingNow = new Set();
 function setTalking(source, on) {
   if (on) talkingNow.add(source); else talkingNow.delete(source);
@@ -668,7 +668,7 @@ function coach(mood, tip, spoken = '') {
   const t = $('#coach-tip');
   t.textContent = tip;
   t.hidden = !tip;
-  // While Fil talks through the game, it speaks its own words, not each move's note.
+  // While Fischer talks through the game, it speaks its own words, not each move's note.
   if (spoken && !(fil && fil.talking)) voice.say(spoken);
 }
 
@@ -678,7 +678,7 @@ function gameSummary() {
   return summaryFor({ accuracy: review.accuracy[game.me], theirs: review.accuracy[game.me === 'w' ? 'b' : 'w'], mistakes: count(['mistake', 'miss']), blunders: count(['blunder']), brilliants: count(['brilliant']) });
 }
 
-// What Fil (the AI) is told about the game: Stockfish's verdict on every move.
+// What Fischer (the AI) is told about the game: Stockfish's verdict on every move.
 function filFacts() {
   const h = game.headers;
   const me = game.me === 'w' ? 'White' : 'Black';
@@ -1116,7 +1116,7 @@ async function main() {
   renderHead();
   $('#grid').hidden = false;
   $('#panel-game').hidden = false;
-  tab = 'coach'; // Fil greets you while Stockfish works
+  tab = 'coach'; // Fischer greets you while Stockfish works
   $('.panel').dataset.tab = 'coach';
   $('#tab-report').hidden = true;
   $('#tab-coach').hidden = false;

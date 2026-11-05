@@ -208,11 +208,11 @@ a.btn { text-decoration: none; display: inline-block; }
 
 /* Moves tab: the note stays put and the move list scrolls under it. */
 #tab-moves:not([hidden]) { display: flex; flex-direction: column; height: 100%; }
-/* ---------- Fil, the coach ---------- */
+/* ---------- Fischer, the coach ---------- */
 .coach { flex: none; display: grid; grid-template-columns: 5rem minmax(0, 1fr); gap: 0.75rem; align-items: start; padding: 0.75rem 1.125rem; border-bottom: 1px solid var(--line); }
 .coach-face { position: relative; width: 5rem; height: 5rem; }
 /* The portrait (web/assets/fil.webp, cut out of its background), with overlays placed on its eyes and mouth. */
-/* Cut out (no background), so Fil stands on the panel; the shoulders fade out at the bottom. */
+/* Cut out (no background), so Fischer stands on the panel; the shoulders fade out at the bottom. */
 .fil-head { position: absolute; inset: 0; transform-origin: 50% 90%; -webkit-mask-image: linear-gradient(#000 86%, transparent); mask-image: linear-gradient(#000 86%, transparent); }
 .fil-head img { display: block; width: 100%; height: 100%; transform-origin: 50% 85%; animation: fil-breathe 4.5s ease-in-out infinite; }
 .fil-lid, .fil-mouth { position: absolute; display: block; }
@@ -220,13 +220,23 @@ a.btn { text-decoration: none; display: inline-block; }
 .fil-lid { top: 42.1%; width: 13.5%; height: 7.7%; background: linear-gradient(#e2ad9a, #efbb9d); border-bottom: 0.09rem solid #2b1d1a; border-radius: 50% 50% 45% 45%; transform: scaleY(0); transform-origin: 50% 0; animation: fil-blink 5.2s infinite; }
 .fil-lid-l { left: 32.8%; }
 .fil-lid-r { left: 55.9%; animation-delay: .02s; }
-/* The mouth opens and closes while Fil talks (aloud, or while a reply is being written). */
-.fil-mouth { left: 44.4%; top: 69.4%; width: 13.5%; height: 6.9%; border-radius: 45% 45% 55% 55% / 35% 35% 65% 65%; background: radial-gradient(ellipse at 50% 92%, #c4605a 0 34%, transparent 36%), #3b120f; border: 0.08rem solid #2a1a17; transform: rotate(-5deg) scaleY(0); transform-origin: 50% 0; opacity: 0; }
-.coach.talking .fil-mouth { opacity: 1; animation: fil-talk .42s infinite; }
+/* The mouth opens and closes while Fischer talks (aloud, or while a reply is being written). */
+.fil-mouth { position: absolute; left: 37.1%; top: 65.8%; width: 28.3%; height: 13.3%; overflow: visible; opacity: 0; transition: opacity .12s; }
+.coach.talking .fil-mouth { opacity: 1; }
+.fil-skin { fill: #f6bb96; }
+.fil-upper { fill: #d48a7a; stroke: #2b1d1a; stroke-width: 2.6; stroke-linejoin: round; }
+.fil-hole { fill: #3b120f; }
+.fil-teeth { fill: #f6f0e6; }
+.fil-tongue { fill: #c4605a; }
+.fil-rim { fill: none; stroke: #2b1d1a; stroke-width: 2.6; stroke-linejoin: round; }
+.fil-lowerlip { fill: #dc9584; }
+/* The jaw opens from the line between the lips. */
+.fil-jaw { transform-box: fill-box; transform-origin: 50% 0; transform: scaleY(.12); }
+.coach.talking .fil-jaw { animation: fil-talk .42s infinite; }
 .coach.talking .fil-head img { animation: fil-talk-bob .84s ease-in-out infinite; }
 @keyframes fil-breathe { 50% { transform: translateY(-1.2%) scale(1.012); } }
 @keyframes fil-blink { 0%, 93%, 100% { transform: scaleY(0); } 95.5% { transform: scaleY(1); } }
-@keyframes fil-talk { 0%, 100% { transform: rotate(-5deg) scaleY(.25); } 25% { transform: rotate(-5deg) scaleY(1); } 50% { transform: rotate(-5deg) scaleY(.45); } 75% { transform: rotate(-5deg) scaleY(.85); } }
+@keyframes fil-talk { 0%, 100% { transform: scaleY(.12); } 25% { transform: scaleY(1); } 50% { transform: scaleY(.45); } 75% { transform: scaleY(.8); } }
 @keyframes fil-talk-bob { 50% { transform: translateY(-1.5%) rotate(.6deg); } }
 /* Moods are moves of the head: a nod, a hop for a great move, a shake for a mistake, a tilt while thinking. */
 .coach[data-mood="happy"] .fil-head { animation: fil-nod .8s var(--ease) 1; }
@@ -356,19 +366,19 @@ a.btn { text-decoration: none; display: inline-block; }
 /* The other ways to pick a game (the review pop-up). */
 .paste-alt { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.25rem; }
 @media (prefers-reduced-motion: reduce) {
-  /* Still: no breathing, nods or blinks. The mouth still shows when Fil talks, gently. */
+  /* Still: no breathing, nods or blinks. The mouth still shows when Fischer talks, gently. */
   .fil-head, .fil-head img, .fil-lid, .fil-dots i { animation: none !important; }
-  .coach.talking .fil-mouth { animation: fil-talk 1.2s infinite !important; }
+  .coach.talking .fil-jaw { animation: fil-talk 1.2s infinite !important; }
 }
 
-/* ---------- Fil's Coach tab: the conversation ---------- */
+/* ---------- Fischer's Coach tab: the conversation ---------- */
 .fil { display: flex; flex-direction: column; gap: 0.75rem; }
 .fil-log { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.5rem; }
 .fil-msg { font-size: 0.9375rem; line-height: 1.5; padding: 0.625rem 0.75rem; border-radius: 0.875rem; max-width: 92%; white-space: pre-wrap; overflow-wrap: anywhere; }
 .fil-msg[data-who="fil"] { background: var(--bg); border: 1px solid var(--line); border-top-left-radius: 0.25rem; justify-self: start; }
 .fil-msg[data-who="you"] { background: var(--sage); color: var(--sage-ink); border-top-right-radius: 0.25rem; justify-self: end; font-weight: 600; }
 .fil-msg.error { border-color: rgb(232 135 107 / 0.55); color: var(--loss); }
-/* Three dots while Fil is thinking (still for reduced motion). */
+/* Three dots while Fischer is thinking (still for reduced motion). */
 .fil-msg.thinking { min-width: 3.5rem; min-height: 2.5rem; }
 .fil-msg.thinking::after { content: '•••'; letter-spacing: 0.2em; color: var(--muted); animation: fil-dots 1.2s infinite; }
 @keyframes fil-dots { 50% { opacity: 0.3; } }
@@ -380,10 +390,10 @@ a.btn { text-decoration: none; display: inline-block; }
 /* The quick replies and the question box stay at the bottom while the talk scrolls. */
 .fil-foot { position: sticky; bottom: -1rem; margin: 0 -1.125rem -1rem; padding: 0.625rem 1.125rem 1rem; background: var(--raise); border-top: 1px solid var(--line); display: grid; gap: 0.5rem; }
 .fil-foot:not(:has(> :not([hidden]))) { display: none; }
-/* On the Coach tab Fil is the focus: the engine lines wait on the other tabs. */
+/* On the Coach tab Fischer is the focus: the engine lines wait on the other tabs. */
 .panel[data-tab="coach"] .lines { display: none; }
 /* Narrow screens: the page scrolls and the move buttons are pinned below, so
-   Fil's quick replies and question box just follow the conversation. */
+   Fischer's quick replies and question box just follow the conversation. */
 @media (max-width: 56.249em) {
   .fil-foot { position: static; margin: 0; padding: 0.625rem 0 0; background: none; }
 }
