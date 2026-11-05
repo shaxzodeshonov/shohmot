@@ -14,7 +14,8 @@ const store = {
 };
 
 // hooks: facts() -> { header, plies }, moments() -> [{ ply, text }], where() -> "14...Nxe4",
-// show(ply), speak(text), talking(on), summary() -> text, track(name)
+// show(ply), speak(text), reading(text) as a reply comes in and reading(null) when it's done,
+// summary() -> text, track(name)
 export function createFil(hooks) {
   const $ = (s) => document.querySelector(s);
   const log = $('#fil-log');
@@ -129,8 +130,8 @@ export function createFil(hooks) {
             if (!line.startsWith('data: ')) continue;
             const ev = JSON.parse(line.slice(6));
             if (ev.type === 'text') {
-              if (!words) hooks.talking(true);
               words += ev.text;
+              hooks.reading(ev.text);
               reply.classList.remove('thinking');
               reply.textContent = clean(words);
               follow();
@@ -151,7 +152,7 @@ export function createFil(hooks) {
       reply.classList.add('error');
       reply.textContent = err.message;
     } finally {
-      hooks.talking(false);
+      hooks.reading(null);
       busy = false;
       form.querySelector('button').disabled = false;
       for (const b of chips.querySelectorAll('button')) b.disabled = false;

@@ -231,12 +231,22 @@ a.btn { text-decoration: none; display: inline-block; }
 .fil-rim { fill: none; stroke: #2b1d1a; stroke-width: 2.6; stroke-linejoin: round; }
 .fil-lowerlip { fill: #dc9584; }
 /* The jaw opens from the line between the lips. */
-.fil-jaw { transform-box: fill-box; transform-origin: 50% 0; transform: scaleY(.12); }
-.coach.talking .fil-jaw { animation: fil-talk .42s infinite; }
+/* The mouth shape for the sound being said (data-viseme, set by lipsync.mjs):
+   how far the jaw drops, and how wide or rounded the lips are. */
+.fil-jaw { transform-box: fill-box; transform-origin: 50% 0; transform: scaleY(.08); transition: transform 70ms ease-out; }
+.fil-lips { transform-box: fill-box; transform-origin: 50% 50%; transition: transform 90ms ease-out; }
+.coach[data-viseme="mbp"] .fil-jaw { transform: scaleY(.02); }
+.coach[data-viseme="fv"] .fil-jaw { transform: scaleY(.24); }
+.coach[data-viseme="eh"] .fil-jaw { transform: scaleY(.48); }
+.coach[data-viseme="ah"] .fil-jaw { transform: scaleY(1); }
+.coach[data-viseme="ee"] .fil-jaw { transform: scaleY(.34); }
+.coach[data-viseme="ee"] .fil-lips { transform: scaleX(1.07); }
+.coach[data-viseme="oo"] .fil-jaw { transform: scaleY(.6); }
+.coach[data-viseme="oo"] .fil-lips { transform: scaleX(.6); }
+.coach[data-viseme="mbp"] .fil-lips { transform: scaleX(.96); }
 .coach.talking .fil-head img { animation: fil-talk-bob .84s ease-in-out infinite; }
 @keyframes fil-breathe { 50% { transform: translateY(-1.2%) scale(1.012); } }
 @keyframes fil-blink { 0%, 93%, 100% { transform: scaleY(0); } 95.5% { transform: scaleY(1); } }
-@keyframes fil-talk { 0%, 100% { transform: scaleY(.12); } 25% { transform: scaleY(1); } 50% { transform: scaleY(.45); } 75% { transform: scaleY(.8); } }
 @keyframes fil-talk-bob { 50% { transform: translateY(-1.5%) rotate(.6deg); } }
 /* Moods are moves of the head: a nod, a hop for a great move, a shake for a mistake, a tilt while thinking. */
 .coach[data-mood="happy"] .fil-head { animation: fil-nod .8s var(--ease) 1; }
@@ -249,6 +259,9 @@ a.btn { text-decoration: none; display: inline-block; }
 @keyframes fil-shake { 20% { transform: rotate(-4deg); } 45% { transform: rotate(3.5deg); } 70% { transform: rotate(-2deg); } }
 @keyframes fil-hmm { 40% { transform: rotate(3deg) translateX(2%); } 100% { transform: none; } }
 /* "…" while Stockfish works. */
+/* Drawn frames (web/assets/fischer/): one shows at a time. */
+.fil-frame { position: absolute; inset: 0; opacity: 0; }
+.fil-frame.on { opacity: 1; }
 .fil-dots { position: absolute; right: -0.375rem; top: -0.375rem; display: none; gap: 0.125rem; padding: 0.1875rem 0.3125rem; border-radius: 62.4375rem; background: var(--ink); box-shadow: 0 0.125rem 0.375rem rgb(0 0 0 / .35); }
 .fil-dots i { width: 0.25rem; height: 0.25rem; border-radius: 50%; background: var(--bg); animation: coach-dot 1.2s infinite; }
 .fil-dots i + i { animation-delay: .2s; }
@@ -368,7 +381,7 @@ a.btn { text-decoration: none; display: inline-block; }
 @media (prefers-reduced-motion: reduce) {
   /* Still: no breathing, nods or blinks. The mouth still shows when Fischer talks, gently. */
   .fil-head, .fil-head img, .fil-lid, .fil-dots i { animation: none !important; }
-  .coach.talking .fil-jaw { animation: fil-talk 1.2s infinite !important; }
+  .fil-jaw, .fil-lips, .fil-frame { transition: none; }
 }
 
 /* ---------- Fischer's Coach tab: the conversation ---------- */
