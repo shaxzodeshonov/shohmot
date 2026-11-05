@@ -115,7 +115,7 @@ export const FEATURES: Feature[] = [
       ['Accuracy you can trust', 'Lichess games use Lichess’s published formula. Other games use the same formula, tuned against real reviewed games.'],
       ['Every move labelled', 'Brilliant, Great, Best, Excellent, Good, Book, Inaccuracy, Mistake, Miss and Blunder, judged by how much each move changes your winning chances.'],
       ['The better move, and why', 'A best-move arrow, the engine’s line, and a short reason, like “It loses a knight” or “It allows mate in 2”.'],
-      ['Eval bar and graph', 'Click the graph to jump to any moment. See your key moments and accuracy by phase.'],
+      ['A coach at your side', 'Fil, Shohmot’s coach, talks you through every move: what happened, the better move, and the lesson in it. Turn its voice on to hear it read aloud.'],
       ['Deep evaluations first', 'Positions Lichess has already searched 40–60 moves deep come from its cloud, then Stockfish 19 with the full network.'],
       ['Runs on your machine', 'The server does no engine work. Results are kept, so a game opens instantly the second time.'],
     ],
