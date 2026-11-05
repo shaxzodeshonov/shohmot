@@ -656,7 +656,13 @@ function renderNote() {
 }
 
 // ---------- Fil, the coach (coach.mjs, fil-chat.mjs) ----------
-const voice = createVoice();
+// Fil's mouth moves while it talks: aloud, or while an AI reply is coming in.
+const talkingNow = new Set();
+function setTalking(source, on) {
+  if (on) talkingNow.add(source); else talkingNow.delete(source);
+  $('#coach').classList.toggle('talking', talkingNow.size > 0);
+}
+const voice = createVoice({ onTalk: (on) => setTalking('voice', on) });
 function coach(mood, tip, spoken = '') {
   setMood($('#coach'), mood);
   const t = $('#coach-tip');
@@ -722,6 +728,7 @@ function wireFil() {
     where: () => (vply ? 'a line you are trying' : ply === 0 ? 'the starting position' : `ply ${ply}, after ${moveNumber(ply - 1)} ${game.moves[ply - 1].san}`),
     show: (p) => go(p),
     speak: (text) => voice.say(text),
+    talking: (on) => setTalking('reply', on),
     summary: () => gameSummary().tip,
     track,
   });

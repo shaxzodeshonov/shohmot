@@ -2,6 +2,7 @@
 import Base from '../layouts/Base.astro';
 import '../styles/review.css';
 import ReviewPicker from '../components/ReviewPicker.astro';
+import filPortrait from '../assets/fil.webp';
 ---
 <Base title="Free chess game review · Shohmot" description="Paste a Lichess link or any PGN for a free Stockfish 19 game review: accuracy, every move labelled Brilliant to Blunder, the best moves and the evaluation graph. No account needed." bodyClass="rv-page">
 
@@ -85,24 +86,16 @@ import ReviewPicker from '../components/ReviewPicker.astro';
       </form>
 
       <div class="panel-game" id="panel-game" hidden>
-        <!-- Fil, the coach: talks you through each move. Its face follows the move (data-mood). -->
+        <!-- Fil, the coach: talks you through each move. Its head moves with the move (data-mood). -->
         <section class="coach" id="coach" data-mood="thinking" aria-label="Coach">
+          <!-- Fil's portrait, with eyelids that blink and a mouth that moves while Fil talks. -->
           <div class="coach-face" aria-hidden="true">
-            <svg viewBox="0 0 64 64">
-              <path class="c-mitre" d="M32 2.5c-3 2.4-4.4 4.8-4.4 7 0 2 1.5 3.5 4.4 3.5s4.4-1.5 4.4-3.5c0-2.2-1.4-4.6-4.4-7z"/>
-              <path class="c-slit" d="M30.4 6.2 33.6 9.4"/>
-              <rect class="c-neck" x="29" y="12.5" width="6" height="4" rx="1.5"/>
-              <rect class="c-ear" x="5" y="28" width="6" height="12" rx="3"/>
-              <rect class="c-ear" x="53" y="28" width="6" height="12" rx="3"/>
-              <rect class="c-head" x="9" y="15.5" width="46" height="40" rx="13"/>
-              <rect class="c-visor" x="15" y="22.5" width="34" height="23" rx="9"/>
-              <g class="m m-calm"><circle cx="25" cy="32" r="3"/><circle cx="39" cy="32" r="3"/><path d="M28 39.5q4 2.5 8 0"/></g>
-              <g class="m m-happy"><path d="M21.5 33q3.5-5 7 0M35.5 33q3.5-5 7 0"/><path d="M27 38.5q5 4.5 10 0"/></g>
-              <g class="m m-wow"><path class="star" d="M25 27.5l1.3 3 3.2.3-2.4 2.1.7 3.2-2.8-1.7-2.8 1.7.7-3.2-2.4-2.1 3.2-.3zM39 27.5l1.3 3 3.2.3-2.4 2.1.7 3.2-2.8-1.7-2.8 1.7.7-3.2-2.4-2.1 3.2-.3z"/><ellipse cx="32" cy="40.5" rx="2.6" ry="2"/></g>
-              <g class="m m-hmm"><path d="M21.5 31h7M35.5 30l7-1.5"/><path d="M28 40h8"/></g>
-              <g class="m m-worried"><path d="M21.5 31.5l6.5-2.5M42.5 31.5l-6.5-2.5"/><circle cx="25" cy="34" r="2.2"/><circle cx="39" cy="34" r="2.2"/><path d="M27.5 41.5q4.5-3 9 0"/></g>
-              <g class="m m-thinking"><circle cx="27" cy="30" r="2.6"/><circle cx="41" cy="30" r="2.6"/><path d="M28 40h6"/><circle class="dot" cx="38" cy="40" r="1"/><circle class="dot" cx="41" cy="40" r="1"/></g>
-            </svg>
+            <div class="fil-head">
+              <img src={filPortrait.src} alt="" width="256" height="256" decoding="async">
+              <i class="fil-lid fil-lid-l"></i><i class="fil-lid fil-lid-r"></i>
+              <i class="fil-mouth"></i>
+            </div>
+            <span class="fil-dots"><i></i><i></i><i></i></span>
           </div>
           <div class="coach-bubble">
             <div class="coach-top">

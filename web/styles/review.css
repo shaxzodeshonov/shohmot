@@ -209,27 +209,40 @@ a.btn { text-decoration: none; display: inline-block; }
 /* Moves tab: the note stays put and the move list scrolls under it. */
 #tab-moves:not([hidden]) { display: flex; flex-direction: column; height: 100%; }
 /* ---------- Fil, the coach ---------- */
-.coach { flex: none; display: grid; grid-template-columns: 3.75rem minmax(0, 1fr); gap: 0.75rem; align-items: start; padding: 0.75rem 1.125rem; border-bottom: 1px solid var(--line); }
-.coach-face { width: 3.75rem; height: 3.75rem; border-radius: 1rem; background: var(--bg); border: 1px solid var(--line-2); display: grid; place-items: center; }
-.coach-face svg { width: 3.25rem; height: 3.25rem; overflow: visible; }
-.coach .c-head, .coach .c-ear, .coach .c-neck { fill: var(--sage); }
-.coach .c-ear { fill: #a9b394; }
-.coach .c-mitre { fill: var(--sage); }
-.coach .c-slit { stroke: var(--sage-ink); stroke-width: 1.4; stroke-linecap: round; fill: none; }
-.coach .c-visor { fill: #17110c; }
-.coach .m { display: none; fill: none; stroke: #b9e28f; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
-.coach .m circle, .coach .m ellipse, .coach .m .star { fill: #b9e28f; stroke: none; }
-.coach[data-mood="calm"] .m-calm, .coach[data-mood="happy"] .m-happy, .coach[data-mood="wow"] .m-wow,
-.coach[data-mood="hmm"] .m-hmm, .coach[data-mood="worried"] .m-worried, .coach[data-mood="thinking"] .m-thinking { display: inline; }
-.coach[data-mood="wow"] .m { stroke: #6fe0d2; }
-.coach[data-mood="wow"] .m circle, .coach[data-mood="wow"] .m ellipse, .coach[data-mood="wow"] .m .star { fill: #6fe0d2; }
-.coach[data-mood="worried"] .m { stroke: #f0a08a; }
-.coach[data-mood="worried"] .m circle { fill: #f0a08a; }
-/* A blink now and then, and dots while it thinks (none for reduced motion, below). */
-.coach .m-calm circle, .coach .m-thinking > circle:not(.dot) { transform-box: fill-box; transform-origin: center; animation: coach-blink 5s infinite; }
-.coach .m-thinking .dot { animation: coach-dot 1.2s infinite; }
-.coach .m-thinking .dot + .dot { animation-delay: .3s; }
-@keyframes coach-blink { 0%, 94%, 100% { transform: scaleY(1); } 97% { transform: scaleY(.15); } }
+.coach { flex: none; display: grid; grid-template-columns: 5rem minmax(0, 1fr); gap: 0.75rem; align-items: start; padding: 0.75rem 1.125rem; border-bottom: 1px solid var(--line); }
+.coach-face { position: relative; width: 5rem; height: 5rem; }
+/* The portrait (web/assets/fil.webp), with overlays placed on its eyes and mouth. */
+.fil-head { position: absolute; inset: 0; border-radius: 1.125rem; overflow: hidden; background: #cbcbcb; border: 1px solid var(--line-2); transform-origin: 50% 90%; }
+.fil-head img { display: block; width: 100%; height: 100%; transform-origin: 50% 85%; animation: fil-breathe 4.5s ease-in-out infinite; }
+.fil-lid, .fil-mouth { position: absolute; display: block; }
+/* Eyelids: closed for a moment every few seconds. */
+.fil-lid { top: 50.5%; width: 15.5%; height: 8.8%; background: linear-gradient(#e2ad9a, #efbb9d); border-bottom: 0.09rem solid #2b1d1a; border-radius: 50% 50% 45% 45%; transform: scaleY(0); transform-origin: 50% 0; animation: fil-blink 5.2s infinite; }
+.fil-lid-l { left: 30.4%; }
+.fil-lid-r { left: 56.8%; animation-delay: .02s; }
+/* The mouth opens and closes while Fil talks (aloud, or while a reply is being written). */
+.fil-mouth { left: 43.6%; top: 81.7%; width: 15.5%; height: 7.9%; border-radius: 45% 45% 55% 55% / 35% 35% 65% 65%; background: radial-gradient(ellipse at 50% 92%, #c4605a 0 34%, transparent 36%), #3b120f; border: 0.08rem solid #2a1a17; transform: rotate(-5deg) scaleY(0); transform-origin: 50% 0; opacity: 0; }
+.coach.talking .fil-mouth { opacity: 1; animation: fil-talk .42s infinite; }
+.coach.talking .fil-head img { animation: fil-talk-bob .84s ease-in-out infinite; }
+@keyframes fil-breathe { 50% { transform: translateY(-1.2%) scale(1.012); } }
+@keyframes fil-blink { 0%, 93%, 100% { transform: scaleY(0); } 95.5% { transform: scaleY(1); } }
+@keyframes fil-talk { 0%, 100% { transform: rotate(-5deg) scaleY(.25); } 25% { transform: rotate(-5deg) scaleY(1); } 50% { transform: rotate(-5deg) scaleY(.45); } 75% { transform: rotate(-5deg) scaleY(.85); } }
+@keyframes fil-talk-bob { 50% { transform: translateY(-1.5%) rotate(.6deg); } }
+/* Moods are moves of the head: a nod, a hop for a great move, a shake for a mistake, a tilt while thinking. */
+.coach[data-mood="happy"] .fil-head { animation: fil-nod .8s var(--ease) 1; }
+.coach[data-mood="wow"] .fil-head { animation: fil-hop .7s var(--ease) 1; }
+.coach[data-mood="worried"] .fil-head { animation: fil-shake .7s ease-in-out 1; }
+.coach[data-mood="hmm"] .fil-head { animation: fil-hmm .9s var(--ease) 1 both; }
+.coach[data-mood="thinking"] .fil-head { transform: rotate(-4deg); transition: transform .4s var(--ease); }
+@keyframes fil-nod { 30% { transform: translateY(4%) rotate(-1deg); } 60% { transform: translateY(-1%); } }
+@keyframes fil-hop { 35% { transform: translateY(-10%) scale(1.04); } 65% { transform: translateY(1%); } }
+@keyframes fil-shake { 20% { transform: rotate(-4deg); } 45% { transform: rotate(3.5deg); } 70% { transform: rotate(-2deg); } }
+@keyframes fil-hmm { 40% { transform: rotate(3deg) translateX(2%); } 100% { transform: none; } }
+/* "…" while Stockfish works. */
+.fil-dots { position: absolute; right: -0.375rem; top: -0.375rem; display: none; gap: 0.125rem; padding: 0.1875rem 0.3125rem; border-radius: 62.4375rem; background: var(--ink); box-shadow: 0 0.125rem 0.375rem rgb(0 0 0 / .35); }
+.fil-dots i { width: 0.25rem; height: 0.25rem; border-radius: 50%; background: var(--bg); animation: coach-dot 1.2s infinite; }
+.fil-dots i + i { animation-delay: .2s; }
+.fil-dots i + i + i { animation-delay: .4s; }
+.coach[data-mood="thinking"] .fil-dots { display: flex; }
 @keyframes coach-dot { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
 .coach-bubble { min-width: 0; display: grid; gap: 0.375rem; }
 .coach-top { display: flex; align-items: center; gap: 0.5rem; }
@@ -342,7 +355,9 @@ a.btn { text-decoration: none; display: inline-block; }
 /* The other ways to pick a game (the review pop-up). */
 .paste-alt { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.25rem; }
 @media (prefers-reduced-motion: reduce) {
-  .coach .m * { animation: none !important; }
+  /* Still: no breathing, nods or blinks. The mouth still shows when Fil talks, gently. */
+  .fil-head, .fil-head img, .fil-lid, .fil-dots i { animation: none !important; }
+  .coach.talking .fil-mouth { animation: fil-talk 1.2s infinite !important; }
 }
 
 /* ---------- Fil's Coach tab: the conversation ---------- */

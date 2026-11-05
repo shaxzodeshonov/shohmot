@@ -134,7 +134,8 @@ export function sayable(text) {
 // Voices that sound calm, best first. Names differ by system; any English voice will do after these.
 const SOFT = [/natural.*(aria|jenny|ava|emma|sonia|libby|michelle)/i, /(ava|samantha|allison|serena|karen|moira|tessa|fiona)/i, /google uk english female/i, /(aria|jenny|zira|hazel)/i, /google us english/i];
 
-export function createVoice({ key = 'shohmot-coach-voice' } = {}) {
+// onTalk(true/false): Fil's mouth moves while it speaks.
+export function createVoice({ key = 'shohmot-coach-voice', onTalk = () => {} } = {}) {
   const synth = typeof speechSynthesis !== 'undefined' ? speechSynthesis : null;
   let on = false;
   try { on = !!synth && localStorage.getItem(key) === '1'; } catch { /* private mode */ }
@@ -147,13 +148,22 @@ export function createVoice({ key = 'shohmot-coach-voice' } = {}) {
   if (synth) { choose(); synth.addEventListener?.('voiceschanged', choose); }
   let timer = 0;
   let last = '';
+  let guard = 0;
+  let current = null;
+  // Some browsers don't always say when speech ends (or was cut off), so a
+  // timer from the length of the text closes the mouth anyway.
+  const talking = (on, words = '') => {
+    clearTimeout(guard);
+    onTalk(on);
+    if (on) guard = setTimeout(() => onTalk(false), 1500 + words.length * 90);
+  };
   return {
     supported: !!synth,
     get on() { return on; },
     set(value) {
       on = !!value && !!synth;
       try { localStorage.setItem(key, on ? '1' : '0'); } catch { /* private mode */ }
-      if (!on) { clearTimeout(timer); synth && synth.cancel(); last = ''; }
+      if (!on) { clearTimeout(timer); synth && synth.cancel(); last = ''; talking(false); }
     },
     // Says it once things settle (stepping quickly through moves doesn't queue them up).
     say(text) {
@@ -170,9 +180,13 @@ export function createVoice({ key = 'shohmot-coach-voice' } = {}) {
         u.rate = 0.92;
         u.pitch = 1.05;
         u.volume = 0.85;
+        current = u;
+        // A cut-off earlier utterance reports its end late: only the current one moves the mouth.
+        u.onstart = () => { if (current === u) talking(true, words); };
+        u.onend = u.onerror = () => { if (current === u) talking(false); };
         synth.speak(u);
       }, 280);
     },
-    stop() { clearTimeout(timer); synth && synth.cancel(); last = ''; },
+    stop() { clearTimeout(timer); synth && synth.cancel(); last = ''; talking(false); },
   };
 }
