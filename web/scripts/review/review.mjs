@@ -10,7 +10,9 @@ import { play, soundOf, isMuted, setMuted } from './sound.mjs';
 import { cloudEvals } from './cloud.mjs';
 import { newTree, play as playOn, toPgn } from './tree.mjs';
 import { LABELS, BAD, ACCURACY, winPercent, moveAccuracy, gameAccuracy, classify, gameRating, phases } from './analysis.mjs';
-import { labelGame } from './label.mjs';
+import { labelGame, explain } from './label.mjs';
+import { coachFor, summaryFor, setMood, createVoice } from './coach.mjs';
+import { createFil } from './fil-chat.mjs';
 import { saveReviewedMistakes } from '../training/store.mjs';
 import { mistakesOf } from '../training/mistakes.mjs';
 import { reviewUrlFor, go as openReview } from './open-game.mjs';
@@ -314,9 +316,11 @@ function finish(depth) {
     saveReviewedMistakes(PLATFORM, GAME_ID, mistakesOf(game, results, review, { end: Number(params.get('t')) || Date.now(), username: USERNAME, opponent: game.me === 'w' ? h.Black : h.White, result }));
   }
   $('#progress').hidden = true;
+  const again = $('#progress').dataset.depth != null;
   $('#progress').dataset.depth = depth;
   render();
   follow();
+  if (!again) fil.done(); // a re-run at another depth doesn't restart the coaching
 }
 
 // ---------- live engine ----------
@@ -347,7 +351,7 @@ function scheduleLive() {
     renderLines();
     renderEvalBar();
     if (!input || !input.dragging) renderBoard();
-    if (tab === 'moves' && vply) renderNote();
+    if (vply) renderNote();
   }, 80);
 }
 
@@ -593,6 +597,7 @@ function variationHtml() {
 function renderNote() {
   const el = $('#note');
   if (vply) {
+    coach('calm', '');
     const m = curMove();
     const best = liveFor(curFen())[0];
     const end = gameOverText(new Chess(curFen()));
@@ -603,14 +608,16 @@ function renderNote() {
   }
   if (ply === 0) {
     el.innerHTML = `<p class="note-h">Starting position</p><p class="muted">${game.opening ? `${esc(game.opening.name)}${game.opening.eco ? ` (${esc(game.opening.eco)})` : ''}. ` : ''}Use ← → to step through the game.</p>`;
-    return;
+    if (!review) return coach('thinking', 'Give me a moment: I’m going through your game with Stockfish, move by move.');
+    const s = gameSummary();
+    return coach(s.mood, s.tip, s.tip);
   }
   const i = ply - 1;
   const m = game.moves[i];
   const who = m.color === game.me ? 'You' : 'Your opponent';
   if (!review) {
     el.innerHTML = `<p class="note-h">${moveNumber(i)} ${esc(m.san)}</p><p class="muted">${results[ply] ? `Evaluation ${evalText(ply)}.` : 'Waiting for Stockfish…'}</p>`;
-    return;
+    return coach('thinking', '');
   }
   const l = review.labels[i];
   const info = review.info[i];
@@ -632,7 +639,7 @@ function renderNote() {
     if (l === 'miss') said.push(`${who === 'You' ? 'Your opponent' : 'You'} had just slipped, and this lets them off the hook.`);
     const bestScore = lines[0].score;
     if (bestScore.mate > 0) said.push(`There was mate in ${bestScore.mate}.`);
-    if (!said.length) said.push(`The evaluation goes from ${evalText(i)} to ${evalText(ply)}.`);
+    // Nothing more to say than the numbers (shown in the corner): Fil's lesson says the rest.
   }
   let best = '';
   if (!['best', 'book', 'forced', 'brilliant', 'great'].includes(l) && info.best) {
@@ -640,7 +647,98 @@ function renderNote() {
     best = `<p class="best-line"><span>Best was</span> <b>${esc(line[0] || info.best)}</b>${line.length > 1 ? ` <small>${esc(line.slice(1).join(' '))}</small>` : ''}</p>`;
   }
   el.innerHTML = `<p class="note-h" data-l="${l}">${badge(l)}<span>${head}</span><small class="ev">${evalText(ply)}</small></p>${said.length ? `<p>${said.join(' ')}</p>` : ''}${best}`;
+  // Fil: a face for the move, and the lesson in it.
+  const kind = BAD.has(l) && lines && lines[0] ? explain(game, results, l, i).kind : null;
+  const c = coachFor({ label: l, kind, mine: m.color === game.me, ply });
+  const bestSan = best ? (sanLine(game.fens[i], lines[0].pv)[0] || info.best) : '';
+  const spoken = `${head.replace(/<[^>]+>/g, '')}. ${said.join(' ')} ${bestSan ? `Best was ${bestSan}.` : ''} ${c.tip}`;
+  coach(c.mood, c.tip, spoken);
 }
+
+// ---------- Fil, the coach (coach.mjs, fil-chat.mjs) ----------
+const voice = createVoice();
+function coach(mood, tip, spoken = '') {
+  setMood($('#coach'), mood);
+  const t = $('#coach-tip');
+  t.textContent = tip;
+  t.hidden = !tip;
+  // While Fil talks through the game, it speaks its own words, not each move's note.
+  if (spoken && !(fil && fil.talking)) voice.say(spoken);
+}
+
+function gameSummary() {
+  const mine = (i) => game.moves[i].color === game.me;
+  const count = (ls) => review.labels.filter((l, i) => mine(i) && ls.includes(l)).length;
+  return summaryFor({ accuracy: review.accuracy[game.me], theirs: review.accuracy[game.me === 'w' ? 'b' : 'w'], mistakes: count(['mistake', 'miss']), blunders: count(['blunder']), brilliants: count(['brilliant']) });
+}
+
+// What Fil (the AI) is told about the game: Stockfish's verdict on every move.
+function filFacts() {
+  const h = game.headers;
+  const me = game.me === 'w' ? 'White' : 'Black';
+  const them = game.me === 'w' ? 'Black' : 'White';
+  const elo = (c) => (h[`${c}Elo`] && h[`${c}Elo`] !== '?' ? ` (${h[`${c}Elo`]})` : '');
+  const r = h.Result;
+  const outcome = r === '1/2-1/2' ? 'a draw' : r === '*' ? 'unfinished' : (r === '1-0') === (game.me === 'w') ? 'you won' : 'you lost';
+  const acc = (c) => (review.accuracy[c] != null ? review.accuracy[c].toFixed(1) : '?');
+  const header = [
+    `You had ${me}${elo(me)}; your opponent, ${h[them] || 'Opponent'}, had ${them}${elo(them)}. Result ${r || '?'}: ${outcome}.`,
+    `Played on ${SITE}${h.TimeControl ? `, time control ${h.TimeControl}` : ''}.${game.opening ? ` Opening: ${game.opening.name}${game.opening.eco ? ` (${game.opening.eco})` : ''}.` : ''}`,
+    `Accuracy: you ${acc(game.me)}, your opponent ${acc(game.me === 'w' ? 'b' : 'w')}.`,
+  ].join(' ');
+  const plies = game.moves.map((m, i) => {
+    const l = review.labels[i];
+    const lines = results[i];
+    let fact = `${moveNumber(i)} ${m.san} by ${m.color === game.me ? 'you' : 'your opponent'}: ${LABELS[l].name.toLowerCase()}; eval ${evalText(i + 1) || '?'}`;
+    if (!['best', 'book', 'forced', 'brilliant', 'great'].includes(l) && lines && lines[0] && lines[0].pv.length) {
+      const best = sanLine(game.fens[i], lines[0].pv);
+      if (best.length) fact += `; better was ${best[0]} (Stockfish's line: ${best.join(' ')})`;
+    }
+    if (BAD.has(l) && lines && lines[0]) fact += `; ${explain(game, results, l, i).why}`;
+    return fact;
+  });
+  return { header, plies };
+}
+
+// The moments worth stopping at: your mistakes and best moves, and your opponent's slips.
+function keyMoments() {
+  const out = [];
+  game.moves.forEach((m, i) => {
+    const l = review.labels[i];
+    const mine = m.color === game.me;
+    const worth = mine ? ['brilliant', 'great', 'miss', 'mistake', 'blunder'].includes(l) : ['blunder', 'mistake', 'brilliant'].includes(l);
+    if (!worth) return;
+    const what = LABELS[l].name.toLowerCase();
+    out.push({ ply: i + 1, text: `${moveNumber(i)} ${m.san}, ${mine ? `your ${what}` : `your opponent’s ${what}`}${l === 'brilliant' ? '!' : '.'}` });
+  });
+  return out;
+}
+
+let fil = null;
+function wireFil() {
+  fil = createFil({
+    facts: filFacts,
+    moments: keyMoments,
+    where: () => (vply ? 'a line you are trying' : ply === 0 ? 'the starting position' : `ply ${ply}, after ${moveNumber(ply - 1)} ${game.moves[ply - 1].san}`),
+    show: (p) => go(p),
+    speak: (text) => voice.say(text),
+    summary: () => gameSummary().tip,
+    track,
+  });
+}
+function wireCoach() {
+  const btn = $('#coach-voice');
+  if (!voice.supported) return;
+  btn.hidden = false;
+  btn.setAttribute('aria-pressed', String(voice.on));
+  btn.addEventListener('click', () => {
+    voice.set(!voice.on);
+    btn.setAttribute('aria-pressed', String(voice.on));
+    if (voice.on) renderNote(); // say the current move straight away
+  });
+}
+
+
 
 function lossText(d) {
   if (d >= 8) return 'the queen';
@@ -691,8 +789,9 @@ function render() {
   renderPlayers();
   renderGraph();
   renderLines();
+  renderNote(); // the coach's bubble, on both tabs
   if (tab === 'report') renderReport();
-  else { renderNote(); renderMoves(); }
+  else if (tab === 'moves') renderMoves();
   $('#next-bad').disabled = !review;
 }
 
@@ -700,7 +799,7 @@ function render() {
 function moved(sound) {
   sel = null;
   targets = [];
-  if (tab !== 'moves') setTab('moves');
+  if (tab === 'report') setTab('moves');
   else render();
   if (sound) play(sound);
   follow();
@@ -821,6 +920,8 @@ function setTab(t) {
   for (const b of $('#tabs').querySelectorAll('button')) b.setAttribute('aria-pressed', String(b.dataset.tab === t));
   $('#tab-report').hidden = t !== 'report';
   $('#tab-moves').hidden = t !== 'moves';
+  $('#tab-coach').hidden = t !== 'coach';
+  $('.panel').dataset.tab = t;
   render();
 }
 
@@ -901,7 +1002,7 @@ function wire() {
     if (!game) return;
     const keys = {
       ArrowLeft: () => step(-1), ArrowRight: () => step(1), Home: () => go(0), End: () => go(game.fens.length - 1),
-      f: () => $('#flip').click(), n: () => $('#next-bad').click(), m: () => $('#sound').click(),
+      f: () => $('#flip').click(), n: () => $('#next-bad').click(), m: () => $('#sound').click(), v: () => $('#coach-voice').click(),
       Escape: () => { sel = null; targets = []; renderBoard(); },
     };
     const fn = keys[e.key];
@@ -937,6 +1038,8 @@ function timeControl(tc) {
 
 async function main() {
   wire();
+  wireCoach();
+  wireFil();
   wirePaste();
   wireShare();
   if (!PGN && (!PLATFORM || !GAME_ID || (!USERNAME && PLATFORM !== 'lichess'))) {
@@ -1006,6 +1109,12 @@ async function main() {
   renderHead();
   $('#grid').hidden = false;
   $('#panel-game').hidden = false;
+  tab = 'coach'; // Fil greets you while Stockfish works
+  $('.panel').dataset.tab = 'coach';
+  $('#tab-report').hidden = true;
+  $('#tab-coach').hidden = false;
+  for (const b of $('#tabs').querySelectorAll('button')) b.setAttribute('aria-pressed', String(b.dataset.tab === 'coach'));
+  fil.greet();
   render();
   analyse();
 }

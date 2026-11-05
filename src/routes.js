@@ -7,6 +7,7 @@ const { account } = require('./account');
 const { billing, webhook } = require('./billing');
 const { event, admin, health } = require('./events');
 const { coach } = require('./coach');
+const { fil } = require('./fil');
 const { cron } = require('./weekly');
 
 // Plain read-only routes; the rest check their own methods.
@@ -35,6 +36,7 @@ const ROUTES = {
   admin,
   health,
   coach,
+  fil,
   cron,
 };
 
