@@ -78,7 +78,7 @@ function renderBoard() {
       const piece = p ? `<i class="pc" style="background-image:url(pieces/${p.color}${p.type.toUpperCase()}.svg)"></i>` : '';
       const cf = y === 7 ? `<b class="cf">${FILES[f]}</b>` : '';
       const cr = x === 0 ? `<b class="cr">${r + 1}</b>` : '';
-      const hint = to.has(sq) ? `<span class="${p ? 'hint cap' : 'hint'}"></span>` : '';
+      const hint = to.has(sq) ? `<span class="${p ? 'sq-hint cap' : 'sq-hint'}"></span>` : '';
       cells.push(`<div class="${cls.join(' ')}" data-sq="${sq}"${last && sq === last.to && last.l ? ` data-l="${last.l}"` : ''}>${piece}${cf}${cr}${hint}</div>`);
     }
   }

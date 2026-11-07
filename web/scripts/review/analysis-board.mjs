@@ -187,7 +187,7 @@ function renderBoard() {
       const piece = p ? `<i class="pc" style="background-image:url(pieces/${p.color}${p.type.toUpperCase()}.svg)"></i>` : '';
       const coordF = y === 7 ? `<b class="cf">${FILES[f]}</b>` : '';
       const coordR = x === 0 ? `<b class="cr">${r + 1}</b>` : '';
-      const hint = to.has(sq) ? `<span class="${p ? 'hint cap' : 'hint'}"></span>` : '';
+      const hint = to.has(sq) ? `<span class="${p ? 'sq-hint cap' : 'sq-hint'}"></span>` : '';
       cells.push(`<div class="${cls.join(' ')}" data-sq="${sq}">${piece}${coordF}${coordR}${hint}</div>`);
     }
   }

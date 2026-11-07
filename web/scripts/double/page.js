@@ -126,7 +126,7 @@ function renderBoard() {
       if (last && (sq === last.from || sq === last.to)) cls.push('last');
       if (sq === sel) cls.push('sel');
       const king = p && p.type === 'k' && p.color === chess.turn() && chess.inCheck() ? ' style="box-shadow: inset 0 0 0 100vmax rgb(220 79 66 / .45)"' : '';
-      cells.push(`<div class="${cls.join(' ')}" data-sq="${sq}"${king}>${p ? `<i class="pc" style="background-image:url(pieces/${p.color}${p.type.toUpperCase()}.svg)"></i>` : ''}${y === 7 ? `<b class="cf">${FILES[f]}</b>` : ''}${x === 0 ? `<b class="cr">${r + 1}</b>` : ''}${to.has(sq) ? `<span class="${p ? 'hint cap' : 'hint'}"></span>` : ''}</div>`);
+      cells.push(`<div class="${cls.join(' ')}" data-sq="${sq}"${king}>${p ? `<i class="pc" style="background-image:url(pieces/${p.color}${p.type.toUpperCase()}.svg)"></i>` : ''}${y === 7 ? `<b class="cf">${FILES[f]}</b>` : ''}${x === 0 ? `<b class="cr">${r + 1}</b>` : ''}${to.has(sq) ? `<span class="${p ? 'sq-hint cap' : 'sq-hint'}"></span>` : ''}</div>`);
     }
   }
   $('#board').innerHTML = cells.join('');
