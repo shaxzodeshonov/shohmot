@@ -403,7 +403,7 @@ function renderBoard() {
       const coordF = y === 7 ? `<b class="cf">${FILES[f]}</b>` : '';
       const coordR = x === 0 ? `<b class="cr">${r + 1}</b>` : '';
       const badge = label && sq === move.to ? `<em class="badge" data-l="${label}" title="${LABELS[label].name}">${LABELS[label].mark}</em>` : '';
-      const hint = to.has(sq) ? `<span class="${p ? 'hint cap' : 'hint'}"></span>` : '';
+      const hint = to.has(sq) ? `<span class="${p ? 'sq-hint cap' : 'sq-hint'}"></span>` : '';
       cells.push(`<div class="${cls.join(' ')}" data-sq="${sq}"${label && move && (sq === move.from || sq === move.to) ? ` data-l="${label}"` : ''}>${piece}${coordF}${coordR}${badge}${hint}</div>`);
     }
   }
@@ -476,6 +476,8 @@ function renderPlayers() {
   $('#player-bottom').innerHTML = line(top === 'w' ? 'b' : 'w');
 }
 
+// A dot at the very edge of the graph would be cut in half: keep it a whole dot inside.
+const edge = (pct) => `clamp(0.375rem, ${pct.toFixed(2)}%, calc(100% - 0.375rem))`;
 function renderGraph() {
   const n = game.fens.length;
   const step = n > 1 ? 1000 / (n - 1) : 1000;
@@ -503,7 +505,7 @@ function renderGraph() {
   review.labels.forEach((l, i) => {
     if (!['blunder', 'mistake', 'miss', 'brilliant', 'great'].includes(l)) return;
     const w = review.wins[i + 1];
-    dots.push(`<i data-l="${l}" style="left:${((i + 1) / (n - 1)) * 100}%;top:${100 - w}%" title="${esc(`${moveNumber(i)} ${game.moves[i].san}: ${LABELS[l].name}`)}"></i>`);
+    dots.push(`<i data-l="${l}" style="left:${edge(((i + 1) / (n - 1)) * 100)};top:${edge(100 - w)}" title="${esc(`${moveNumber(i)} ${game.moves[i].san}: ${LABELS[l].name}`)}"></i>`);
   });
   $('#g-dots').innerHTML = dots.join('');
 }
@@ -582,8 +584,14 @@ function renderMoves() {
   if (line && after < 0) out.push(variationHtml());
   const list = $('#moves');
   list.innerHTML = `<li>${out.join('')}</li>`;
+  // The selected move in view, scrolling only the list (not the panel or the page).
   const on = list.querySelector('.mv.on, .vm.on');
-  if (on) on.scrollIntoView({ block: 'nearest' });
+  if (on) {
+    const box = list.getBoundingClientRect();
+    const r = on.getBoundingClientRect();
+    if (r.top < box.top) list.scrollTop += r.top - box.top - 4;
+    else if (r.bottom > box.bottom) list.scrollTop += r.bottom - box.bottom + 4;
+  }
 }
 
 function variationHtml() {
@@ -778,7 +786,6 @@ function wireFil() {
     speak: (text) => voice.say(text),
     // With the voice off, the mouth reads the reply along as it arrives.
     reading: (more) => { if (!voice.on) { if (more) lip.read(more); else lip.end(); } },
-    summary: () => gameSummary().tip,
     track,
   });
 }
@@ -1203,8 +1210,10 @@ function wireShare() {
       const qs = new URLSearchParams({ p: 'lichess', id: GAME_ID, side: game.me });
       url = `${location.origin}/review.html?${qs}`;
     }
-    try { await navigator.clipboard.writeText(url); $('#copy-link').textContent = 'Link copied'; } catch { prompt('Copy this link:', url); }
-    setTimeout(() => { $('#copy-link').textContent = 'Copy link'; }, 2500);
+    const btn = $('#copy-link');
+    const label = (text) => { btn.setAttribute('aria-label', text); btn.title = text; };
+    try { await navigator.clipboard.writeText(url); btn.classList.add('done'); label('Link copied'); } catch { prompt('Copy this link:', url); }
+    setTimeout(() => { btn.classList.remove('done'); label('Copy link'); }, 2500);
   });
   $('#share').addEventListener('click', async () => {
     if (!review) return;

@@ -15,7 +15,7 @@ const store = {
 
 // hooks: facts() -> { header, plies }, moments() -> [{ ply, text }], where() -> "14...Nxe4",
 // show(ply), speak(text), reading(text) as a reply comes in and reading(null) when it's done,
-// summary() -> text, track(name)
+// track(name)
 export function createFil(hooks) {
   const $ = (s) => document.querySelector(s);
   const log = $('#fil-log');
@@ -73,8 +73,11 @@ export function createFil(hooks) {
   async function done() {
     ready = true;
     await status;
-    bubble('fil', hooks.summary());
-    if (aiOn && store.get(OK) === '1') return startAi();
+    // "I'm going through this game now" is out of date: the chat starts fresh.
+    log.innerHTML = '';
+    // The numbers are in Fischer's note at the top; here, just what's next.
+    if (aiOn && store.get(OK) === '1') { bubble('fil', 'Done! My summary is up top, next to my face. Let’s go through the game.'); return startAi(); }
+    bubble('fil', 'Done! My summary is up top, next to my face. Want me to take you through the moments that matter?');
     start.hidden = false;
     $('#fil-ai-note').hidden = !aiOn;
     $('#fil-go').hidden = !aiOn;

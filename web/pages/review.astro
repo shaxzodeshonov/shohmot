@@ -66,8 +66,13 @@ const useFrames = frames.some((f) => f.name === 'rest') && frames.some((f) => f.
         <p class="rv-meta" id="meta"></p>
         <p class="rv-error" id="error" role="alert" hidden></p>
         <div class="rv-share" id="share-row" hidden>
-          <button class="btn btn-solid" type="button" id="share">Share image</button>
-          <button class="btn" type="button" id="copy-link">Copy link</button>
+          <button class="icon-btn rv-share-img" type="button" id="share" aria-label="Share image" title="Share image">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4m0 0L8 8m4-4 4 4M5 12v6.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <button class="icon-btn" type="button" id="copy-link" aria-label="Copy link" title="Copy link">
+            <svg class="i-link" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <svg class="i-done" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
         </div>
       </header>
 
@@ -94,6 +99,9 @@ const useFrames = frames.some((f) => f.name === 'rest') && frames.some((f) => f.
       </form>
 
       <div class="panel-game" id="panel-game" hidden>
+        <!-- Everything above the move buttons. It scrolls as one only when the
+             window is too short to give the tab underneath enough room. -->
+        <div class="panel-scroll" id="panel-scroll">
         <!-- Fischer, the coach: talks you through each move. Its head moves with the move (data-mood). -->
         <section class="coach" id="coach" data-mood="thinking" data-frames={useFrames ? '' : undefined} aria-label="Coach">
           <!-- Fischer's portrait, with eyelids that blink and a mouth that moves while Fischer talks. -->
@@ -155,18 +163,13 @@ const useFrames = frames.some((f) => f.name === 'rest') && frames.some((f) => f.
           <div class="g-dots" id="g-dots"></div>
         </div>
 
-        <section class="lines" id="lines" aria-label="Engine lines" aria-live="off">
-          <div class="lines-h">
-            <button type="button" class="switch" id="live-toggle" aria-pressed="true"><i></i><span>Engine</span></button>
-            <small id="lines-depth"></small>
-          </div>
-          <div class="lines-body" id="lines-body"></div>
-        </section>
 
+        <div class="tabbar">
         <div class="toggle" role="group" aria-label="View" id="tabs">
           <button type="button" data-tab="coach" aria-pressed="false">Coach</button>
           <button type="button" data-tab="report" aria-pressed="true">Report</button>
           <button type="button" data-tab="moves" aria-pressed="false">Moves</button>
+        </div>
         </div>
 
         <div class="panel-body">
@@ -201,8 +204,17 @@ const useFrames = frames.some((f) => f.name === 'rest') && frames.some((f) => f.
           </div>
 
           <div id="tab-moves" class="tab" hidden>
+            <section class="lines" id="lines" aria-label="Engine lines" aria-live="off">
+              <div class="lines-h">
+                <button type="button" class="switch" id="live-toggle" aria-pressed="true"><i></i><span>Engine</span></button>
+                <small id="lines-depth"></small>
+              </div>
+              <div class="lines-body" id="lines-body"></div>
+            </section>
             <ol class="moves" id="moves"></ol>
           </div>
+        </div>
+
         </div>
 
         <div class="controls">
