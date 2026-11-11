@@ -1,6 +1,6 @@
 {
   "name": "shohmot",
-  "version": "3.0.0",
+  "version": "1.0.2",
   "description": "Live game counter for Chess.com and Lichess accounts",
   "main": "server.js",
   "private": true,
