@@ -36,7 +36,8 @@ async function load() {
   $('#ad-cards').innerHTML = cards.map(([k, v, sub]) => `<div><dt>${esc(k)}</dt><dd>${nf.format(v)}<small>${esc(sub)}</small></dd></div>`).join('');
 
   const steps = out.funnel.filter((f) => billing || !['checkout_started', 'subscribed'].includes(f.step));
-  const top = Math.max(1, steps[0].count);
+  // Later steps can outnumber the first (reviews without an account, accounts made before the window), so scale to the biggest.
+  const top = Math.max(1, ...steps.map((f) => f.count));
   $('#ad-funnel').innerHTML = steps.map((f) => `<p><span>${esc(FUNNEL[f.step] || f.step)}</span><i style="--w:${(f.count / top) * 100}%"></i><b>${nf.format(f.count)}</b></p>`).join('');
 
   const cols = ['visitors', 'page_view', 'signup', 'account_added', 'review_finished', 'guest_review', 'puzzle_solved', 'client_error'];
