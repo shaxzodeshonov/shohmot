@@ -1,11 +1,13 @@
 // Settings: name, email confirmation, plan and billing, tilt guard, emails,
 // coach, signing out and the account's data.
 import { currentUser, freshUser, remember, features, api, signOut, forget, unlocked } from './session.js';
+import { avatarDesigner } from './avatar-designer.mjs';
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const dateFmt = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
 let me = null;
+currentUser().then((u) => avatarDesigner($('#av'), { name: (u && u.name) || 'you' }));
 
 let toastTimer;
 function toast(msg) {

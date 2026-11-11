@@ -128,7 +128,29 @@ import { PLATFORM, BASE_SPEEDS, ALL_SPEEDS, SPEED_NAME, esc, cellLabel, gridHead
     if (drawn.get(el) === html) return false;
     drawn.set(el, html);
     el.innerHTML = html;
+    if (el.id === 'rows') tickCounts(el);
     return true;
+  }
+  // A count that changed runs up (or down) to its new value, so a game that
+  // has just landed is seen arriving.
+  const lastCounts = [];
+  const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function tickCounts(root) {
+    root.querySelectorAll('.played').forEach((el, i) => {
+      const text = el.textContent;
+      const to = Number(text.replace(/\D/g, ''));
+      const from = lastCounts[i] || 0;
+      lastCounts[i] = to;
+      if (calm || from === to || !/\d/.test(text)) return;
+      const t0 = performance.now();
+      const step = (now) => {
+        if (!el.isConnected) return;
+        const k = Math.min(1, (now - t0) / 500);
+        el.textContent = k < 1 ? nf.format(Math.round(from + (to - from) * (1 - (1 - k) ** 3))) : text;
+        if (k < 1) requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    });
   }
   // The shown day is older than the games we have (last visit's copy covers
   // only today and yesterday): it waits for the full history.

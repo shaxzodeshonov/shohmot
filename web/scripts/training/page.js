@@ -11,6 +11,8 @@ import { currentUser, freshUser, features, unlocked } from '../session.js';
 import { track } from '../track.js';
 import { queue, record, stats, doneToday, LEARNED } from './store.mjs';
 import { analyzeMany } from './analyze.mjs';
+import { slidePieces } from '../review/slide.mjs';
+import { boardFx, checkOf } from '../review/fx.mjs';
 
 export const FREE_PER_DAY = 5;
 const $ = (s) => document.querySelector(s);
@@ -83,6 +85,8 @@ function renderBoard() {
     }
   }
   $('#board').innerHTML = cells.join('') + (arrow ? arrowPath(arrow.uci, arrow.cls) : '');
+  slidePieces($('#board'));
+  boardFx($('#board'), chess.fen(), checkOf(chess));
 }
 
 function squareAt(x, y) {

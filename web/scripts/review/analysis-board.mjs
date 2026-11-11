@@ -13,6 +13,9 @@ import { winPercent } from './analysis.mjs';
 import { play as playSound, soundOf, isMuted, setMuted } from './sound.mjs';
 import { SetupEditor } from './setup.mjs';
 import { START, newTree, play, pathTo, lineEnd, onMainLine, cut, promote, numText, moveNo, toPgn, fromPgn, addressOf, nodeAt } from './tree.mjs';
+import { slidePieces } from './slide.mjs';
+import './options-menu.mjs';
+import { boardFx, checkOf } from './fx.mjs';
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -183,7 +186,6 @@ function renderBoard() {
       const cls = ['sq', (f + r) % 2 ? 'light' : 'dark'];
       if (last && (sq === last.from || sq === last.to)) cls.push('last');
       if (sq === sel) cls.push('sel');
-      if (sq === checked) cls.push('check');
       const piece = p ? `<i class="pc" style="background-image:url(pieces/${p.color}${p.type.toUpperCase()}.svg)"></i>` : '';
       const coordF = y === 7 ? `<b class="cf">${FILES[f]}</b>` : '';
       const coordR = x === 0 ? `<b class="cr">${r + 1}</b>` : '';
@@ -196,6 +198,8 @@ function renderBoard() {
     ? `<svg class="arrow" viewBox="0 0 8 8" aria-hidden="true">${arrowPath(squareXY(best.pv[0].slice(0, 2)), squareXY(best.pv[0].slice(2, 4)), 'a-live')}</svg>`
     : '';
   $('#board').innerHTML = cells.join('') + arrow;
+  slidePieces($('#board'));
+  boardFx($('#board'), cur.fen, checkOf(chess));
   $('#board').setAttribute('aria-label', last ? `Position after ${numText(last)} ${last.san}` : 'Starting position');
 }
 

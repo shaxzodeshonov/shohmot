@@ -10,6 +10,8 @@
 // api.move(from, to) -> play the move
 // api.clear() -> drop the selection
 // api.redraw() -> draw the board again (after a drag that went nowhere)
+import { dropped } from './slide.mjs';
+
 export function boardInput(el, api) {
   let drag = null; // { from, x, y, ghost, piece, wasSelected }
 
@@ -66,7 +68,7 @@ export function boardInput(el, api) {
     cleanup();
     if (ghost) {
       const to = api.squareAt(e.clientX, e.clientY);
-      if (to && to !== from && api.isTarget(to)) api.move(from, to);
+      if (to && to !== from && api.isTarget(to)) { dropped(to); api.move(from, to); }
       else api.redraw();
     } else if (wasSelected) {
       api.clear(); // a second click on the picked piece puts it back

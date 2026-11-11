@@ -167,3 +167,185 @@
 .py-moves small { color: var(--faint); }
 .py-moves .mv-double { color: var(--sage); }
 .py-moves sup { font-size: 0.625rem; margin-left: 0.125rem; }
+
+/* ---------- avatar designer (Settings) ---------- */
+.avatar-svg { display: block; width: 100%; height: 100%; }
+.av { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 1.5rem 2.25rem; align-items: start; margin-top: 1.125rem; }
+.av-preview { display: flex; align-items: center; gap: 0.75rem; }
+.av-preview figure { margin: 0; text-align: center; }
+.av-preview { position: sticky; top: 1rem; }
+.av-face { width: 8.5rem; height: 8.5rem; border-radius: 1.75rem; overflow: hidden; box-shadow: 0 1rem 2rem -1.25rem rgb(0 0 0 / .8); }
+.av-preview figcaption { margin-top: 0.5rem; font-size: 0.8125rem; font-weight: 600; color: var(--muted); }
+.av-arrow { width: 1.25rem; height: 1.25rem; color: var(--faint); margin-bottom: 1.75rem; flex: none; }
+.av-rows { display: grid; gap: 0.75rem; }
+.av-row { display: grid; grid-template-columns: 7rem minmax(0, 1fr); align-items: center; gap: 0.75rem; }
+.av-row-name { font-size: 0.875rem; font-weight: 600; color: var(--muted); }
+.av-choices { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+.av-swatch { width: 2rem; height: 2rem; border-radius: 50%; border: 0; background: var(--c); cursor: pointer; box-shadow: inset 0 0 0 1px rgb(255 255 255 / .2); transition: transform .15s var(--ease-out); }
+.av-swatch:hover { transform: scale(1.12); }
+.av-swatch[aria-pressed="true"] { outline: 0.125rem solid var(--ink); outline-offset: 0.1875rem; }
+.av-chip { border: 1px solid var(--line-2); background: transparent; border-radius: 62.4375rem; padding: 0.3125rem 0.875rem; font-size: 0.8125rem; font-weight: 600; color: var(--muted); cursor: pointer; transition: background-color .15s var(--ease), color .15s var(--ease), border-color .15s var(--ease); }
+.av-chip:hover { color: var(--ink); border-color: var(--faint); }
+.av-chip[aria-pressed="true"] { background: var(--sage); border-color: var(--sage); color: var(--sage-ink); }
+.settings .muted a { color: var(--sage); }
+@media (max-width: 40em) {
+  .av { grid-template-columns: minmax(0, 1fr); }
+  .av-preview { position: static; }
+  .av-face { width: 6.5rem; height: 6.5rem; }
+  .av-row { grid-template-columns: minmax(0, 1fr); gap: 0.375rem; }
+}
+
+/* ---------- play yourself: the cloning lab ---------- */
+.py-face { display: flex; align-items: center; gap: 0.625rem; flex-wrap: wrap; margin-top: 1rem; color: var(--muted); font-size: 0.9375rem; }
+.py-face a { color: var(--sage); font-weight: 600; }
+.who-face { width: 1.75rem; height: 1.75rem; border-radius: 0.5rem; overflow: hidden; flex: none; display: inline-block; }
+.py-face .who-face { width: 2.5rem; height: 2.5rem; border-radius: 0.75rem; }
+
+/* The form on the left, you and your double on the right; the read-out runs full width below. */
+.py-hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 27rem); gap: 2rem 4rem; align-items: center; }
+.py-hero .lead-s { max-width: 34rem; }
+.lab { --led: #3fe0d0; scroll-margin: 1rem; }
+.lab-stage { display: grid; grid-template-columns: minmax(0, 1fr) minmax(2rem, 4rem) minmax(0, 1fr); align-items: center; gap: 0.75rem; }
+.lab-stage .lab-link { margin-bottom: 3.25rem; } /* level with the pods, not their captions */
+.spec-panel { --led: #3fe0d0; margin-top: 2.5rem; padding: 1.75rem; border: 1px solid var(--line-2); border-radius: 1.25rem; background: var(--raise); }
+@media (max-width: 56em) { .py-hero { grid-template-columns: minmax(0, 1fr); } .lab { max-width: 27rem; } }
+.pod { margin: 0; text-align: center; min-width: 0; }
+.pod-glass { position: relative; aspect-ratio: 1; border-radius: 18%; overflow: hidden; background: #0f1a1c; box-shadow: inset 0 0 0 1px var(--line-2), 0 1.5rem 2.5rem -1.5rem rgb(0 0 0 / .9); transition: box-shadow .6s var(--ease-out); }
+.pod-glass > *, .pod-glass .wire svg, .pod-glass .bot-fill svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.pod figcaption { margin-top: 0.75rem; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); }
+.pod figcaption b { display: block; font-size: 1.0625rem; font-weight: 800; letter-spacing: -0.01em; text-transform: none; color: var(--ink); overflow-wrap: anywhere; }
+
+/* Scanning: a light bar runs down and up the original, and data crosses to the empty pod. */
+.pod-glass .scan { height: 18%; background: linear-gradient(180deg, transparent, rgb(63 224 208 / .3) 75%, var(--led)); box-shadow: 0 0.25rem 0.75rem rgb(63 224 208 / .6); mix-blend-mode: screen; animation: lab-scan 1.5s ease-in-out infinite alternate; }
+@keyframes lab-scan { from { transform: translateY(-100%); } to { transform: translateY(556%); } }
+.lab-link { position: relative; height: 0.5rem; overflow: hidden; background: repeating-linear-gradient(90deg, var(--line-2) 0 0.375rem, transparent 0.375rem 0.75rem) center / 100% 0.125rem no-repeat; }
+.lab-link i { position: absolute; inset: 0; animation: lab-packet 1s linear infinite; animation-delay: calc(var(--i) * -0.25s); }
+.lab-link i::before { content: ''; position: absolute; left: -0.5rem; top: 0; width: 0.5rem; height: 0.5rem; border-radius: 0.125rem; background: var(--led); }
+@keyframes lab-packet { to { transform: translateX(calc(100% + 0.5rem)); } }
+.pod-bot .pod-glass { background: #0f1a1c linear-gradient(rgb(63 224 208 / .07) 1px, transparent 1px) 0 0 / 100% 12.5%; }
+.lab[data-phase="scan"] .pod-bot .pod-glass { animation: lab-wait 1.2s ease-in-out infinite alternate; }
+@keyframes lab-wait { from { box-shadow: inset 0 0 0 1px var(--line-2); } to { box-shadow: inset 0 0 0 1px rgb(63 224 208 / .5), inset 0 0 2rem rgb(63 224 208 / .12); } }
+
+.lab[data-phase="idle"] .scan, .lab[data-phase="idle"] .lab-link i { display: none; }
+.lab[data-phase="idle"] .wire { opacity: 0.28; }
+.lab[data-phase="idle"] .wire svg * { stroke-dasharray: none; }
+/* Casting: the wireframe is drawn, then steel rises through it behind a weld line. */
+.wire, .weld { opacity: 0; }
+.wire svg * { fill: none; stroke: var(--led); stroke-width: 1; stroke-dasharray: 420; stroke-dashoffset: 420; }
+.bot-fill { clip-path: inset(100% 0 0 0); }
+.weld { border-bottom: 0.1875rem solid #fff; filter: drop-shadow(0 0 0.5rem var(--led)) drop-shadow(0 0.25rem 0.75rem var(--led)); }
+.lab[data-phase="cast"] .wire { opacity: 1; }
+.lab[data-phase="cast"] .wire svg * { animation: lab-draw 1s ease-out forwards; }
+@keyframes lab-draw { to { stroke-dashoffset: 0; } }
+.lab[data-phase="cast"] .bot-fill { animation: lab-cast 1.5s cubic-bezier(.6, 0, .3, 1) .9s forwards; }
+@keyframes lab-cast { to { clip-path: inset(0 0 0 0); } }
+.lab[data-phase="cast"] .weld { animation: lab-weld 1.5s cubic-bezier(.6, 0, .3, 1) .9s forwards; }
+@keyframes lab-weld { 0% { opacity: 1; transform: translateY(0); } 92% { opacity: 1; } 100% { opacity: 0; transform: translateY(-100%); } }
+.lab[data-phase="cast"] .bot-eye { opacity: 0.12; }
+
+/* Online: its lights flicker on, the antenna keeps blinking, the link goes quiet. */
+.lab[data-phase="live"] .scan, .lab[data-phase="live"] .lab-link i { display: none; }
+.lab[data-phase="live"] .bot-fill { clip-path: none; }
+.lab[data-phase="live"] .pod-bot .pod-glass { box-shadow: inset 0 0 0 1px rgb(63 224 208 / .6), 0 0.75rem 2.5rem -0.75rem rgb(63 224 208 / .45); }
+.lab[data-phase="live"] .bot-eye { animation: lab-power .7s steps(1) both; }
+@keyframes lab-power { 0% { opacity: 0.12; } 18% { opacity: 1; } 30% { opacity: 0.12; } 44% { opacity: 1; } 54% { opacity: 0.12; } 68%, 100% { opacity: 1; } }
+.lab[data-phase="live"] .bot-antenna .bot-eye { animation: lab-power .7s steps(1) both, lab-blink 2.4s ease-in-out .7s infinite; }
+@keyframes lab-blink { 50% { opacity: 0.25; } }
+.lab-log { text-align: center; margin-top: 1.25rem; color: var(--muted); min-height: 1.5em; }
+
+/* The read-out: rating, six gauges, the habits it copied. */
+.spec { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 1.75rem 3.5rem; align-items: center; }
+.spec > * { animation: spec-in .7s var(--ease-out) calc(var(--n, 0) * 140ms) both; }
+@keyframes spec-in { from { opacity: 0; transform: translateY(1rem); } }
+.spec-elo small { display: block; color: var(--muted); font-weight: 600; font-size: 0.875rem; }
+.spec-elo p { display: flex; align-items: baseline; gap: 0.5rem; }
+.spec-elo strong { font-size: clamp(3.5rem, 2rem + 7vw, 5.75rem); font-weight: 800; letter-spacing: -0.04em; line-height: 1; font-variation-settings: 'opsz' 96; min-width: 4ch; }
+.spec-elo span { color: var(--led); font-weight: 800; font-size: 1.125rem; }
+.spec-elo em { display: block; font-style: normal; color: var(--faint); font-size: 0.875rem; }
+.spec-gauges { display: grid; gap: 0.5rem; margin: 0; }
+.spec-gauges div { display: grid; grid-template-columns: 6.75rem minmax(0, 1fr) 2rem; align-items: center; gap: 0.75rem; }
+.spec-gauges dt { font-size: 0.875rem; font-weight: 600; color: var(--muted); }
+.spec-gauges dd { display: contents; }
+.spec-gauges b { text-align: right; font-size: 0.875rem; }
+.leds { display: grid; grid-template-columns: repeat(10, 1fr); gap: 0.1875rem; }
+.leds i { height: 0.75rem; border-radius: 0.125rem; background: var(--line); }
+.leds i.on { background: var(--led); animation: led-on .35s ease-out calc(.5s + var(--i) * 90ms + var(--j) * 45ms) both; }
+@keyframes led-on { from { background: var(--line); } 40% { background: #fff; } }
+.spec-mods { grid-column: 1 / -1; }
+.spec-mods h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.625rem; }
+.spec-mods ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 0.5rem 1.5rem; }
+.spec-mods li { display: grid; gap: 0.125rem; padding-top: 0.5rem; border-top: 1px solid var(--line); font-size: 0.9375rem; color: var(--muted); }
+.spec-mods li b { color: var(--ink); }
+@media (max-width: 44em) {
+  .spec-panel { padding: 1.25rem 1rem; }
+  .lab-stage { gap: 0.5rem; grid-template-columns: minmax(0, 1fr) 2rem minmax(0, 1fr); }
+  .spec { grid-template-columns: minmax(0, 1fr); gap: 1.5rem; }
+  .spec-gauges div { grid-template-columns: 6rem minmax(0, 1fr) 2rem; }
+}
+
+/* ---------- play yourself: the face-off ----------
+   One centred column: the question, you against your double on a lit board,
+   then the one thing to do. (These rules come last and replace the earlier
+   side-by-side hero.) */
+.double { overflow-x: clip; }
+.py-hero { display: block; text-align: center; max-width: 52rem; margin: 0 auto; padding-top: 1.25rem; }
+.py-title { font-size: clamp(2.6rem, 1.3rem + 4.4vw, 4.25rem); font-weight: 800; letter-spacing: -0.04em; line-height: 0.98; font-variation-settings: 'opsz' 96; text-wrap: balance; }
+.py-title em { font-style: normal; color: var(--led, #3fe0d0); }
+.py-lead { margin: 0.875rem auto 0; max-width: 38rem; font-size: 1.0625rem; color: var(--muted); text-wrap: pretty; }
+
+.py-hero .lab { position: relative; isolation: isolate; max-width: 27rem; margin: 1.75rem auto 0; }
+/* The floor: a chessboard seen from the players' side, lit warm on your half and teal on the robot's. */
+.py-hero .lab::before {
+  content: ''; position: absolute; z-index: -1; left: -18%; right: -18%; top: 38%; height: 13rem; pointer-events: none;
+  background: conic-gradient(rgb(239 225 198 / .07) 25%, transparent 0 50%, rgb(239 225 198 / .07) 0 75%, transparent 0) 50% 0 / 4rem 4rem;
+  transform: perspective(26rem) rotateX(62deg); transform-origin: 50% 0;
+  -webkit-mask-image: radial-gradient(closest-side, #000 25%, transparent 100%); mask-image: radial-gradient(closest-side, #000 25%, transparent 100%);
+}
+.py-hero .lab::after {
+  content: ''; position: absolute; z-index: -2; inset: -3rem -12%; pointer-events: none;
+  background: radial-gradient(15rem 12rem at 22% 46%, rgb(224 122 95 / .2), transparent 70%), radial-gradient(15rem 12rem at 78% 46%, rgb(63 224 208 / .18), transparent 70%);
+}
+.py-hero .lab-stage { grid-template-columns: minmax(0, 1fr) 4.5rem minmax(0, 1fr); gap: 0.5rem; }
+/* Squared up to each other until the double is built; then they stand straight. */
+.pod-glass { transition: transform .7s var(--ease-out), box-shadow .6s var(--ease-out); }
+.lab[data-phase="idle"] .pod-you .pod-glass { transform: rotate(-4deg); }
+.lab[data-phase="idle"] .pod-bot .pod-glass { transform: rotate(4deg); }
+.lab[data-phase="idle"] .wire { opacity: 0.55; animation: lab-ghost 2.4s ease-in-out infinite alternate; }
+@keyframes lab-ghost { to { opacity: 0.25; } }
+.lab-mid { position: relative; display: grid; place-items: center; margin-bottom: 3.25rem; }
+.lab-mid .lab-link { width: 100%; margin: 0; }
+.lab-vs { position: absolute; display: grid; place-items: center; width: 3rem; height: 3rem; border-radius: 50%; background: var(--bg); border: 1px solid var(--line-2); font-size: 0.9375rem; font-weight: 800; letter-spacing: 0.02em; box-shadow: 0 0.75rem 1.5rem -0.75rem #000; transition: color .4s var(--ease), border-color .4s var(--ease), transform .5s var(--ease-out); }
+.lab[data-phase="scan"] .lab-vs, .lab[data-phase="cast"] .lab-vs { transform: scale(.7); color: var(--faint); }
+.lab[data-phase="live"] .lab-vs { color: var(--led); border-color: var(--led); }
+.py-hero .pod figcaption b { font-size: 1.1875rem; }
+.lab[data-phase="idle"] .pod-bot figcaption b { color: var(--led); }
+.py-hero .lab-log { margin-top: 0.75rem; }
+.py-hero .lab-log:empty { display: none; }
+
+/* The one thing to do: site, username and the button in a single bar. */
+.py-hero .py-form { display: flex; flex-wrap: nowrap; align-items: center; gap: 0.25rem; max-width: 34rem; margin: 1.5rem auto 0; padding: 0.375rem; background: var(--raise); border: 1px solid var(--line-2); border-radius: 62.4375rem; box-shadow: 0 1.5rem 3rem -1.5rem rgb(0 0 0 / .8); transition: border-color .2s var(--ease), box-shadow .2s var(--ease); }
+.py-hero .py-form:focus-within { border-color: var(--sage); box-shadow: 0 0 0 0.1875rem rgb(198 206 178 / .2), 0 1.5rem 3rem -1.5rem rgb(0 0 0 / .8); }
+.py-site select { appearance: none; -webkit-appearance: none; border: 0; background: var(--bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m6 9 6 6 6-6' fill='none' stroke='%23b8a385' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") right 0.625rem center / 1rem no-repeat; border-radius: 62.4375rem; padding: 0.75rem 2rem 0.75rem 1rem; font-size: 0.9375rem; font-weight: 600; cursor: pointer; }
+.py-hero .py-form input { flex: 1 1 8rem; min-width: 0; max-width: none; background: none; border: 0; border-radius: 62.4375rem; padding: 0.75rem 0.75rem; font-size: 1.0625rem; }
+.py-hero .py-form input:focus-visible { outline: none; border: 0; box-shadow: none; }
+.py-hero .py-form .btn { flex: none; white-space: nowrap; }
+.py-hero #py-status { margin-top: 0.875rem; }
+.py-hero .py-mine, .py-hero .py-face { justify-content: center; }
+.py-try { margin-top: 1.5rem; }
+
+/* What happens, in three steps (hidden once a double is on show). */
+.py-steps { counter-reset: step; list-style: none; padding: 2.25rem 0 0; margin: 3.5rem auto 0; max-width: 60rem; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2rem 2.5rem; border-top: 1px solid var(--line); color: var(--muted); }
+.py-steps li { counter-increment: step; display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 0.875rem; }
+.py-steps li::before { content: counter(step); grid-row: span 2; display: grid; place-items: center; width: 2.25rem; height: 2.25rem; border-radius: 50%; border: 1px solid var(--line-2); color: var(--ink); font-weight: 800; }
+.py-steps b { color: var(--ink); font-size: 1.0625rem; align-self: center; }
+.py-steps li { font-size: 0.9375rem; }
+@media (max-width: 44em) {
+  .py-hero { padding-top: 1rem; }
+  .py-hero .lab { margin-top: 2rem; }
+  .py-hero .lab-stage { grid-template-columns: minmax(0, 1fr) 3rem minmax(0, 1fr); }
+  .lab-vs { width: 2.5rem; height: 2.5rem; font-size: 0.8125rem; }
+  .py-hero .py-form { flex-wrap: wrap; border-radius: 1.5rem; padding: 0.5rem; }
+  .py-hero .py-form input { flex-basis: 8rem; }
+  .py-hero .py-form .btn { flex: 1 1 100%; justify-content: center; }
+  .py-steps { grid-template-columns: minmax(0, 1fr); margin-top: 2.5rem; }
+}

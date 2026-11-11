@@ -9,6 +9,10 @@ import { currentUser, signedIn } from '../session.js';
 import { track } from '../track.js';
 import { buildProfile } from './profile.mjs';
 import { pickBook, pickEngine, searchFor } from './choose.mjs';
+import { slidePieces } from '../review/slide.mjs';
+import { boardFx, checkOf } from '../review/fx.mjs';
+import { avatarSvg } from '../avatar.mjs';
+import { openLab, showLab, faceOf } from './lab.mjs';
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -58,11 +62,10 @@ async function loadGames(platform, username, onProgress) {
   return all.filter((g) => !seen.has(g.id) && seen.add(g.id)).sort((a, b) => b.end - a.end).slice(0, MAX_GAMES);
 }
 
-async function build(platform, username) {
+async function build(platform, username, say) {
   const key = `shohmot-double:${platform}:${username.toLowerCase()}`;
   const cached = store.get(key);
   if (cached && Date.now() - cached.builtAt < CACHE_MS) return cached;
-  const say = (m) => { $('#py-status').textContent = m; };
   say(`Loading ${username}’s games from ${SITE[platform]}…`);
   const [games, openings] = await Promise.all([
     loadGames(platform, username, (n) => say(`Loading ${username}’s games from ${SITE[platform]}… ${n} so far`)),
@@ -78,7 +81,6 @@ async function build(platform, username) {
 }
 
 // ---------- profile card ----------
-const pctText = (x) => `${Math.round(x * 100)}%`;
 function renderProfile() {
   const p = profile;
   const s = p.stats;
@@ -87,25 +89,16 @@ function renderProfile() {
   const named = (list) => list.map((o) => esc(o.name)).join(', ') || '–';
   $('#py-profile').innerHTML = `
     <div class="py-head">
-      <div class="py-av" aria-hidden="true">${esc([...p.displayName][0].toUpperCase())}</div>
-      <div><h2 id="py-name">${esc(p.displayName)}’s double</h2>
-        <p class="muted">${esc(p.style)} player · about ${p.rating} in ${esc(p.speed)} · learnt from ${p.games} games on ${SITE[p.platform]}</p></div>
+      <div><h2 id="py-name">The openings it learnt</h2>
+        <p class="muted">From ${p.games} games on ${SITE[p.platform]}. The small numbers are how many games started that way.</p></div>
     </div>
-    <div class="py-traits">${p.traits.map((t) => `<span class="py-trait" title="${esc(t.text)}">${esc(t.name)}</span>`).join('') || '<span class="muted small">Play more games for a sharper picture.</span>'}</div>
     <div class="py-grid">
       <div><h3>As White</h3><p>${white}</p><p class="muted small">${named(p.openings.white)}</p></div>
       <div><h3>As Black</h3><p>${black}</p><p class="muted small">${named(p.openings.black)}</p></div>
-      <div><h3>How you play</h3>
-        <p class="py-bars">
-          <span>Captures</span><i style="--w:${Math.min(100, s.captureRate * 250)}%"></i><b>${pctText(s.captureRate)}</b>
-          <span>Checks</span><i style="--w:${Math.min(100, s.checkRate * 700)}%"></i><b>${pctText(s.checkRate)}</b>
-          <span>Castles</span><i style="--w:${s.castleRate * 100}%"></i><b>${pctText(s.castleRate)}</b>
-          <span>Queens off early</span><i style="--w:${s.queenTradeRate * 100}%"></i><b>${pctText(s.queenTradeRate)}</b>
-        </p>
-        <p class="muted small">Games last ${Math.round(s.avgMoves)} moves on average${s.castleMove ? `; you castle around move ${Math.round(s.castleMove)}` : ''}.</p>
+      <div><h3>Its games</h3>
+        <p class="muted">Last ${Math.round(s.avgMoves)} moves on average${s.castleMove ? `; it castles around move ${Math.round(s.castleMove)}` : ''}.</p>
       </div>
-    </div>
-    <ul class="py-trait-list">${p.traits.map((t) => `<li><b>${esc(t.name)}:</b> ${esc(t.text)}</li>`).join('')}</ul>`;
+    </div>`;
   $('#py-profile').hidden = false;
 }
 
@@ -130,6 +123,8 @@ function renderBoard() {
     }
   }
   $('#board').innerHTML = cells.join('');
+  slidePieces($('#board'));
+  boardFx($('#board'), chess.fen(), checkOf(chess));
 }
 function squareAt(x, y) {
   const r = $('#board').getBoundingClientRect();
@@ -171,8 +166,8 @@ function renderMoves() {
 
 function names() {
   const them = `${profile.displayName}’s double`;
-  $('#py-top').innerHTML = `<span class="pl-dot ${me === 'w' ? 'b' : 'w'}"></span>${esc(them)} <small>~${profile.rating}</small>`;
-  $('#py-bottom').innerHTML = `<span class="pl-dot ${me}"></span>You`;
+  $('#py-top').innerHTML = `<span class="pl-dot ${me === 'w' ? 'b' : 'w'}"></span><span class="who-face">${avatarSvg(faceOf(profile.displayName), { robot: true })}</span>${esc(them)} <small>~${profile.rating}</small>`;
+  $('#py-bottom').innerHTML = `<span class="pl-dot ${me}"></span><span class="who-face">${avatarSvg(faceOf(profile.displayName))}</span>You`;
 }
 
 function endText() {
@@ -280,19 +275,31 @@ $('#py-share').addEventListener('click', async () => {
 
 async function go(platform, username) {
   $('#py-go').disabled = true;
+  $('#py-profile').hidden = true;
+  $('#py-play').hidden = true;
+  drawFace();
+  const lab = openLab($('#py-lab'), username, $('#py-specs'));
+  $('#py-status').textContent = '';
+  // On a phone the pods are below the form: bring them into view.
+  $('#py-lab').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'nearest' });
   try {
-    profile = await build(platform, username);
-    $('#py-status').textContent = `${profile.games} games read. Your double is ready.`;
+    built = true;
+    $('#py-steps').hidden = true;
+    profile = await build(platform, username, lab.say);
+    await lab.finish(profile);
     renderProfile();
+    $('#py-profile').hidden = false;
     $('#py-play').hidden = false;
     chess = new Chess();
     flipped = false;
     names();
     renderBoard();
     $('#py-setup').hidden = false;
-    $('#py-profile').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
     track('double_built');
   } catch (err) {
+    built = false;
+    $('#py-steps').hidden = false;
+    lab.close();
     $('#py-status').textContent = err.message;
   } finally {
     $('#py-go').disabled = false;
@@ -306,6 +313,17 @@ $('#py-form').addEventListener('submit', (e) => {
   window.history.replaceState(null, '', `?u=${encodeURIComponent(`${$('#py-site').value}:${u}`)}`);
   go($('#py-site').value, u);
 });
+
+// The face the double will be cast from (it follows the username until one is
+// designed), and where to change it.
+function drawFace() {
+  const to = signedIn() ? '/settings.html#avatar' : '/signup.html?next=%2Fsettings.html%23avatar';
+  $('#py-face').innerHTML = `<span class="who-face">${avatarSvg(faceOf($('#py-user').value.trim() || 'you'))}</span>Your double is cast from your avatar. <a href="${to}">${signedIn() ? 'Design your avatar' : 'Make an account to design it'}</a>`;
+}
+let built = false; // once a double is on show, typing a new name doesn't wipe it
+function rest() { drawFace(); if (!built) showLab($('#py-lab'), $('#py-user').value.trim()); }
+$('#py-user').addEventListener('input', rest);
+rest();
 
 // ?u=lichess:name (a shared challenge link) builds that double straight away.
 const shared = new URLSearchParams(location.search).get('u');
@@ -327,11 +345,13 @@ if (shared && /^(lichess|chesscom):[A-Za-z0-9_-]{2,30}$/.test(shared)) {
     }
   });
 }
-$('#py-mine').addEventListener('click', (e) => {
+$('#py-try').addEventListener('click', pickAccount);
+$('#py-mine').addEventListener('click', pickAccount);
+function pickAccount(e) {
   const b = e.target.closest('button[data-u]');
   if (!b) return;
   $('#py-site').value = b.dataset.p;
   $('#py-user').value = b.dataset.u;
   $('#py-form').requestSubmit();
-});
+}
 addEventListener('pagehide', () => { if (engine) engine.stop(); });

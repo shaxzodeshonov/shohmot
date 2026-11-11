@@ -8,4 +8,4 @@ const levels = Array.from({ length: 26 * 7 }, (_, i) => {
   return r > 0.75 ? 3 : r > 0.5 ? 2 : r > 0.3 ? 1 : 0;
 });
 ---
-<div class="heat" aria-hidden="true">{levels.map((l) => <i data-l={l} />)}</div>
+<div class="heat" aria-hidden="true">{levels.map((l, i) => <i data-l={l} style={`--d:${Math.floor(i / 7) + (i % 7) * 0.5}`} />)}</div>

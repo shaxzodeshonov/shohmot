@@ -21,19 +21,41 @@ import '../styles/pages.css';
   </header>
 
   <main id="main" class="page wide-page double">
-    <section class="py-intro" id="py-intro">
-      <h1 class="page-title">Play against yourself</h1>
-      <p class="muted lead-s">Shohmot reads your recent games, learns your openings and your style, and builds a double of you: it plays the moves you play, at your level, and makes the kind of mistakes you make. Can you beat yourself?</p>
+    <!-- The pitch: you against a robot of you. The pods are the cloning lab
+         (lab.mjs): your avatar is scanned and the double is cast from it. -->
+    <section class="py-hero" id="py-intro">
+      <h1 class="py-title">Can you beat <em>yourself?</em></h1>
+      <p class="py-lead">Shohmot reads your recent games and builds a robot that opens like you, plays at your rating and makes your kind of mistakes. Then you sit down against it.</p>
+
+      <div class="lab" id="py-lab" role="group" aria-label="You and your double"></div>
+
       <form class="py-form" id="py-form">
-        <label class="depth-pick">Site
+        <label class="py-site"><span class="sr-only">Site</span>
           <select id="py-site"><option value="lichess">Lichess</option><option value="chesscom">Chess.com</option></select>
         </label>
         <input id="py-user" placeholder="Your username" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="30" required aria-label="Username">
-        <button class="btn btn-solid" type="submit" id="py-go">Build my double</button>
+        <button class="btn btn-solid btn-lg" type="submit" id="py-go">Build my double</button>
       </form>
+      <p class="muted small" id="py-status" aria-live="polite">Free, and it runs in your browser. It only reads public games.</p>
       <div class="py-mine" id="py-mine" hidden></div>
-      <p class="muted small" id="py-status" aria-live="polite">Free and in your browser. It only reads public games.</p>
+      <!-- Nothing to type: see it work on players everyone knows (the demo's public accounts). -->
+      <p class="py-mine py-try" id="py-try">
+        <span class="muted small">Or meet a grandmaster’s double:</span>
+        <button class="btn" type="button" data-p="chesscom" data-u="Hikaru">Hikaru</button>
+        <button class="btn" type="button" data-p="chesscom" data-u="MagnusCarlsen">Magnus Carlsen</button>
+        <button class="btn" type="button" data-p="lichess" data-u="DrNykterstein">DrNykterstein</button>
+      </p>
+      <p class="py-face" id="py-face"></p>
     </section>
+
+    <ol class="py-steps" id="py-steps">
+      <li><b>It reads your games</b>Up to 400 of your recent games, straight from Lichess or Chess.com.</li>
+      <li><b>It casts your double</b>Your openings, how often you attack, castle and trade queens, and your rating.</li>
+      <li><b>You play it</b>It answers with the moves you play, and slips the way players at your level do.</li>
+    </ol>
+
+    <!-- What the robot reports once it is switched on: its rating and how it plays. -->
+    <section class="spec-panel" id="py-specs" hidden aria-label="Your double's rating and style"></section>
 
     <section class="py-profile" id="py-profile" hidden aria-labelledby="py-name"></section>
 

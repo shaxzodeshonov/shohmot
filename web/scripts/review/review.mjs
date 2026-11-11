@@ -20,6 +20,9 @@ import { reviewUrlFor, go as openReview } from './open-game.mjs';
 import { track } from '../track.js';
 import { shareCard } from './share.mjs';
 import { saveReviewed } from '../brilliants/store.mjs';
+import { slidePieces } from './slide.mjs';
+import './options-menu.mjs';
+import { boardFx, checkOf } from './fx.mjs';
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -418,6 +421,8 @@ function renderBoard() {
   if (engineOn && best && best.pv[0] && !sel) arrows.push(arrowPath(squareXY(best.pv[0].slice(0, 2)), squareXY(best.pv[0].slice(2, 4)), 'a-live'));
   const arrow = arrows.length ? `<svg class="arrow" viewBox="0 0 8 8" aria-hidden="true">${arrows.join('')}</svg>` : '';
   $('#board').innerHTML = cells.join('') + arrow;
+  slidePieces($('#board'));
+  boardFx($('#board'), curFen() + (label || ''), { ...checkOf(chess), label: label ? { sq: move.to, l: label } : null });
   $('#board').setAttribute('aria-label', move ? `Position after ${moveNumber(vply ? line.from + vply - 1 : ply - 1)} ${move.san}` : 'Starting position');
 }
 
