@@ -4,7 +4,7 @@
 
 <br><br>
 
-**Every game counted. Every mistake trained. Every brilliant move found.**
+**Free chess game counter and Stockfish coach for the web.**
 
 Shohmot follows your [Chess.com](https://www.chess.com) and [Lichess](https://lichess.org) accounts, tells you how many games you played today and how many you lost, then lets Stockfish turn your mistakes into training. All of the engine work happens in your browser.
 
