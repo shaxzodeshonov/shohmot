@@ -14,8 +14,10 @@ interface Props {
   bodyClass?: string;
   /** Leave the page out of search engines (account pages). */
   noindex?: boolean;
+  /** Where to send visitors who are already signed in (the landing page sends them to the app). */
+  signedInTo?: string;
 }
-const { title, description, guard = false, bodyClass, noindex = guard } = Astro.props;
+const { title, description, guard = false, bodyClass, noindex = guard, signedInTo = '' } = Astro.props;
 const path = Astro.url.pathname.replace(/index\.html$/, '');
 const canonical = `${SITE.url}${path === '/' ? '/' : path}`;
 ---
@@ -24,7 +26,7 @@ const canonical = `${SITE.url}${path === '/' ? '/' : path}`;
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <script is:inline define:vars={{ guard }}>
+  <script is:inline define:vars={{ guard, signedInTo }}>
     var signedIn = document.cookie.split('; ').indexOf('shohmot_in=1') !== -1;
     document.documentElement.dataset.auth = signedIn ? 'in' : 'out';
     // How many chess accounts last visit's profile had: the counter keeps room for that many rows.
@@ -32,6 +34,7 @@ const canonical = `${SITE.url}${path === '/' ? '/' : path}`;
     // The counter has last visit's copy: it holds its content back a moment
     // (at most 0.6 s) and shows it complete, instead of a skeleton first.
     if (signedIn) try { if (localStorage.getItem('shohmot-counter:ready')) { var root = document.documentElement; root.dataset.snap = '1'; setTimeout(function () { delete root.dataset.snap; }, 600); } } catch (e) {}
+    if (signedInTo && signedIn) location.replace(signedInTo);
     if (guard && !signedIn) location.replace('/login.html?next=' + encodeURIComponent(location.pathname + location.search + location.hash));
   </script>
   <title>{title}</title>
