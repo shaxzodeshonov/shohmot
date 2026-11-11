@@ -287,23 +287,26 @@
    One centred column: the question, you against your double on a lit board,
    then the one thing to do. (These rules come last and replace the earlier
    side-by-side hero.) */
-.double { overflow-x: clip; }
-.py-hero { display: block; text-align: center; max-width: 52rem; margin: 0 auto; padding-top: 1.25rem; }
+/* The floor and glow reach past the column, so clip them at the screen edge, not at the column's edge (that cut them off in a straight line on phones). */
+html:has(.double), body:has(.double) { overflow-x: clip; }
+.py-hero { display: block; text-align: center; max-width: 60rem; margin: 0 auto; padding-top: 1.25rem; }
 .py-title { font-size: clamp(2.6rem, 1.3rem + 4.4vw, 4.25rem); font-weight: 800; letter-spacing: -0.04em; line-height: 0.98; font-variation-settings: 'opsz' 96; text-wrap: balance; }
 .py-title em { font-style: normal; color: var(--led, #3fe0d0); }
 .py-lead { margin: 0.875rem auto 0; max-width: 38rem; font-size: 1.0625rem; color: var(--muted); text-wrap: pretty; }
 
-.py-hero .lab { position: relative; isolation: isolate; max-width: 27rem; margin: 1.75rem auto 0; }
+.py-hero .lab { position: relative; isolation: isolate; max-width: 34rem; margin: 1.75rem auto 0; }
 /* The floor: a chessboard seen from the players' side, lit warm on your half and teal on the robot's. */
 .py-hero .lab::before {
-  content: ''; position: absolute; z-index: -1; left: -18%; right: -18%; top: 38%; height: 13rem; pointer-events: none;
+  content: ''; position: absolute; z-index: -1; left: -30%; right: -30%; top: 38%; height: 14rem; pointer-events: none;
   background: conic-gradient(rgb(239 225 198 / .07) 25%, transparent 0 50%, rgb(239 225 198 / .07) 0 75%, transparent 0) 50% 0 / 4rem 4rem;
   transform: perspective(26rem) rotateX(62deg); transform-origin: 50% 0;
   -webkit-mask-image: radial-gradient(closest-side, #000 25%, transparent 100%); mask-image: radial-gradient(closest-side, #000 25%, transparent 100%);
 }
+/* The glow is sized in % of its own box and masked to fade out before the edges, so it never ends in a straight line. */
 .py-hero .lab::after {
-  content: ''; position: absolute; z-index: -2; inset: -3rem -12%; pointer-events: none;
-  background: radial-gradient(15rem 12rem at 22% 46%, rgb(224 122 95 / .2), transparent 70%), radial-gradient(15rem 12rem at 78% 46%, rgb(63 224 208 / .18), transparent 70%);
+  content: ''; position: absolute; z-index: -2; inset: -5rem -38%; pointer-events: none;
+  background: radial-gradient(ellipse 26% 46% at 30% 50%, rgb(224 122 95 / .22), transparent), radial-gradient(ellipse 26% 46% at 70% 50%, rgb(63 224 208 / .2), transparent);
+  -webkit-mask-image: radial-gradient(closest-side, #000 30%, transparent); mask-image: radial-gradient(closest-side, #000 30%, transparent);
 }
 .py-hero .lab-stage { grid-template-columns: minmax(0, 1fr) 4.5rem minmax(0, 1fr); gap: 0.5rem; }
 /* Squared up to each other until the double is built; then they stand straight. */
@@ -323,7 +326,7 @@
 .py-hero .lab-log:empty { display: none; }
 
 /* The one thing to do: site, username and the button in a single bar. */
-.py-hero .py-form { display: flex; flex-wrap: nowrap; align-items: center; gap: 0.25rem; max-width: 34rem; margin: 1.5rem auto 0; padding: 0.375rem; background: var(--raise); border: 1px solid var(--line-2); border-radius: 62.4375rem; box-shadow: 0 1.5rem 3rem -1.5rem rgb(0 0 0 / .8); transition: border-color .2s var(--ease), box-shadow .2s var(--ease); }
+.py-hero .py-form { display: flex; flex-wrap: nowrap; align-items: center; gap: 0.25rem; max-width: 38rem; margin: 1.5rem auto 0; padding: 0.375rem; background: var(--raise); border: 1px solid var(--line-2); border-radius: 62.4375rem; box-shadow: 0 1.5rem 3rem -1.5rem rgb(0 0 0 / .8); transition: border-color .2s var(--ease), box-shadow .2s var(--ease); }
 .py-hero .py-form:focus-within { border-color: var(--sage); box-shadow: 0 0 0 0.1875rem rgb(198 206 178 / .2), 0 1.5rem 3rem -1.5rem rgb(0 0 0 / .8); }
 .py-site select { appearance: none; -webkit-appearance: none; border: 0; background: var(--bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m6 9 6 6 6-6' fill='none' stroke='%23b8a385' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") right 0.625rem center / 1rem no-repeat; border-radius: 62.4375rem; padding: 0.75rem 2rem 0.75rem 1rem; font-size: 0.9375rem; font-weight: 600; cursor: pointer; }
 .py-hero .py-form input { flex: 1 1 8rem; min-width: 0; max-width: none; background: none; border: 0; border-radius: 62.4375rem; padding: 0.75rem 0.75rem; font-size: 1.0625rem; }
