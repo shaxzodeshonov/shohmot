@@ -1121,11 +1121,10 @@ async function main() {
   const savedDepth = store.get('shohmot-review-depth');
   if (savedDepth && $('#depth').querySelector(`option[value="${savedDepth}"]`)) $('#depth').value = String(savedDepth);
   $('#depth').addEventListener('change', () => store.set('shohmot-review-depth', Number($('#depth').value)));
-  // The full engine is the most accurate, but it's a 99 MB download, so phones
-  // start on lite unless full was picked before.
+  // The full engine is the most accurate, but it's a 99 MB download and slow,
+  // so everyone starts on lite unless they picked full themselves.
   const savedEngine = store.get('shohmot-review-engine');
-  const phone = matchMedia('(max-width: 43.75em)').matches || (navigator.connection && navigator.connection.saveData);
-  $('#engine').value = savedEngine || (phone ? 'lite' : 'full');
+  $('#engine').value = savedEngine || 'lite';
   $('#engine').addEventListener('change', () => store.set('shohmot-review-engine', $('#engine').value));
 
   let data;

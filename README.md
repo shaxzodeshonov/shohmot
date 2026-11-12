@@ -161,7 +161,7 @@ flowchart LR
 ```
 
 1. **Lichess cloud evals first.** Positions Lichess has already searched deeply are fetched, which covers most openings.
-2. **Stockfish 19 for the rest.** The full network runs on up to three cores on desktop; a lighter one is used on phones.
+2. **Stockfish 19 for the rest.** A lighter, faster network is the default; the full network (up to three cores) is one switch away.
 3. **Backward analysis.** The game is split into stretches and each engine works from the last position to the first, so every move is judged knowing what it led to.
 
 Lichess accuracy uses Lichess's own published formula, and it lands within about 3 points of Lichess's number on average. Chess.com's formula is private, so Chess.com games use a fit against games Chess.com had also reviewed. The details and the tuning notes are in [docs/DETAILS.md](docs/DETAILS.md#game-review).
