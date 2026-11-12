@@ -1,12 +1,14 @@
 ---
 import Base from '../layouts/Base.astro';
 import AppBar from '../components/AppBar.astro';
+import TrainTabs from '../components/TrainTabs.astro';
 import '../styles/review.css';
 import '../styles/pages.css';
 ---
 <Base title="Training · Shohmot" description="Train on the positions where you went wrong in your own games, until you find the right move every time." guard>
   <AppBar current="train" />
   <main id="main" class="page wide-page train">
+    <TrainTabs current="mistakes" />
     <section class="tr-head">
       <div>
         <h1 class="page-title">Training</h1>

@@ -7,7 +7,7 @@ const nf = new Intl.NumberFormat();
 const NAMES = {
   page_view: 'Page views', signup: 'Sign-ups', login: 'Sign-ins', account_added: 'Chess accounts added', review_started: 'Reviews started',
   review_finished: 'Reviews finished', review_shared: 'Reviews shared', guest_review: 'Reviews without an account', puzzle_solved: 'Training positions solved',
-  puzzle_failed: 'Training positions missed', insights_viewed: 'Insights viewed', tilt_alert: 'Tilt warnings shown', upgrade_clicked: 'Upgrade clicks',
+  puzzle_failed: 'Training positions missed', opening_solved: 'Opening lines played clean', opening_failed: 'Opening lines with slips', insights_viewed: 'Insights viewed', tilt_alert: 'Tilt warnings shown', upgrade_clicked: 'Upgrade clicks',
   checkout_started: 'Checkouts started', subscribed: 'New subscriptions', churned: 'Cancelled subscriptions', coach_joined: 'Students joined a coach',
   install: 'App installs', client_error: 'Script errors', double_built: 'Doubles built', double_game: 'Games against a double', review_picker: 'Review pop-ups opened', fil_message: 'Questions to Fischer',
 };

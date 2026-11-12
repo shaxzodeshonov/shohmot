@@ -1,0 +1,11 @@
+---
+// The sections of Training: the positions from your own games, and the
+// openings. (Puzzles will join them.)
+interface Props { current: 'mistakes' | 'openings' }
+const { current } = Astro.props;
+const here = (k: string) => (k === current ? 'page' : undefined);
+---
+<nav class="tr-tabs" aria-label="Training sections">
+  <a href="/train.html" aria-current={here('mistakes')} data-astro-prefetch="false">Your mistakes</a>
+  <a href="/openings.html" aria-current={here('openings')} data-astro-prefetch="false">Openings</a>
+</nav>

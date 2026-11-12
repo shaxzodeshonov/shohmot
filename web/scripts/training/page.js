@@ -11,13 +11,11 @@ import { currentUser, freshUser, features, unlocked } from '../session.js';
 import { track } from '../track.js';
 import { queue, record, stats, doneToday, LEARNED } from './store.mjs';
 import { analyzeMany } from './analyze.mjs';
-import { slidePieces } from '../review/slide.mjs';
-import { boardFx, checkOf } from '../review/fx.mjs';
+import { drawBoard, squareAtPoint } from './board.mjs';
 
 export const FREE_PER_DAY = 5;
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const FILES = 'abcdefgh';
 const DAY = 86400000;
 const SITE = { chesscom: 'Chess.com', lichess: 'Lichess' };
 const PHASES = ['Opening', 'Middlegame', 'Endgame'];
@@ -36,6 +34,10 @@ let state = 'ask'; // ask | right | wrong | shown | done
 let arrow = null;  // { uci, cls }
 let last = null;   // { from, to } of the move on the board
 const focusGame = new URLSearchParams(location.search).get('game');
+// Positions finished in this visit. A game you came from lists all its positions
+// first, due or not, so without this "Next" would show the one just solved again.
+const finished = new Set();
+const upNext = () => queue({ game: focusGame }).filter((it) => !finished.has(it.key));
 
 const isPro = (u) => unlocked(u);
 const limited = () => !isPro(me) && doneToday() >= FREE_PER_DAY;
@@ -50,52 +52,8 @@ function toast(msg) {
 }
 
 // ---------- board ----------
-function squareXY(sq) {
-  const f = FILES.indexOf(sq[0]);
-  const r = Number(sq[1]) - 1;
-  return flipped ? { x: 7 - f, y: r } : { x: f, y: 7 - r };
-}
-function arrowPath(uci, cls) {
-  const a = squareXY(uci.slice(0, 2)), b = squareXY(uci.slice(2, 4));
-  const x1 = a.x + 0.5, y1 = a.y + 0.5, x2 = b.x + 0.5, y2 = b.y + 0.5;
-  const len = Math.hypot(x2 - x1, y2 - y1);
-  const ux = (x2 - x1) / len, uy = (y2 - y1) / len, px = -uy, py = ux;
-  const ex = x2 - ux * 0.42, ey = y2 - uy * 0.42, w = 0.09, hw = 0.24;
-  const pts = [[x1 + px * w, y1 + py * w], [ex + px * w, ey + py * w], [ex + px * hw, ey + py * hw], [x2, y2], [ex - px * hw, ey - py * hw], [ex - px * w, ey - py * w], [x1 - px * w, y1 - py * w]];
-  return `<svg class="arrow" viewBox="0 0 8 8" aria-hidden="true"><polygon class="${cls}" points="${pts.map((p) => p.map((v) => v.toFixed(3)).join(',')).join(' ')}"/></svg>`;
-}
-
-function renderBoard() {
-  const to = new Map(targets.map((t) => [t.to, t]));
-  const cells = [];
-  for (let y = 0; y < 8; y++) {
-    for (let x = 0; x < 8; x++) {
-      const f = flipped ? 7 - x : x;
-      const r = flipped ? y : 7 - y;
-      const sq = FILES[f] + (r + 1);
-      const p = chess.get(sq);
-      const cls = ['sq', (f + r) % 2 ? 'light' : 'dark'];
-      if (last && (sq === last.from || sq === last.to)) cls.push('last');
-      if (sq === sel) cls.push('sel');
-      const piece = p ? `<i class="pc" style="background-image:url(pieces/${p.color}${p.type.toUpperCase()}.svg)"></i>` : '';
-      const cf = y === 7 ? `<b class="cf">${FILES[f]}</b>` : '';
-      const cr = x === 0 ? `<b class="cr">${r + 1}</b>` : '';
-      const hint = to.has(sq) ? `<span class="${p ? 'sq-hint cap' : 'sq-hint'}"></span>` : '';
-      cells.push(`<div class="${cls.join(' ')}" data-sq="${sq}"${last && sq === last.to && last.l ? ` data-l="${last.l}"` : ''}>${piece}${cf}${cr}${hint}</div>`);
-    }
-  }
-  $('#board').innerHTML = cells.join('') + (arrow ? arrowPath(arrow.uci, arrow.cls) : '');
-  slidePieces($('#board'));
-  boardFx($('#board'), chess.fen(), checkOf(chess));
-}
-
-function squareAt(x, y) {
-  const r = $('#board').getBoundingClientRect();
-  if (x < r.left || y < r.top || x >= r.right || y >= r.bottom) return null;
-  const cx = Math.floor(((x - r.left) / r.width) * 8), cy = Math.floor(((y - r.top) / r.height) * 8);
-  const f = flipped ? 7 - cx : cx, rk = flipped ? cy : 7 - cy;
-  return FILES[f] + (rk + 1);
-}
+const renderBoard = () => drawBoard($('#board'), { chess, flipped, last, sel, targets, arrow });
+const squareAt = (x, y) => squareAtPoint($('#board'), x, y, flipped);
 
 const input = boardInput($('#board'), {
   squareAt,
@@ -134,7 +92,7 @@ function show(i) {
   chess = new Chess(item.fen);
   flipped = chess.turn() === 'b';
   state = 'ask';
-  $('#tr-count').textContent = `Position ${i + 1} of ${list.length}${focusGame && item.key.startsWith(`${focusGame}:`) ? ' · from the game you just played' : ''}`;
+  $('#tr-count').textContent = `Position ${finished.size + i + 1} of ${finished.size + list.length}${focusGame && item.key.startsWith(`${focusGame}:`) ? ' · from the game you just played' : ''}`;
   $('#tr-prompt').textContent = `Find the better move for ${side()}.`;
   $('#tr-context').innerHTML = `In your game vs <b>${esc(item.opponent || 'your opponent')}</b>${item.speed ? ` (${esc(item.speed)})` : ''} on ${esc(dateFmt.format(item.end))}, you played <b class="nw-move" data-l="${item.label}">${moveNo(item.ply)} ${esc(item.san)}${LABELS[item.label].mark}</b> here. ${esc(item.why)}`;
   $('#tr-top').innerHTML = `<span class="pl-dot ${flipped ? 'w' : 'b'}"></span>${esc(flipped ? 'White' : 'Black')}`;
@@ -150,6 +108,7 @@ function show(i) {
 
 function finish(solved, html) {
   state = solved ? 'right' : 'shown';
+  finished.add(item.key);
   record(item.key, solved);
   track(solved ? 'puzzle_solved' : 'puzzle_failed');
   $('#tr-feedback').innerHTML = html;
@@ -277,7 +236,7 @@ $('#tr-old-go').addEventListener('click', () => {
     accounts,
     since: Date.now() - days * DAY,
     pick: (g) => g.result === 'loss',
-    onGame: (_, __, out) => { added += out.items.length; list = queue({ game: focusGame }); renderStats(); renderWork(); if (!item) show(0); },
+    onGame: (_, __, out) => { added += out.items.length; list = upNext(); renderStats(); renderWork(); if (!item) show(0); },
     onProgress: (p) => {
       $('#tr-old-bar').style.width = `${p.total ? (p.done / p.total) * 100 : 2}%`;
       $('#tr-old-status').textContent = `${p.done} of ${p.total} losses checked · ${added} new positions${p.note && p.note !== 'Done.' ? ` · ${p.note}` : ''}`;
@@ -293,7 +252,7 @@ addEventListener('pagehide', () => { if (oldJob) oldJob.stop(); });
 
 // ---------- start ----------
 $('#tr-next').addEventListener('click', () => {
-  list = queue({ game: focusGame });
+  list = upNext();
   // The one just done is no longer due, so the next due one is now first.
   show(0);
 });
@@ -312,7 +271,7 @@ function setUser(u) {
 
 currentUser().then(async (u) => {
   if (u) setUser(u);
-  list = queue({ game: focusGame });
+  list = upNext();
   renderStats();
   renderWork();
   show(0);

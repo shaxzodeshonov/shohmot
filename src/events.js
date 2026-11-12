@@ -18,11 +18,11 @@ const KEEP = 400 * 86400; // a bit over a year
 // Every event the site sends. Anything else is dropped.
 const EVENTS = [
   'page_view', 'signup', 'login', 'account_added', 'review_started', 'review_finished', 'review_shared',
-  'guest_review', 'puzzle_solved', 'puzzle_failed', 'insights_viewed', 'tilt_alert', 'upgrade_clicked',
+  'guest_review', 'puzzle_solved', 'puzzle_failed', 'opening_solved', 'opening_failed', 'insights_viewed', 'tilt_alert', 'upgrade_clicked',
   'checkout_started', 'subscribed', 'churned', 'coach_joined', 'install', 'client_error', 'double_built', 'double_game', 'review_picker', 'fil_message',
 ];
 // The pages page views are counted for, so the key space stays small.
-const PAGES = ['/', '/app', '/review', '/analysis', '/train', '/brilliants', '/pricing', '/signup', '/login', '/settings', '/coach', '/join', '/features', '/privacy', '/terms', '/play-yourself', '/demo'];
+const PAGES = ['/', '/app', '/review', '/analysis', '/train', '/openings', '/brilliants', '/pricing', '/signup', '/login', '/settings', '/coach', '/join', '/features', '/privacy', '/terms', '/play-yourself', '/demo'];
 const FUNNEL = ['signup', 'account_added', 'review_finished', 'checkout_started', 'subscribed'];
 
 const dayOf = (t = Date.now()) => new Date(t).toISOString().slice(0, 10);

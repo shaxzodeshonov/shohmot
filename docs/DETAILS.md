@@ -166,6 +166,16 @@ What the review shows:
 - **Overrides:** a full review overrides the quick check for its game, but keeps your training progress.
 - **Storage:** everything is kept in the browser (`shohmot-training:v1`).
 
+## Opening training
+
+`/openings.html`, the second tab of Training (the first is "Your mistakes"). It drills the named opening lines from Lichess's [chess-openings](https://github.com/lichess-org/chess-openings) list (CC0), about 3,900 of them, grouped into families ("Sicilian Defense", "Ruy Lopez", …). `node scripts/build-openings.mjs` rebuilds `public/opening-lines.json` (every line as `[ECO, name, "e4 c5 Nf3 …"]`) along with `openings.json`.
+
+- **Pick a family and a side.** The trainer takes you through every variation in it, so whatever your opponent plays against your opening, you've seen it. The other side's moves are played for you and you play yours.
+- **Study, then drill.** A line you haven't seen is shown first, with an arrow on each of your moves and no marks for mistakes; then "Play it from memory" hides the moves. A wrong move gets a second try; after two it's shown. A move that is a real book move in a *different* line is called out as that, not just "wrong". A hint or reveal counts as a slip.
+- **Scheduling** is the same as for mistakes (`schedule` in `store.mjs`), per line and per side: a line played with no slip comes back after 1, 3, 7 and 21 days, then it's learned; a slip brings it back in 10 minutes. "Review N due lines" works through everything due, across all openings, oldest first. New lines come shortest first, so the trunk of an opening comes before its branches.
+- **Code:** line parsing, grouping and ordering are pure functions in `web/scripts/training/openings.mjs` (tested in `test/openings.test.mjs`, which also replays every line in the real list), progress is kept in the browser by `openings-store.mjs` (`shohmot-openings:v1`), and the page is `openings-page.js`. The board drawing is shared with the mistakes page (`board.mjs`).
+- Free for everyone: there is no daily limit.
+
 ## Brilliant moves
 
 **How a move becomes Brilliant** (`isBrilliant` in `web/scripts/review/analysis.mjs`), following Chess.com's published description, since its exact formula is private:

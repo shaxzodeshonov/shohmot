@@ -1,0 +1,74 @@
+---
+import Base from '../layouts/Base.astro';
+import AppBar from '../components/AppBar.astro';
+import TrainTabs from '../components/TrainTabs.astro';
+import '../styles/review.css';
+import '../styles/pages.css';
+---
+<Base title="Opening training · Shohmot" description="Learn every variation of an opening, as White or Black, and drill it from memory until it sticks." guard>
+  <AppBar current="train" />
+  <main id="main" class="page wide-page train openings">
+    <TrainTabs current="openings" />
+    <section class="tr-head">
+      <div>
+        <h1 class="page-title">Opening training</h1>
+        <p class="muted" id="op-sub">Pick an opening and play every variation of it from memory, so nothing your opponent tries catches you out.</p>
+      </div>
+      <dl class="tr-stats" id="op-stats"><div><dt>Due</dt><dd>–</dd></div><div><dt>Learned</dt><dd>–</dd></div><div><dt>Lines tried</dt><dd>–</dd></div></dl>
+    </section>
+
+    <section class="tr-main" id="op-main" aria-label="Opening training">
+      <div class="tr-board-wrap">
+        <div class="tr-who" id="op-top"></div>
+        <div class="cb" id="board" role="img" aria-label="Chess board"></div>
+        <div class="tr-who" id="op-bottom"></div>
+      </div>
+
+      <div class="tr-panel">
+        <div class="op-side" role="group" aria-label="Play as">
+          <span class="muted small" id="op-side-l">Play as</span>
+          <div class="op-seg">
+            <button type="button" data-color="w" aria-pressed="true">White</button>
+            <button type="button" data-color="b" aria-pressed="false">Black</button>
+          </div>
+        </div>
+
+        <div id="op-pick">
+          <h2 class="tr-prompt" id="op-pick-h">Pick an opening</h2>
+          <p class="muted" id="op-pick-p">Each one is a family of named lines. You’ll play your side of every line in it, shortest first.</p>
+          <div class="op-due" id="op-due" hidden></div>
+          <label class="field op-search">
+            <span class="field-label">Find an opening</span>
+            <input type="search" id="op-q" placeholder="Sicilian, Ruy Lopez, London…" autocomplete="off" spellcheck="false">
+          </label>
+          <ul class="op-fams" id="op-fams" aria-label="Openings"></ul>
+        </div>
+
+        <div id="op-drill" hidden>
+          <p class="tr-count muted small" id="op-count"></p>
+          <h2 class="tr-prompt" id="op-prompt"></h2>
+          <p class="op-name" id="op-name"></p>
+          <p class="op-moves" id="op-moves" aria-label="The line"></p>
+          <div class="tr-feedback" id="op-feedback" aria-live="polite"></div>
+          <div class="tr-actions">
+            <button class="btn" type="button" id="op-hint">Hint</button>
+            <button class="btn" type="button" id="op-show">Show the move</button>
+            <button class="btn btn-solid" type="button" id="op-again" hidden>Play it from memory</button>
+            <button class="btn btn-solid" type="button" id="op-next" hidden>Next line</button>
+            <button class="btn" type="button" id="op-retry" hidden>Play it again</button>
+            <button class="btn" type="button" id="op-study" hidden>Study this line</button>
+            <button class="btn" type="button" id="op-back">All openings</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="op-vars-sec" hidden aria-labelledby="op-vars-h">
+      <h2 class="sec-h" id="op-vars-h">Variations</h2>
+      <p class="muted small" id="op-vars-sub"></p>
+      <ul class="op-vars" id="op-vars" aria-label="Variations"></ul>
+    </section>
+    <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+  </main>
+  <script>import '../scripts/training/openings-page.js';</script>
+</Base>

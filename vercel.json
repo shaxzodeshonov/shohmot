@@ -26,7 +26,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'inline-speculation-rules' 'sha256-CHgM+Bm/FUdyfggKIvPgB5DbG78Q71jWCqM34WYdQDw=' 'sha256-rHi2DF9G+US1xc8vBZszAoUxgNzqhmsZKUg6ULMYtNA='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://images.chesscomfiles.com; font-src 'self'; connect-src 'self' blob: https://lichess.org https://unpkg.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+          "value": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'inline-speculation-rules' 'sha256-CHgM+Bm/FUdyfggKIvPgB5DbG78Q71jWCqM34WYdQDw=' 'sha256-rHi2DF9G+US1xc8vBZszAoUxgNzqhmsZKUg6ULMYtNA=' 'sha256-KvclCFb3CdmvMhK8BVuntgU+RGwx0FjYX71AZM0DdJA=' 'sha256-Q25YSDGL/A4pOL8UcaLIXFyZgPjw5KRC4LM9npD749E=' 'sha256-ymHOlUPDbJlP0BE1I1dsWN8Z3x5S8/BMP0tOF/cq854='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://images.chesscomfiles.com; font-src 'self'; connect-src 'self' blob: https://lichess.org https://unpkg.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
         },
         {
           "key": "Strict-Transport-Security",
