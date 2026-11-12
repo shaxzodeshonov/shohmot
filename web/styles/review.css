@@ -476,3 +476,104 @@ a.btn { text-decoration: none; display: inline-block; }
 @media (prefers-reduced-motion: reduce) {
   .fil-msg.thinking::after { animation: none; }
 }
+
+/* ---------- phones: the review as an app screen ----------
+   Top to bottom: a bar (back, "Game Review", search, settings), the coach's
+   card, the board edge to edge, the move before / this move / the move after,
+   then the report and moves to scroll to. The actions sit at the bottom of the
+   screen: show the engine, play the best move, the report, and Next. On wider
+   screens none of this shows. */
+.rv-back, .rv-bar-title, .rv-find, .opts-phone, .opts > summary .i-gear, .coach-share, .mstrip, .actbar { display: none; }
+
+@media (max-width: 40em) {
+  /* The bar */
+  .rv-bar { position: sticky; top: 0; display: grid; grid-template-columns: 3rem minmax(0, 1fr) auto; align-items: center; gap: 0.25rem; min-height: 3.5rem; padding: 0.25rem 0.5rem; background: var(--bg); border-bottom: 1px solid var(--line); }
+  .rv-bar > .wordmark, .rv-bar .bar-actions > a.btn { display: none; }
+  .rv-back { display: grid; place-items: center; width: 2.75rem; height: 2.75rem; border-radius: 50%; color: var(--ink); }
+  .rv-back svg, .rv-bar-btn svg, .rv-bar .opts > summary svg { width: 1.5rem; height: 1.5rem; }
+  .rv-bar-title { display: block; text-align: center; font-size: 1.125rem; font-weight: 800; letter-spacing: -0.015em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rv-bar .bar-actions { gap: 0; flex-wrap: nowrap; }
+  .rv-bar-btn { display: grid; place-items: center; width: 2.75rem; height: 2.75rem; border: 0; border-radius: 50%; background: none; color: var(--ink); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .rv-bar .opts > summary { width: 2.75rem; height: 2.75rem; border: 0; color: var(--ink); }
+  .rv-bar .opts > summary .i-sliders { display: none; }
+  .rv-bar .opts > summary .i-gear { display: block; }
+  .rv-bar-btn:active, .rv-back:active { background: var(--raise); }
+  /* The settings menu also holds your account (or sign-up) and flipping the board. */
+  .opts-menu .btn.opts-phone { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 2.75rem; padding: 0.25rem 0.625rem; border: 0; border-radius: 0.625rem; background: none; color: var(--ink); font-size: 0.875rem; text-align: left; }
+  .opts-menu .btn.opts-phone:hover { background: var(--bg); }
+  #flip-menu { margin-bottom: 0.25rem; border-bottom: 1px solid var(--line); border-radius: 0.625rem 0.625rem 0 0; }
+
+  /* One column: the panel's parts take their places around the board. */
+  .review:not(.pasting) { display: flex; flex-direction: column; gap: 0; padding: 0 0 calc(5.75rem + env(safe-area-inset-bottom, 0px)); }
+  .review:not(.pasting) .panel, .panel-game:not([hidden]), .panel-scroll { display: contents; }
+  .review.pasting { padding: 1rem; }
+  .coach { order: 1; }
+  .progress { order: 2; }
+  .rv-board { order: 3; }
+  .mstrip { order: 4; }
+  .panel-head { order: 5; }
+  .graph { order: 6; }
+  .tabbar { order: 7; }
+  .panel-scroll > .panel-body { order: 8; }
+  .controls { display: none; }
+
+  /* The coach: Fischer beside a card with the move, its score, what Fischer says and Share. */
+  .coach { grid-template-columns: 4.5rem minmax(0, 1fr); gap: 0.625rem; align-items: center; padding: 0.875rem 1rem; border-bottom: 0; }
+  .coach-face { width: 4.5rem; height: 4.5rem; border-radius: 50%; background: var(--raise); box-shadow: inset 0 0 0 1px var(--line-2); }
+  .coach-bubble { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; padding: 0.875rem 1rem; background: var(--raise); border: 1px solid var(--line-2); border-radius: 1.125rem; }
+  .coach-bubble > .note, .coach-bubble > .coach-tip { flex: 1 0 100%; }
+  .coach-top { order: 10; margin-left: auto; }
+  .coach-name, .coach-role { display: none; }
+  .coach .note { padding: 0; border: 0; background: none; font-size: 0.875rem; }
+  .coach .note p + p { margin-top: 0.375rem; }
+  .coach .note-h { font-size: 1.125rem; font-weight: 800; gap: 0.5rem; line-height: 1.25; }
+  .coach .note-h .badge { width: 1.75rem; height: 1.75rem; font-size: 0.8125rem; }
+  .coach .note-h .ev { flex: none; padding: 0.25rem 0.625rem; border-radius: 0.5rem; background: var(--line); color: var(--ink); font-size: 0.875rem; font-weight: 800; }
+  .coach-tip { padding-left: 0; border-left: 0; color: var(--muted); font-size: 0.875rem; line-height: 1.45; }
+  .coach-share:not([hidden]) { display: inline-flex; align-items: center; gap: 0.5rem; min-height: 2.5rem; padding: 0 0.875rem; border: 1px solid var(--line-2); border-radius: 0.75rem; background: var(--bg); color: var(--ink); font-size: 0.9375rem; font-weight: 700; cursor: pointer; }
+  .coach-share svg { width: 1.125rem; height: 1.125rem; }
+  .coach-share:active { transform: scale(0.97); }
+  .progress { padding: 0 1rem 0.75rem; }
+
+  /* The board, edge to edge, with a thin eval bar down its left side (the score itself is on the card). */
+  :root { --eval-w: 0.625rem; --eval-gap: 0rem; --player-h: 0rem; }
+  .evalbar { border-radius: 0; box-shadow: none; }
+  .evalbar span { display: none; }
+  .stage { --s: calc(100cqw - var(--eval-w)); width: 100%; }
+  .board-row { gap: 0; }
+  .cb { border-radius: 0; }
+  .player { display: none; } /* the names and accuracy are in the title and the report below */
+
+  /* The move before, this move (underlined) and the move after. */
+  .mstrip { display: grid; grid-template-columns: 3rem minmax(0, 1fr) 3rem; align-items: center; min-height: 3.75rem; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .mstrip-nav { display: grid; place-items: center; height: 3.5rem; border: 0; background: none; color: var(--ink); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .mstrip-nav svg { width: 1.5rem; height: 1.5rem; }
+  .mstrip-nav:disabled { color: var(--line-2); cursor: default; }
+  .mstrip-moves { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 0.75rem; min-width: 0; }
+  .ms { min-width: 0; border: 0; background: none; padding: 0.5rem 0; color: var(--muted); font-size: 0.9375rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .ms:first-child { justify-self: end; }
+  .ms:last-child { justify-self: start; }
+  .ms small { color: var(--faint); font-size: 1em; font-weight: 600; }
+  .ms-on { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.5rem 0.25rem; color: var(--ink); font-size: 1.0625rem; font-weight: 800; box-shadow: inset 0 -0.1875rem 0 var(--ink); }
+  .ms-on .badge { width: 1.375rem; height: 1.375rem; font-size: 0.6875rem; }
+  .ms-on small { color: var(--muted); }
+
+  /* Below the fold: the game, the graph and the tabs. */
+  .panel-head { padding: 1.25rem 1rem 0; border-bottom: 0; }
+  .graph { margin: 1rem 1rem 0; }
+  .tabbar { padding: 1rem 1rem 0; background: none; scroll-margin-top: 4rem; }
+  .panel-scroll > .panel-body { padding: 1rem; }
+
+  /* The actions, pinned to the bottom of the screen. */
+  .actbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 2.25fr); align-items: center; gap: 0.25rem; padding: 0.625rem 1rem calc(0.625rem + env(safe-area-inset-bottom, 0px)); background: var(--raise); border-top: 1px solid var(--line); }
+  .act { display: grid; justify-items: center; gap: 0.25rem; min-height: 3.5rem; padding: 0.375rem 0; border: 0; border-radius: 0.75rem; background: none; color: var(--ink); font-size: 0.8125rem; font-weight: 700; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .act svg { width: 1.625rem; height: 1.625rem; }
+  .act:active:not(:disabled) { background: var(--line); }
+  .act:disabled { color: var(--faint); opacity: .6; cursor: default; }
+  #act-show .off, #act-show[aria-pressed="false"] .on { display: none; }
+  #act-show[aria-pressed="false"] .off { display: block; }
+  #act-show[aria-pressed="false"] { color: var(--muted); }
+  .act-next { min-height: 3.5rem; margin-left: 0.5rem; border: 0; border-radius: 1rem; background: var(--sage); color: var(--sage-ink); font-size: 1.25rem; font-weight: 800; letter-spacing: -0.01em; cursor: pointer; box-shadow: inset 0 1px 0 rgb(255 255 255 / .4); -webkit-tap-highlight-color: transparent; transition: transform .12s var(--ease-out); }
+  .act-next:active:not(:disabled) { transform: scale(0.97); }
+  .act-next:disabled { opacity: .45; cursor: default; }
+}

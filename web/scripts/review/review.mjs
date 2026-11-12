@@ -851,6 +851,67 @@ function renderLines() {
   }).join('');
 }
 
+// Phones: the move before, this move and the move after, under the board
+// (on the game, or along a tried line).
+function renderStrip() {
+  const text = (m, i) => `${m.color === 'w' ? `<small>${moveNumber(i)}</small> ` : ''}${esc(m.san)}`;
+  const cell = (html, attr, cls = '') => `<button type="button" class="ms${cls}" ${attr}>${html}</button>`;
+  const empty = '<span class="ms ms-empty"></span>';
+  let prev = empty, cur, next = empty;
+  if (vply) {
+    const k = vply - 1;
+    const m = line.moves[k];
+    cur = cell(`<span>${text(m, line.from + k)}</span>`, `data-vply="${vply}" aria-current="step"`, ' ms-on');
+    if (k > 0) prev = cell(text(line.moves[k - 1], line.from + k - 1), `data-vply="${vply - 1}"`);
+    else if (line.from > 0) prev = cell(text(game.moves[line.from - 1], line.from - 1), `data-ply="${line.from}"`);
+    else prev = cell('Start', 'data-ply="0"');
+    if (line.moves[vply]) next = cell(text(line.moves[vply], line.from + vply), `data-vply="${vply + 1}"`);
+  } else {
+    const i = ply - 1;
+    const l = review && i >= 0 ? review.labels[i] : null;
+    cur = i < 0 ? cell('<span>Start</span>', 'data-ply="0" aria-current="step"', ' ms-on')
+      : cell(`${l ? badge(l) : ''}<span>${text(game.moves[i], i)}</span>`, `data-ply="${ply}" aria-current="step"${l ? ` data-l="${l}"` : ''}`, ' ms-on');
+    if (i > 0) prev = cell(text(game.moves[i - 1], i - 1), `data-ply="${ply - 1}"`);
+    else if (i === 0) prev = cell('Start', 'data-ply="0"');
+    if (game.moves[ply]) next = cell(text(game.moves[ply], ply), `data-ply="${ply + 1}"`);
+  }
+  $('#mstrip-moves').innerHTML = prev + cur + next;
+  const atStart = !vply && ply === 0;
+  const atEnd = vply ? vply >= line.moves.length : ply >= game.fens.length - 1;
+  for (const b of document.querySelectorAll('#mstrip [data-go="prev"]')) b.disabled = atStart;
+  for (const b of document.querySelectorAll('#mstrip [data-go="next"], #actbar [data-go="next"]')) b.disabled = atEnd;
+  $('#act-show').setAttribute('aria-pressed', String(engineOn));
+  $('#act-best').disabled = !bestMoveHere();
+  $('#coach-share').hidden = !review;
+}
+
+// What the Best button plays: in place of a game move that wasn't the best,
+// the best one; anywhere else, the engine's best move from the position shown.
+function bestMoveHere() {
+  if (!vply && review && ply > 0) {
+    const l = review.labels[ply - 1];
+    const uci = review.info[ply - 1].best;
+    if (uci && !['best', 'book', 'forced', 'brilliant', 'great'].includes(l)) return { from: ply - 1, uci };
+  }
+  const lines = !vply && results[ply] && results[ply][0] ? results[ply] : liveFor(curFen());
+  const uci = lines[0] && lines[0].pv && lines[0].pv[0];
+  return uci ? { from: null, uci } : null;
+}
+
+function playBest() {
+  const b = bestMoveHere();
+  if (!b) return;
+  if (b.from != null) { ply = b.from; vply = 0; }
+  playMove(b.uci);
+}
+
+function setEngine(on) {
+  engineOn = on;
+  store.set('shohmot-review-live', engineOn);
+  if (engineOn) follow(); else stopLive();
+  render();
+}
+
 function render() {
   renderBoard();
   renderEvalBar();
@@ -858,6 +919,7 @@ function render() {
   renderGraph();
   renderLines();
   renderNote(); // the coach's bubble, on both tabs
+  renderStrip();
   if (tab === 'report') renderReport();
   else if (tab === 'moves') renderMoves();
   $('#next-bad').disabled = !review;
@@ -1026,12 +1088,17 @@ function wire() {
     if (g === 'end') return go(game.fens.length - 1);
     step(g === 'next' ? 1 : -1);
   });
-  $('#live-toggle').addEventListener('click', () => {
-    engineOn = !engineOn;
-    store.set('shohmot-review-live', engineOn);
-    if (engineOn) follow(); else stopLive();
-    render();
+  $('#live-toggle').addEventListener('click', () => setEngine(!engineOn));
+  // Phones: the action bar at the bottom, and the share button in the coach's card.
+  $('#act-show').addEventListener('click', () => { if (game) setEngine(!engineOn); });
+  $('#act-best').addEventListener('click', () => { if (game) playBest(); });
+  $('#act-skills').addEventListener('click', () => {
+    if (!game) return;
+    setTab('report');
+    $('.tabbar').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
   });
+  $('#coach-share').addEventListener('click', () => $('#share').click());
+  $('#flip-menu').addEventListener('click', () => { $('#flip').click(); $('#opts').open = false; });
   const sound = $('#sound');
   const showSound = () => { sound.setAttribute('aria-pressed', String(!isMuted())); sound.title = isMuted() ? 'Sound off (M)' : 'Sound on (M)'; };
   sound.addEventListener('click', () => { setMuted(!isMuted()); showSound(); if (!isMuted()) play('move'); });
