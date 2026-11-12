@@ -535,10 +535,11 @@ a.btn { text-decoration: none; display: inline-block; }
   .coach-share:active { transform: scale(0.97); }
   .progress { padding: 0 1rem 0.75rem; }
 
-  /* The board, edge to edge, without the eval bar (the score is on the card). */
-  :root { --eval-w: 0rem; --eval-gap: 0rem; --player-h: 0rem; }
-  .evalbar { display: none; }
-  .stage { --s: 100cqw; width: 100%; }
+  /* The board, edge to edge, with a thin eval bar down its left side (the score itself is on the card). */
+  :root { --eval-w: 0.625rem; --eval-gap: 0rem; --player-h: 0rem; }
+  .evalbar { border-radius: 0; box-shadow: none; }
+  .evalbar span { display: none; }
+  .stage { --s: calc(100cqw - var(--eval-w)); width: 100%; }
   .board-row { gap: 0; }
   .cb { border-radius: 0; }
   .player { display: none; } /* the names and accuracy are in the title and the report below */
