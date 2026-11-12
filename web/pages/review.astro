@@ -91,9 +91,44 @@ const useFrames = frames.some((f) => f.name === 'rest') && frames.some((f) => f.
       </div>
     </section>
 
+    <!-- Phones: the move before, this move and the move after, under the board. -->
+    <nav class="mstrip" id="mstrip" aria-label="Moves" hidden>
+      <button class="mstrip-nav" data-go="prev" type="button" aria-label="Previous move">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 8 12l7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="mstrip-moves" id="mstrip-moves"></div>
+      <button class="mstrip-nav" data-go="next" type="button" aria-label="Next move">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </nav>
+
+    <!-- Phones: the actions, in reach of the thumb at the bottom of the screen. -->
+    <div class="actbar" id="actbar" hidden>
+      <button class="act" id="act-show" type="button" aria-pressed="true" title="Show or hide the engine's arrow and lines">
+        <svg class="on" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        <svg class="off" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 4l16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <span>Show</span>
+      </button>
+      <button class="act" id="act-best" type="button" title="Play the best move here">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m16 16 4.5 4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <span>Best</span>
+      </button>
+      <button class="act" id="act-skills" type="button" title="Your accuracy and moves, in the report">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3.5 2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.2-4.1 5.8-.8Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+        <span>Skills</span>
+      </button>
+      <button class="act-next" data-go="next" type="button">Next</button>
+    </div>
+
+    <!-- Phones: the report sheet's backdrop. -->
+    <div class="sheet-scrim" id="sheet-scrim" hidden></div>
+
     <aside class="panel" aria-label="Review">
       <header class="panel-head">
         <h1 class="rv-title" id="title">Loading the game…</h1>
+        <button class="sheet-x" id="sheet-x" type="button" aria-label="Close">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+        </button>
         <p class="rv-meta" id="meta"></p>
         <p class="rv-error" id="error" role="alert" hidden></p>
         <div class="rv-share" id="share-row" hidden>
@@ -180,8 +215,10 @@ const useFrames = frames.some((f) => f.name === 'rest') && frames.some((f) => f.
                 <span class="sr-only">Read the coach aloud</span>
               </button>
             </div>
-            <div class="note" id="note" aria-live="polite"></div>
-            <p class="coach-tip" id="coach-tip" hidden></p>
+            <div class="coach-text" id="coach-text">
+              <div class="note" id="note" aria-live="polite"></div>
+              <p class="coach-tip" id="coach-tip" hidden></p>
+            </div>
             <!-- Phones: the review's share image, from the coach's card. -->
             <button class="coach-share" id="coach-share" type="button" hidden>
               <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5.5" r="2.5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="6" cy="12" r="2.5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="18" cy="18.5" r="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m8.2 10.8 7.6-4.1m-7.6 6.5 7.6 4.1" fill="none" stroke="currentColor" stroke-width="2"/></svg>
@@ -251,35 +288,6 @@ const useFrames = frames.some((f) => f.name === 'rest') && frames.some((f) => f.
           </div>
         </div>
 
-        </div>
-
-        <!-- Phones: the move before, this move and the move after, under the board. -->
-        <nav class="mstrip" id="mstrip" aria-label="Moves">
-          <button class="mstrip-nav" data-go="prev" type="button" aria-label="Previous move">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 8 12l7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </button>
-          <div class="mstrip-moves" id="mstrip-moves"></div>
-          <button class="mstrip-nav" data-go="next" type="button" aria-label="Next move">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </button>
-        </nav>
-
-        <!-- Phones: the actions, in reach of the thumb at the bottom of the screen. -->
-        <div class="actbar" id="actbar">
-          <button class="act" id="act-show" type="button" aria-pressed="true" title="Show or hide the engine's arrow and lines">
-            <svg class="on" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/></svg>
-            <svg class="off" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 4l16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-            <span>Show</span>
-          </button>
-          <button class="act" id="act-best" type="button" title="Play the best move here">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m16 16 4.5 4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-            <span>Best</span>
-          </button>
-          <button class="act" id="act-skills" type="button" title="Your accuracy and moves, in the report">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3.5 2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.2-4.1 5.8-.8Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
-            <span>Skills</span>
-          </button>
-          <button class="act-next" data-go="next" type="button">Next</button>
         </div>
 
         <div class="controls">

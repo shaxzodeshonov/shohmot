@@ -243,6 +243,7 @@ async function analyse() {
 
   results = new Array(total);
   if (game.end) results[total - 1] = game.end;
+  startShuffle();
 
   // 1. Deep evaluations Lichess already has (mostly the opening).
   $('#progress').hidden = false;
@@ -302,6 +303,7 @@ async function analyse() {
 }
 
 function finish(depth) {
+  stopShuffle();
   review = buildReview();
   // The full review is the last word on this game's brilliant moves.
   $('#share-row').hidden = false;
@@ -387,6 +389,7 @@ function squareXY(sq) {
 
 function renderBoard() {
   if (promoting) return;
+  if (shuffle) return drawShuffle();
   const chess = new Chess(curFen());
   const move = curMove();
   // Review labels only belong to the game's own moves.
@@ -424,6 +427,56 @@ function renderBoard() {
   slidePieces($('#board'));
   boardFx($('#board'), curFen() + (label || ''), { ...checkOf(chess), label: label ? { sq: move.to, l: label } : null });
   $('#board').setAttribute('aria-label', move ? `Position after ${moveNumber(vply ? line.from + vply - 1 : ply - 1)} ${move.san}` : 'Starting position');
+}
+
+// ---------- shuffling pieces while Stockfish works ----------
+// Until the review is ready, the pieces of the position shown wander about the
+// board, a couple at a time. Any move, tap or the finished review puts them back.
+let shuffle = null; // { timer, at: Map(square -> piece image) }
+
+function startShuffle() {
+  if (shuffle || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const at = new Map();
+  for (const row of new Chess(curFen()).board()) for (const p of row) if (p) at.set(p.square, `pieces/${p.color}${p.type.toUpperCase()}.svg`);
+  const squares = [];
+  for (const f of FILES) for (let r = 1; r <= 8; r++) squares.push(f + r);
+  const pickOf = (xs) => xs[Math.floor(Math.random() * xs.length)];
+  const tick = () => {
+    for (let k = 0; k < 2; k++) {
+      const from = pickOf([...at.keys()]);
+      const to = pickOf(squares.filter((sq) => !at.has(sq)));
+      if (!from || !to) break;
+      at.set(to, at.get(from));
+      at.delete(from);
+    }
+    drawShuffle();
+  };
+  shuffle = { timer: setInterval(tick, 560), at };
+  setTimeout(() => { if (shuffle) tick(); }, 250);
+}
+
+function stopShuffle() {
+  if (!shuffle) return;
+  clearInterval(shuffle.timer);
+  shuffle = null;
+}
+
+function drawShuffle() {
+  const cells = [];
+  for (let y = 0; y < 8; y++) {
+    for (let x = 0; x < 8; x++) {
+      const f = flipped ? 7 - x : x;
+      const r = flipped ? y : 7 - y;
+      const sq = FILES[f] + (r + 1);
+      const img = shuffle.at.get(sq);
+      const coordF = y === 7 ? `<b class="cf">${FILES[f]}</b>` : '';
+      const coordR = x === 0 ? `<b class="cr">${r + 1}</b>` : '';
+      cells.push(`<div class="sq ${(f + r) % 2 ? 'light' : 'dark'}" data-sq="${sq}">${img ? `<i class="pc" style="background-image:url(${img})"></i>` : ''}${coordF}${coordR}</div>`);
+    }
+  }
+  $('#board').innerHTML = cells.join('');
+  slidePieces($('#board'));
+  $('#board').setAttribute('aria-label', 'Stockfish is going through the game');
 }
 
 function arrowPath(a, b, cls = '') {
@@ -731,6 +784,14 @@ function coach(mood, tip, spoken = '') {
   t.hidden = !tip;
   // While Fischer talks through the game, it speaks its own words, not each move's note.
   if (spoken && !(fil && fil.talking)) voice.say(spoken);
+  fitCoach();
+}
+
+// Phones: the coach's card has a fixed height; text that runs past it fades out.
+function fitCoach() {
+  const t = $('#coach-text');
+  t.classList.remove('clipped');
+  t.classList.toggle('clipped', t.scrollHeight > t.clientHeight + 1);
 }
 
 function gameSummary() {
@@ -905,6 +966,31 @@ function playBest() {
   playMove(b.uci);
 }
 
+// ---------- phones: one screen ----------
+// The coach and Stockfish's progress sit above the board; the rest of the
+// panel (title, graph, report, moves, chat) is a sheet that slides up.
+const PHONE = matchMedia('(max-width: 40em)');
+const home = new Map();
+function placeForScreen() {
+  const main = $('main.review');
+  for (const el of [$('#coach'), $('#progress')]) if (!home.has(el)) home.set(el, [el.parentNode, el.nextSibling]);
+  if (PHONE.matches) for (const el of home.keys()) main.insertBefore(el, $('#grid'));
+  else for (const [el, [parent, next]] of home) parent.insertBefore(el, next);
+}
+
+function openSheet(t) {
+  if (t) setTab(t);
+  $('.panel').classList.add('open');
+  $('#sheet-scrim').hidden = false;
+  $('#sheet-x').focus({ preventScroll: true });
+}
+
+function closeSheet() {
+  if (!$('.panel').classList.contains('open')) return;
+  $('.panel').classList.remove('open');
+  $('#sheet-scrim').hidden = true;
+}
+
 function setEngine(on) {
   engineOn = on;
   store.set('shohmot-review-live', engineOn);
@@ -919,6 +1005,7 @@ function render() {
   renderGraph();
   renderLines();
   renderNote(); // the coach's bubble, on both tabs
+  fitCoach();
   renderStrip();
   if (tab === 'report') renderReport();
   else if (tab === 'moves') renderMoves();
@@ -927,6 +1014,7 @@ function render() {
 
 // Every change of position comes through here: draw, sound, follow with the engine.
 function moved(sound) {
+  stopShuffle();
   sel = null;
   targets = [];
   if (tab === 'report') setTab('moves');
@@ -1065,6 +1153,7 @@ function nextOfMine(test) {
 }
 
 function showError(text) {
+  stopShuffle();
   const el = $('#error');
   el.textContent = text;
   el.hidden = false;
@@ -1076,6 +1165,8 @@ function wire() {
   document.addEventListener('click', (e) => {
     const t = e.target.closest('[data-ply],[data-vply],[data-go],[data-tab],[data-line],.jump');
     if (!t || !game) return;
+    // Phones: picking a move in the sheet shows it on the board.
+    if (PHONE.matches && t.closest('.panel') && (t.dataset.ply || t.dataset.vply || t.classList.contains('jump'))) closeSheet();
     if (t.dataset.tab) return setTab(t.dataset.tab);
     if (t.classList.contains('jump')) return nextOfMine((l) => l === t.dataset.l);
     if (t.dataset.ply) return go(Number(t.dataset.ply));
@@ -1092,11 +1183,11 @@ function wire() {
   // Phones: the action bar at the bottom, and the share button in the coach's card.
   $('#act-show').addEventListener('click', () => { if (game) setEngine(!engineOn); });
   $('#act-best').addEventListener('click', () => { if (game) playBest(); });
-  $('#act-skills').addEventListener('click', () => {
-    if (!game) return;
-    setTab('report');
-    $('.tabbar').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
-  });
+  $('#act-skills').addEventListener('click', () => { if (game) openSheet('report'); });
+  $('#sheet-x').addEventListener('click', () => { closeSheet(); $('#act-skills').focus({ preventScroll: true }); });
+  $('#sheet-scrim').addEventListener('click', closeSheet);
+  PHONE.addEventListener('change', () => { if (!game) return; closeSheet(); placeForScreen(); render(); });
+  addEventListener('resize', () => { if (game) fitCoach(); });
   $('#coach-share').addEventListener('click', () => $('#share').click());
   $('#flip-menu').addEventListener('click', () => { $('#flip').click(); $('#opts').open = false; });
   const sound = $('#sound');
@@ -1106,7 +1197,7 @@ function wire() {
   input = boardInput($('#board'), {
     squareAt,
     selected: () => sel,
-    pick: (sq) => !!game && pick(sq),
+    pick: (sq) => { if (!game) return false; if (shuffle) { stopShuffle(); renderBoard(); } return pick(sq); },
     isTarget: (sq) => targets.some((t) => t.to === sq),
     move: (from, to) => { dropOn(from, to); },
     clear: () => { if (sel) { sel = null; targets = []; renderBoard(); } },
@@ -1138,7 +1229,7 @@ function wire() {
     const keys = {
       ArrowLeft: () => step(-1), ArrowRight: () => step(1), Home: () => go(0), End: () => go(game.fens.length - 1),
       f: () => $('#flip').click(), n: () => $('#next-bad').click(), m: () => $('#sound').click(), v: () => $('#coach-voice').click(),
-      Escape: () => { sel = null; targets = []; renderBoard(); },
+      Escape: () => { closeSheet(); sel = null; targets = []; renderBoard(); },
     };
     const fn = keys[e.key];
     if (fn) { e.preventDefault(); fn(); }
@@ -1243,6 +1334,10 @@ async function main() {
   // ?ply=N opens the game at that move (links from the brilliant-move list).
   ply = Math.min(game.fens.length - 1, Math.max(0, Number(params.get('ply')) || 0));
   renderHead();
+  document.body.classList.add('rv-app');
+  placeForScreen();
+  $('#mstrip').hidden = false;
+  $('#actbar').hidden = false;
   $('#grid').hidden = false;
   $('#panel-game').hidden = false;
   tab = 'coach'; // Fischer greets you while Stockfish works

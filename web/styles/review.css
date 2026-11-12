@@ -477,24 +477,26 @@ a.btn { text-decoration: none; display: inline-block; }
   .fil-msg.thinking::after { animation: none; }
 }
 
-/* ---------- phones: the review as an app screen ----------
-   Top to bottom: a bar (back, "Game Review", search, settings), the coach's
-   card, the board edge to edge, the move before / this move / the move after,
-   then the report and moves to scroll to. The actions sit at the bottom of the
-   screen: show the engine, play the best move, the report, and Next. On wider
-   screens none of this shows. */
-.rv-back, .rv-bar-title, .rv-find, .opts-phone, .opts > summary .i-gear, .coach-share, .mstrip, .actbar { display: none; }
+/* ---------- phones: the review as one screen ----------
+   Once a game is loaded (body.rv-app), a phone shows exactly one screen that
+   never scrolls: a bar (back, "Game Review", search, settings), the coach's
+   card, the board as large as the room left allows, the move before / this
+   move / the move after, and the actions (show the engine, best move, the
+   report, Next). The title, graph, report, moves and chat are a sheet that
+   slides up from Skills; only the sheet scrolls. Wider screens show none of this. */
+.rv-back, .rv-bar-title, .rv-find, .opts-phone, .opts > summary .i-gear, .coach-share, .mstrip, .actbar, .sheet-x, .sheet-scrim { display: none; }
+.coach-text { display: contents; } /* a box of its own on phones only */
 
 @media (max-width: 40em) {
   /* The bar */
-  .rv-bar { position: sticky; top: 0; display: grid; grid-template-columns: 3rem minmax(0, 1fr) auto; align-items: center; gap: 0.25rem; min-height: 3.5rem; padding: 0.25rem 0.5rem; background: var(--bg); border-bottom: 1px solid var(--line); }
+  .rv-bar { display: grid; grid-template-columns: 2.5rem minmax(0, 1fr) auto; align-items: center; gap: 0.25rem; min-height: 3rem; padding: 0.125rem 0.375rem; background: var(--bg); border-bottom: 1px solid var(--line); }
   .rv-bar > .wordmark, .rv-bar .bar-actions > a.btn { display: none; }
-  .rv-back { display: grid; place-items: center; width: 2.75rem; height: 2.75rem; border-radius: 50%; color: var(--ink); }
-  .rv-back svg, .rv-bar-btn svg, .rv-bar .opts > summary svg { width: 1.5rem; height: 1.5rem; }
-  .rv-bar-title { display: block; text-align: center; font-size: 1.125rem; font-weight: 800; letter-spacing: -0.015em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rv-back { display: grid; place-items: center; width: 2.5rem; height: 2.5rem; border-radius: 50%; color: var(--ink); }
+  .rv-back svg, .rv-bar-btn svg, .rv-bar .opts > summary svg { width: 1.25rem; height: 1.25rem; }
+  .rv-bar-title { display: block; text-align: center; font-size: 1rem; font-weight: 800; letter-spacing: -0.015em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .rv-bar .bar-actions { gap: 0; flex-wrap: nowrap; }
-  .rv-bar-btn { display: grid; place-items: center; width: 2.75rem; height: 2.75rem; border: 0; border-radius: 50%; background: none; color: var(--ink); cursor: pointer; -webkit-tap-highlight-color: transparent; }
-  .rv-bar .opts > summary { width: 2.75rem; height: 2.75rem; border: 0; color: var(--ink); }
+  .rv-bar-btn { display: grid; place-items: center; width: 2.5rem; height: 2.5rem; border: 0; border-radius: 50%; background: none; color: var(--ink); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .rv-bar .opts > summary { width: 2.5rem; height: 2.5rem; border: 0; color: var(--ink); }
   .rv-bar .opts > summary .i-sliders { display: none; }
   .rv-bar .opts > summary .i-gear { display: block; }
   .rv-bar-btn:active, .rv-back:active { background: var(--raise); }
@@ -503,77 +505,104 @@ a.btn { text-decoration: none; display: inline-block; }
   .opts-menu .btn.opts-phone:hover { background: var(--bg); }
   #flip-menu { margin-bottom: 0.25rem; border-bottom: 1px solid var(--line); border-radius: 0.625rem 0.625rem 0 0; }
 
-  /* One column: the panel's parts take their places around the board. */
-  .review:not(.pasting) { display: flex; flex-direction: column; gap: 0; padding: 0 0 calc(5.75rem + env(safe-area-inset-bottom, 0px)); }
-  .review:not(.pasting) .panel, .panel-game:not([hidden]), .panel-scroll { display: contents; }
-  .review.pasting { padding: 1rem; }
-  .coach { order: 1; }
-  .progress { order: 2; }
-  .rv-board { order: 3; }
-  .mstrip { order: 4; }
-  .panel-head { order: 5; }
-  .graph { order: 6; }
-  .tabbar { order: 7; }
-  .panel-scroll > .panel-body { order: 8; }
-  .controls { display: none; }
+  /* One screen, no scrolling: the bar on top, the review filling the rest. */
+  html:has(> body.rv-app) { overflow: hidden; overscroll-behavior: none; }
+  body.rv-app { height: 100dvh; overflow: hidden; overscroll-behavior: none; display: flex; flex-direction: column; }
+  .rv-app .rv-bar { flex: none; }
+  .rv-app .review { flex: 1; min-height: 0; width: 100%; max-width: none; margin: 0; padding: 0; gap: 0; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto auto; grid-template-areas: "coach" "board" "strip" "act"; }
+  .rv-app #coach { grid-area: coach; }
+  .rv-app #grid { grid-area: board; }
+  .rv-app .mstrip { grid-area: strip; }
+  .rv-app #progress { grid-area: strip; z-index: 2; } /* over the move strip while Stockfish works */
+  .rv-app .actbar { grid-area: act; }
 
-  /* The coach: Fischer beside a card with the move, its score, what Fischer says and Share. */
-  .coach { grid-template-columns: 4.5rem minmax(0, 1fr); gap: 0.625rem; align-items: center; padding: 0.875rem 1rem; border-bottom: 0; }
-  .coach-face { width: 4.5rem; height: 4.5rem; border-radius: 50%; background: var(--raise); box-shadow: inset 0 0 0 1px var(--line-2); }
-  .coach-bubble { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; padding: 0.875rem 1rem; background: var(--raise); border: 1px solid var(--line-2); border-radius: 1.125rem; }
-  .coach-bubble > .note, .coach-bubble > .coach-tip { flex: 1 0 100%; }
-  .coach-top { order: 10; margin-left: auto; }
-  .coach-name, .coach-role { display: none; }
-  .coach .note { padding: 0; border: 0; background: none; font-size: 0.875rem; }
-  .coach .note p + p { margin-top: 0.375rem; }
-  .coach .note-h { font-size: 1.125rem; font-weight: 800; gap: 0.5rem; line-height: 1.25; }
-  .coach .note-h .badge { width: 1.75rem; height: 1.75rem; font-size: 0.8125rem; }
-  .coach .note-h .ev { flex: none; padding: 0.25rem 0.625rem; border-radius: 0.5rem; background: var(--line); color: var(--ink); font-size: 0.875rem; font-weight: 800; }
-  .coach-tip { padding-left: 0; border-left: 0; color: var(--muted); font-size: 0.875rem; line-height: 1.45; }
-  .coach-share:not([hidden]) { display: inline-flex; align-items: center; gap: 0.5rem; min-height: 2.5rem; padding: 0 0.875rem; border: 1px solid var(--line-2); border-radius: 0.75rem; background: var(--bg); color: var(--ink); font-size: 0.9375rem; font-weight: 700; cursor: pointer; }
-  .coach-share svg { width: 1.125rem; height: 1.125rem; }
-  .coach-share:active { transform: scale(0.97); }
-  .progress { padding: 0 1rem 0.75rem; }
+  /* The coach: Fischer beside a card of fixed height (the board never jumps). */
+  .rv-app .coach { grid-template-columns: 3.25rem minmax(0, 1fr); gap: 0.625rem; align-items: center; padding: 0.5rem 0.75rem; border-bottom: 0; }
+  .rv-app .coach-face { width: 3.25rem; height: 3.25rem; border-radius: 50%; background: var(--raise); box-shadow: inset 0 0 0 1px var(--line-2); }
+  .rv-app .fil-dots { right: -0.25rem; top: -0.25rem; }
+  .rv-app .coach-bubble { height: 8rem; display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: minmax(0, 1fr) auto; align-items: center; gap: 0.375rem 0.5rem; padding: 0.625rem 0.75rem; background: var(--raise); border: 1px solid var(--line-2); border-radius: 0.875rem; }
+  .rv-app .coach-text { grid-column: 1 / -1; align-self: stretch; display: block; min-height: 0; overflow: hidden; }
+  .rv-app .coach-text.clipped { -webkit-mask-image: linear-gradient(#000 calc(100% - 1.125rem), transparent); mask-image: linear-gradient(#000 calc(100% - 1.125rem), transparent); }
+  .rv-app .coach-top { grid-column: 2; grid-row: 2; }
+  .rv-app .coach-name, .rv-app .coach-role { display: none; }
+  .rv-app .coach-voice { width: 1.875rem; height: 1.875rem; }
+  .rv-app .coach-voice svg { width: 1rem; height: 1rem; }
+  .rv-app .coach .note { padding: 0; border: 0; background: none; font-size: 0.8125rem; line-height: 1.35; }
+  .rv-app .coach .note p + p { margin-top: 0.25rem; }
+  .rv-app .coach .note-h { font-size: 0.9375rem; font-weight: 800; gap: 0.375rem; line-height: 1.25; }
+  .rv-app .coach .note-h .badge { width: 1.25rem; height: 1.25rem; font-size: 0.625rem; }
+  .rv-app .coach .note-h .ev { flex: none; padding: 0.125rem 0.4375rem; border-radius: 0.375rem; background: var(--line); color: var(--ink); font-size: 0.75rem; font-weight: 800; }
+  .rv-app .coach .note .btn { padding: 0.25rem 0.625rem; font-size: 0.75rem; }
+  .rv-app .coach-tip { margin-top: 0.25rem; padding-left: 0; border-left: 0; color: var(--muted); font-size: 0.8125rem; line-height: 1.35; }
+  .rv-app .coach-share:not([hidden]) { grid-column: 1; grid-row: 2; justify-self: start; display: inline-flex; align-items: center; gap: 0.375rem; height: 1.875rem; padding: 0 0.625rem; border: 1px solid var(--line-2); border-radius: 0.5rem; background: var(--bg); color: var(--ink); font-size: 0.8125rem; font-weight: 700; cursor: pointer; }
+  .rv-app .coach-share svg { width: 0.9375rem; height: 0.9375rem; }
+  .rv-app .coach-share:active { transform: scale(0.97); }
 
-  /* The board, edge to edge, with a thin eval bar down its left side (the score itself is on the card). */
-  :root { --eval-w: 0.625rem; --eval-gap: 0rem; --player-h: 0rem; }
-  .evalbar { border-radius: 0; box-shadow: none; }
-  .evalbar span { display: none; }
-  .stage { --s: calc(100cqw - var(--eval-w)); width: 100%; }
-  .board-row { gap: 0; }
-  .cb { border-radius: 0; }
-  .player { display: none; } /* the names and accuracy are in the title and the report below */
+  /* The board: the largest square the room allows, a thin eval bar on its left. */
+  :root { --eval-w: 0.5rem; --eval-gap: 0rem; --player-h: 0rem; }
+  .rv-app .rv-board { container-type: size; min-height: 0; align-items: center; justify-items: center; }
+  .rv-app .stage { --s: min(100cqw - var(--eval-w), 100cqh); width: calc(var(--s) + var(--eval-w)); max-width: none; }
+  .rv-app .player { display: none; } /* the names and accuracy are in the sheet */
+  .rv-app .board-row { gap: 0; }
+  .rv-app .evalbar { border-radius: 0; box-shadow: none; }
+  .rv-app .evalbar span { display: none; }
+  .rv-app .cb { border-radius: 0; }
+
+  /* Stockfish's progress, over the move strip until the review is ready. */
+  .rv-app #progress:not([hidden]) { display: flex; flex-direction: column; justify-content: center; padding: 0 1rem; background: var(--bg); border-top: 1px solid var(--line); }
+  .rv-app #progress p { font-size: 0.75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rv-app .progress-bar { height: 0.1875rem; margin-top: 0.375rem; }
 
   /* The move before, this move (underlined) and the move after. */
-  .mstrip { display: grid; grid-template-columns: 3rem minmax(0, 1fr) 3rem; align-items: center; min-height: 3.75rem; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-  .mstrip-nav { display: grid; place-items: center; height: 3.5rem; border: 0; background: none; color: var(--ink); cursor: pointer; -webkit-tap-highlight-color: transparent; }
-  .mstrip-nav svg { width: 1.5rem; height: 1.5rem; }
+  .rv-app .mstrip { display: grid; grid-template-columns: 2.75rem minmax(0, 1fr) 2.75rem; align-items: center; height: 2.875rem; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .mstrip-nav { display: grid; place-items: center; height: 2.75rem; border: 0; background: none; color: var(--ink); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .mstrip-nav svg { width: 1.25rem; height: 1.25rem; }
   .mstrip-nav:disabled { color: var(--line-2); cursor: default; }
   .mstrip-moves { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 0.75rem; min-width: 0; }
-  .ms { min-width: 0; border: 0; background: none; padding: 0.5rem 0; color: var(--muted); font-size: 0.9375rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .ms { min-width: 0; border: 0; background: none; padding: 0.375rem 0; color: var(--muted); font-size: 0.8125rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; -webkit-tap-highlight-color: transparent; }
   .ms:first-child { justify-self: end; }
   .ms:last-child { justify-self: start; }
   .ms small { color: var(--faint); font-size: 1em; font-weight: 600; }
-  .ms-on { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.5rem 0.25rem; color: var(--ink); font-size: 1.0625rem; font-weight: 800; box-shadow: inset 0 -0.1875rem 0 var(--ink); }
-  .ms-on .badge { width: 1.375rem; height: 1.375rem; font-size: 0.6875rem; }
+  .ms-on { display: inline-flex; align-items: center; gap: 0.3125rem; padding: 0.375rem 0.1875rem; color: var(--ink); font-size: 0.9375rem; font-weight: 800; box-shadow: inset 0 -0.125rem 0 var(--ink); }
+  .ms-on .badge { width: 1.125rem; height: 1.125rem; font-size: 0.5625rem; }
   .ms-on small { color: var(--muted); }
 
-  /* Below the fold: the game, the graph and the tabs. */
-  .panel-head { padding: 1.25rem 1rem 0; border-bottom: 0; }
-  .graph { margin: 1rem 1rem 0; }
-  .tabbar { padding: 1rem 1rem 0; background: none; scroll-margin-top: 4rem; }
-  .panel-scroll > .panel-body { padding: 1rem; }
-
-  /* The actions, pinned to the bottom of the screen. */
-  .actbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 2.25fr); align-items: center; gap: 0.25rem; padding: 0.625rem 1rem calc(0.625rem + env(safe-area-inset-bottom, 0px)); background: var(--raise); border-top: 1px solid var(--line); }
-  .act { display: grid; justify-items: center; gap: 0.25rem; min-height: 3.5rem; padding: 0.375rem 0; border: 0; border-radius: 0.75rem; background: none; color: var(--ink); font-size: 0.8125rem; font-weight: 700; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-  .act svg { width: 1.625rem; height: 1.625rem; }
+  /* The actions, at the bottom of the screen. */
+  .rv-app .actbar { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 2.25fr); align-items: center; gap: 0.25rem; padding: 0.375rem 0.75rem calc(0.375rem + env(safe-area-inset-bottom, 0px)); background: var(--raise); border-top: 1px solid var(--line); }
+  .act { display: grid; justify-items: center; gap: 0.125rem; min-height: 2.75rem; padding: 0.25rem 0; border: 0; border-radius: 0.625rem; background: none; color: var(--ink); font-size: 0.6875rem; font-weight: 700; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .act svg { width: 1.25rem; height: 1.25rem; }
   .act:active:not(:disabled) { background: var(--line); }
   .act:disabled { color: var(--faint); opacity: .6; cursor: default; }
   #act-show .off, #act-show[aria-pressed="false"] .on { display: none; }
   #act-show[aria-pressed="false"] .off { display: block; }
   #act-show[aria-pressed="false"] { color: var(--muted); }
-  .act-next { min-height: 3.5rem; margin-left: 0.5rem; border: 0; border-radius: 1rem; background: var(--sage); color: var(--sage-ink); font-size: 1.25rem; font-weight: 800; letter-spacing: -0.01em; cursor: pointer; box-shadow: inset 0 1px 0 rgb(255 255 255 / .4); -webkit-tap-highlight-color: transparent; transition: transform .12s var(--ease-out); }
+  .act-next { height: 2.75rem; margin-left: 0.5rem; border: 0; border-radius: 0.75rem; background: var(--sage); color: var(--sage-ink); font-size: 1.0625rem; font-weight: 800; letter-spacing: -0.01em; cursor: pointer; box-shadow: inset 0 1px 0 rgb(255 255 255 / .4); -webkit-tap-highlight-color: transparent; transition: transform .12s var(--ease-out); }
   .act-next:active:not(:disabled) { transform: scale(0.97); }
   .act-next:disabled { opacity: .45; cursor: default; }
+
+  /* The sheet: the game's title, graph, report, moves and chat. It alone scrolls. */
+  .rv-app .panel { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; height: min(85dvh, 46rem); display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--line-2); border-bottom: 0; border-radius: 1.25rem 1.25rem 0 0; background: var(--raise); box-shadow: 0 -1.5rem 3rem -1rem rgb(0 0 0 / .7); transform: translateY(100%); visibility: hidden; transition: transform .3s var(--ease-out), visibility 0s linear .3s; }
+  .rv-app .panel.open { transform: none; visibility: visible; transition: transform .3s var(--ease-out); }
+  .rv-app .sheet-scrim:not([hidden]) { display: block; position: fixed; inset: 0; z-index: 35; background: rgb(0 0 0 / .55); }
+  .rv-app .panel-head { grid-template-columns: minmax(0, 1fr) auto auto; padding: 0.875rem 0.75rem 0.75rem 1rem; }
+  .rv-app .sheet-x { display: grid; place-items: center; grid-column: 3; grid-row: 1; width: 2.125rem; height: 2.125rem; border: 0; border-radius: 50%; background: var(--line); color: var(--ink); cursor: pointer; }
+  .rv-app .sheet-x svg { width: 1rem; height: 1rem; }
+  .rv-app .rv-title { font-size: 1.125rem; }
+  .rv-app .panel-game { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  .rv-app .panel-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+  .rv-app .graph { margin: 0.75rem 1rem 0; height: 3.5rem; }
+  .rv-app .tabbar { position: sticky; top: 0; padding: 0.75rem 1rem 0; background: var(--raise); }
+  .rv-app .panel-scroll > .panel-body { flex: 1 0 auto; min-height: 0; overflow: visible; padding: 0.75rem 1rem calc(1rem + env(safe-area-inset-bottom, 0px)); }
+  .rv-app .moves { max-height: none; overflow: visible; }
+  .rv-app .controls { display: none; }
+}
+
+/* Short phones: a smaller coach, so the board keeps its room. */
+@media (max-width: 40em) and (max-height: 41em) {
+  .rv-app .coach { grid-template-columns: 2.75rem minmax(0, 1fr); padding-block: 0.375rem; }
+  .rv-app .coach-face { width: 2.75rem; height: 2.75rem; }
+  .rv-app .coach-bubble { height: 6.75rem; padding-block: 0.5rem; }
+}
+@media (max-width: 40em) and (prefers-reduced-motion: reduce) {
+  .rv-app .panel, .rv-app .panel.open { transition: none; }
 }
