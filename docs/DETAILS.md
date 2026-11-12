@@ -114,7 +114,7 @@ Every standard-chess game in the list has a **Review** button. It opens `review.
 How the evaluations are made, most accurate first:
 
 1. **Lichess cloud evaluations.** Positions Lichess has already searched deeply (often depth 40–60) come from its [cloud-eval API](https://lichess.org/api#tag/Analysis). That covers most openings; the page stops asking after three misses in a row.
-2. **Stockfish 19, full network** (default on desktop): the same engine strength as desktop Stockfish, as WebAssembly, on up to 3 cores. Its 99 MB `.wasm` is loaded from the [stockfish npm package on unpkg](https://unpkg.com/stockfish@19.0.1/bin/) and cached by the browser; the small `.js` loader is in `public/vendor`. **Lite** (a 2 MB network, up to 4 cores) is faster but weaker, and is the default on phones.
+2. **Stockfish 19, full network** (opt-in; Lite is the default for everyone): the same engine strength as desktop Stockfish, as WebAssembly, on up to 3 cores. Its 99 MB `.wasm` is loaded from the [stockfish npm package on unpkg](https://unpkg.com/stockfish@19.0.1/bin/) and cached by the browser; the small `.js` loader is in `public/vendor`. **Lite** (a 2 MB network, up to 4 cores) is faster but weaker, and is the default everywhere.
 3. **Backward analysis.** The game is split into 8-position stretches and each engine works through its stretch from the last position back to the first, keeping its hash. So when a move is judged, the engine has already seen the position it led to, and both sides of the comparison come from the same search knowledge.
 
 Depth runs from Quick (12) to Deep (22); Strong (18) is the default.

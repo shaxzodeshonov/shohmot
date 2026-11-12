@@ -889,8 +889,7 @@ function restore() {
 
 async function main() {
   const savedEngine = store.get('shohmot-review-engine');
-  const phone = matchMedia('(max-width: 43.75em)').matches || (navigator.connection && navigator.connection.saveData);
-  $('#engine').value = savedEngine || (phone ? 'lite' : 'full');
+  $('#engine').value = savedEngine || 'lite';
   wire();
   restore();
   index();

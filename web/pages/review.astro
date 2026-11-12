@@ -20,13 +20,29 @@ const useFrames = frames.some((f) => f.name === 'rest') && frames.some((f) => f.
       <Logo />
       Shohmot
     </a>
+    <!-- Phones: a back arrow, the page's name in the middle, search and settings on the right. -->
+    <a class="rv-back" href="/app.html" data-signed-in aria-label="Back to games">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12H5m6-7-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </a>
+    <a class="rv-back" href="/" data-signed-out aria-label="Home">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12H5m6-7-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </a>
+    <p class="rv-bar-title" aria-hidden="true">Game Review</p>
     <div class="bar-actions">
+      <button class="rv-bar-btn rv-find" type="button" data-review-picker="user" aria-label="Review another game" title="Review another game">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="m16 16 4.5 4.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+      </button>
       <!-- Everything that isn't needed on every visit lives behind this one button. -->
       <details class="opts" id="opts">
-        <summary class="icon-btn" aria-label="Options" title="Options">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9m6 0h1M4 17h1m6 0h9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="16" cy="7" r="2.5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="8" cy="17" r="2.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        <summary class="icon-btn" aria-label="Settings" title="Settings">
+          <svg class="i-sliders" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9m6 0h1M4 17h1m6 0h9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="16" cy="7" r="2.5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="8" cy="17" r="2.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+          <svg class="i-gear" viewBox="0 0 24 24" aria-hidden="true"><path d="M10.3 3.6a1.7 1.7 0 0 1 3.4 0 1.7 1.7 0 0 0 2.6 1.1 1.7 1.7 0 0 1 2.4 2.4 1.7 1.7 0 0 0 1.1 2.6 1.7 1.7 0 0 1 0 3.4 1.7 1.7 0 0 0-1.1 2.6 1.7 1.7 0 0 1-2.4 2.4 1.7 1.7 0 0 0-2.6 1.1 1.7 1.7 0 0 1-3.4 0 1.7 1.7 0 0 0-2.6-1.1 1.7 1.7 0 0 1-2.4-2.4 1.7 1.7 0 0 0-1.1-2.6 1.7 1.7 0 0 1 0-3.4 1.7 1.7 0 0 0 1.1-2.6 1.7 1.7 0 0 1 2.4-2.4 1.7 1.7 0 0 0 2.6-1.1Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.9"/></svg>
         </summary>
         <div class="opts-menu">
+          <!-- On phones the bar has no room for these, so the menu holds them. -->
+          <a class="btn opts-phone" href="/settings.html" data-signed-in>Account settings</a>
+          <a class="btn opts-phone" href="/signup.html" data-signed-out>Create free account</a>
+          <button class="btn opts-phone" type="button" id="flip-menu">Flip the board</button>
           <div class="opts-row"><span>Move sounds</span>
             <button class="icon-btn" id="sound" type="button" aria-pressed="true" aria-label="Move sounds">
               <svg class="on" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4zm12.5 3a4.5 4.5 0 0 0-2-3.7v7.4a4.5 4.5 0 0 0 2-3.7zM14.5 4.3v2.1a7 7 0 0 1 0 11.2v2.1a9 9 0 0 0 0-15.4z" fill="currentColor"/></svg>
@@ -40,8 +56,8 @@ const useFrames = frames.some((f) => f.name === 'rest') && frames.some((f) => f.
           <label class="depth opts-row">
             <span>Engine</span>
             <select id="engine">
+              <option value="lite" selected>Lite (faster)</option>
               <option value="full">Full (most accurate)</option>
-              <option value="lite">Lite (faster)</option>
             </select>
           </label>
           <label class="depth opts-row">
@@ -166,6 +182,11 @@ const useFrames = frames.some((f) => f.name === 'rest') && frames.some((f) => f.
             </div>
             <div class="note" id="note" aria-live="polite"></div>
             <p class="coach-tip" id="coach-tip" hidden></p>
+            <!-- Phones: the review's share image, from the coach's card. -->
+            <button class="coach-share" id="coach-share" type="button" hidden>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5.5" r="2.5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="6" cy="12" r="2.5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="18" cy="18.5" r="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m8.2 10.8 7.6-4.1m-7.6 6.5 7.6 4.1" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+              Share
+            </button>
           </div>
         </section>
         <div class="progress" id="progress" aria-live="polite">
@@ -230,6 +251,35 @@ const useFrames = frames.some((f) => f.name === 'rest') && frames.some((f) => f.
           </div>
         </div>
 
+        </div>
+
+        <!-- Phones: the move before, this move and the move after, under the board. -->
+        <nav class="mstrip" id="mstrip" aria-label="Moves">
+          <button class="mstrip-nav" data-go="prev" type="button" aria-label="Previous move">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 8 12l7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="mstrip-moves" id="mstrip-moves"></div>
+          <button class="mstrip-nav" data-go="next" type="button" aria-label="Next move">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </nav>
+
+        <!-- Phones: the actions, in reach of the thumb at the bottom of the screen. -->
+        <div class="actbar" id="actbar">
+          <button class="act" id="act-show" type="button" aria-pressed="true" title="Show or hide the engine's arrow and lines">
+            <svg class="on" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+            <svg class="off" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 4l16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            <span>Show</span>
+          </button>
+          <button class="act" id="act-best" type="button" title="Play the best move here">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m16 16 4.5 4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            <span>Best</span>
+          </button>
+          <button class="act" id="act-skills" type="button" title="Your accuracy and moves, in the report">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3.5 2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.2-4.1 5.8-.8Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+            <span>Skills</span>
+          </button>
+          <button class="act-next" data-go="next" type="button">Next</button>
         </div>
 
         <div class="controls">
