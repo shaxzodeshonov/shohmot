@@ -19,6 +19,7 @@ const TYPES = {
   '.woff2': 'font/woff2',
   '.wasm': 'application/wasm',
   '.png': 'image/png',
+  '.mp3': 'audio/mpeg',
   '.webmanifest': 'application/manifest+json',
   '.xml': 'application/xml; charset=utf-8',
   '.txt': 'text/plain; charset=utf-8',

@@ -1,6 +1,6 @@
-// Move sounds in the style people know from the big chess sites: short, dry
-// and crisp, a hard piece put down on a hard board. Made here sample by
-// sample; no sound files, and nothing copied from any chess site.
+// Move sounds. The default style, Classic, plays the recordings in
+// public/sounds. The other styles are made here sample by sample: short, dry
+// and crisp, a hard piece put down on a hard board.
 //   move     one crisp "tock"
 //   capture  a louder, sharper double "clack"
 //   castle   two tocks in quick succession
@@ -18,7 +18,10 @@ try { muted = localStorage.getItem(MUTE_KEY) === '1'; } catch { /* blocked stora
 
 // The same six sounds in a few characters, picked in the Options menu:
 // p pitch, d how long it rings, c how much click, b how much thump, a attack (ms).
+// "Classic" is the default: recorded sounds from public/sounds. Its numbers are
+// Thock's, used only until the recordings have loaded (or if they can't).
 export const STYLES = {
+  classic: { name: 'Classic (recorded)', recorded: true, p: 0.62, d: 1.35, c: 0.7, b: 1.7, a: 0.5 },
   thock: { name: 'Thock (deep wood)', p: 0.62, d: 1.35, c: 0.7, b: 1.7, a: 0.5 },
   tock: { name: 'Tock (crisp wood)', p: 1, d: 1, c: 1, b: 1, a: 0.3 },
   click: { name: 'Click (light plastic)', p: 1.55, d: 0.6, c: 1.5, b: 0.45, a: 0.2 },
@@ -26,7 +29,7 @@ export const STYLES = {
   marble: { name: 'Marble (bright)', p: 2.1, d: 1.6, c: 0.9, b: 0.3, a: 0.2 },
 };
 const STYLE_KEY = 'shohmot-sound-style';
-let style = 'thock';
+let style = 'classic';
 try { const saved = localStorage.getItem(STYLE_KEY); if (STYLES[saved]) style = saved; } catch { /* blocked storage: the default style */ }
 export const getStyle = () => style;
 export function setStyle(v) {
@@ -34,6 +37,51 @@ export function setStyle(v) {
   style = v;
   try { localStorage.setItem(STYLE_KEY, v); } catch { /* ignore */ }
   if (ctx) bank = buildBank(ctx);
+  loadRecorded();
+}
+
+// ---------- the recorded sounds ----------
+// The file each kind of move plays. They're fetched and decoded as soon as the
+// page loads (an offline context can decode before the first click or key,
+// when a real one may not start yet), so the first move already has them.
+const FILES = { move: 'move-self', capture: 'capture', castle: 'castle', check: 'move-check', promote: 'promote', end: 'game-end' };
+let recorded = null;
+let loading = false;
+function loadRecorded() {
+  if (recorded || loading || !STYLES[style].recorded) return;
+  const OAC = globalThis.OfflineAudioContext || globalThis.webkitOfflineAudioContext;
+  if (!OAC || typeof fetch !== 'function') return;
+  loading = true;
+  const dec = new OAC(2, 1, 48000);
+  Promise.all(Object.entries(FILES).map(async ([kind, file]) => {
+    const res = await fetch(`/sounds/${file}.mp3`);
+    if (!res.ok) throw new Error(`${file}: ${res.status}`);
+    return [kind, await dec.decodeAudioData(await res.arrayBuffer())];
+  })).then(
+    (list) => { recorded = Object.fromEntries(list); },
+    () => { loading = false; /* the made sounds play instead; the next style pick tries again */ },
+  );
+}
+loadRecorded();
+
+// How the recordings are changed as they play. rate: speed and pitch together
+// (1 = as recorded); wobble: how far the pitch may vary from one play to the
+// next; low / high: dB added below 220 Hz and above 4.5 kHz.
+const TUNE = { rate: 0.92, wobble: 0.04, low: 4, high: -3 };
+let warm = null;
+function warmth(c) {
+  if (!warm) {
+    warm = c.createBiquadFilter();
+    warm.type = 'lowshelf';
+    warm.frequency.value = 220;
+    warm.gain.value = TUNE.low;
+    const top = c.createBiquadFilter();
+    top.type = 'highshelf';
+    top.frequency.value = 4500;
+    top.gain.value = TUNE.high;
+    warm.connect(top).connect(c.destination);
+  }
+  return warm;
 }
 
 export const isMuted = () => muted;
@@ -174,8 +222,14 @@ export function play(kind = 'move') {
   // Mate: the move itself, then the two notes.
   if (kind === 'end') play('check');
   const takes = bank[kind] || bank.move;
+  const file = STYLES[style].recorded && recorded && (recorded[kind] || recorded.move);
   const src = c.createBufferSource();
-  src.buffer = takes[Math.floor(Math.random() * takes.length)];
-  src.connect(c.destination);
+  src.buffer = file || takes[Math.floor(Math.random() * takes.length)];
+  if (file) {
+    // The recordings, made a little our own: a touch deeper and slower, never
+    // quite the same pitch twice, and warmer (more low end, less top).
+    src.playbackRate.value = TUNE.rate * (1 + (Math.random() - 0.5) * TUNE.wobble);
+    src.connect(warmth(c));
+  } else src.connect(c.destination);
   src.start(kind === 'end' ? c.currentTime + 0.15 : c.currentTime);
 }
