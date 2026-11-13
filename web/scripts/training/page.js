@@ -12,6 +12,9 @@ import { track } from '../track.js';
 import { queue, record, stats, doneToday, LEARNED } from './store.mjs';
 import { analyzeMany } from './analyze.mjs';
 import { drawBoard, squareAtPoint } from './board.mjs';
+import { session, addSolved } from './focus.mjs';
+import { startTimer } from './timer.mjs';
+import { drawCoach, wireCoach, drawDay, drawClock } from './today.mjs';
 
 export const FREE_PER_DAY = 5;
 const $ = (s) => document.querySelector(s);
@@ -37,7 +40,10 @@ const focusGame = new URLSearchParams(location.search).get('game');
 // Positions finished in this visit. A game you came from lists all its positions
 // first, due or not, so without this "Next" would show the one just solved again.
 const finished = new Set();
-const upNext = () => queue({ game: focusGame }).filter((it) => !finished.has(it.key));
+// Without one, the games reviewed in today's session come first: fix what the review found.
+const sessionGames = () => { const s = session(); return s ? s.games.filter((g) => g.done).map((g) => g.key) : []; };
+const fromSession = (it) => sessionGames().some((g) => it.key.startsWith(`${g}:`));
+const upNext = () => queue({ game: focusGame || sessionGames() }).filter((it) => !finished.has(it.key));
 
 const isPro = (u) => unlocked(u);
 const limited = () => !isPro(me) && doneToday() >= FREE_PER_DAY;
@@ -92,7 +98,7 @@ function show(i) {
   chess = new Chess(item.fen);
   flipped = chess.turn() === 'b';
   state = 'ask';
-  $('#tr-count').textContent = `Position ${finished.size + i + 1} of ${finished.size + list.length}${focusGame && item.key.startsWith(`${focusGame}:`) ? ' · from the game you just played' : ''}`;
+  $('#tr-count').textContent = `Position ${finished.size + i + 1} of ${finished.size + list.length}${focusGame && item.key.startsWith(`${focusGame}:`) ? ' · from the game you just played' : !focusGame && fromSession(item) ? ' · from a game you reviewed today' : ''}`;
   $('#tr-prompt').textContent = `Find the better move for ${side()}.`;
   $('#tr-context').innerHTML = `In your game vs <b>${esc(item.opponent || 'your opponent')}</b>${item.speed ? ` (${esc(item.speed)})` : ''} on ${esc(dateFmt.format(item.end))}, you played <b class="nw-move" data-l="${item.label}">${moveNo(item.ply)} ${esc(item.san)}${LABELS[item.label].mark}</b> here. ${esc(item.why)}`;
   $('#tr-top').innerHTML = `<span class="pl-dot ${flipped ? 'w' : 'b'}"></span>${esc(flipped ? 'White' : 'Black')}`;
@@ -110,6 +116,8 @@ function finish(solved, html) {
   state = solved ? 'right' : 'shown';
   finished.add(item.key);
   record(item.key, solved);
+  if (solved) addSolved();
+  renderToday();
   track(solved ? 'puzzle_solved' : 'puzzle_failed');
   $('#tr-feedback').innerHTML = html;
   $('#tr-show').hidden = true;
@@ -222,6 +230,27 @@ function renderWork() {
   $('#tr-work').innerHTML = `<p class="tr-tip"><b>Most often: ${esc(top[0].toLowerCase())}</b> (${top[1]} of ${s.total}). ${esc(tip)}</p><div class="tr-work-grid">${bars('By kind', kinds)}${bars('By phase', phases)}</div>`;
 }
 
+// ---------- today: the coach's session, the clock, yesterday and today ----------
+let focusSeconds = 0;
+function renderToday() {
+  drawCoach($('#tr-coach'));
+  drawDay($('#tr-day'), focusSeconds || undefined);
+}
+wireCoach($('#tr-coach'), { onChange: renderToday });
+$('#tr-coach').addEventListener('click', (e) => {
+  // "Check my older losses": go there and start it.
+  if (e.target.closest('a[href="#tr-old-h"]') && !oldJob) $('#tr-old-go').click();
+});
+startTimer((sec) => {
+  const minute = Math.floor(sec / 60) !== Math.floor(focusSeconds / 60);
+  focusSeconds = sec;
+  drawClock($('#tr-day'), sec);
+  if (minute) drawDay($('#tr-day'), sec);
+});
+// Back from a review in another tab, or from the session's last game.
+addEventListener('pageshow', (e) => { if (e.persisted) { list = upNext(); renderToday(); renderStats(); } });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') renderToday(); });
+
 // ---------- older games ----------
 let oldJob = null;
 $('#tr-old-go').addEventListener('click', () => {
@@ -236,7 +265,7 @@ $('#tr-old-go').addEventListener('click', () => {
     accounts,
     since: Date.now() - days * DAY,
     pick: (g) => g.result === 'loss',
-    onGame: (_, __, out) => { added += out.items.length; list = upNext(); renderStats(); renderWork(); if (!item) show(0); },
+    onGame: (_, __, out) => { added += out.items.length; list = upNext(); renderStats(); renderWork(); renderToday(); if (!item) show(0); },
     onProgress: (p) => {
       $('#tr-old-bar').style.width = `${p.total ? (p.done / p.total) * 100 : 2}%`;
       $('#tr-old-status').textContent = `${p.done} of ${p.total} losses checked · ${added} new positions${p.note && p.note !== 'Done.' ? ` · ${p.note}` : ''}`;
@@ -274,6 +303,7 @@ currentUser().then(async (u) => {
   list = upNext();
   renderStats();
   renderWork();
+  renderToday();
   show(0);
   const fresh = await freshUser();
   if (fresh) { setUser(fresh); if (limited() !== !item) show(at); }

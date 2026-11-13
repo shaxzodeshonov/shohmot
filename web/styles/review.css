@@ -245,11 +245,13 @@ a.btn { text-decoration: none; display: inline-block; }
 /* Cut out (no background), so Fischer stands on the panel; the shoulders fade out at the bottom. */
 .fil-head { position: absolute; inset: 0; transform-origin: 50% 90%; -webkit-mask-image: linear-gradient(#000 86%, transparent); mask-image: linear-gradient(#000 86%, transparent); }
 .fil-head img { display: block; width: 100%; height: 100%; transform-origin: 50% 85%; animation: fil-breathe 4.5s ease-in-out infinite; }
-.fil-lid, .fil-mouth { position: absolute; display: block; }
-/* Eyelids: closed for a moment every few seconds. */
-.fil-lid { top: 42.1%; width: 13.5%; height: 7.7%; background: linear-gradient(#e2ad9a, #efbb9d); border-bottom: 0.09rem solid #2b1d1a; border-radius: 50% 50% 45% 45%; transform: scaleY(0); transform-origin: 50% 0; animation: fil-blink 5.2s infinite; }
-.fil-lid-l { left: 32.8%; }
-.fil-lid-r { left: 55.9%; animation-delay: .02s; }
+.fil-mouth { position: absolute; display: block; }
+/* Eyelids (eyes.mjs): drawn over the portrait only during a blink. They sit on the
+   portrait pixel for pixel, so they breathe and bob with it. */
+.fil-eyes { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; transform-origin: 50% 85%; animation: fil-breathe 4.5s ease-in-out infinite; }
+.fil-eyes g { visibility: hidden; }
+.fil-lash { fill: none; stroke: #2a0f15; stroke-width: 2.1; stroke-linecap: round; }
+.coach.talking .fil-eyes { animation: fil-talk-bob .84s ease-in-out infinite; }
 /* The mouth opens and closes while Fischer talks (aloud, or while a reply is being written). */
 .fil-mouth { position: absolute; left: 37.1%; top: 65.8%; width: 28.3%; height: 13.3%; overflow: visible; opacity: 0; transition: opacity .12s; }
 .coach.talking .fil-mouth { opacity: 1; }
@@ -276,7 +278,6 @@ a.btn { text-decoration: none; display: inline-block; }
 .coach[data-viseme="mbp"] .fil-lips { transform: scaleX(.96); }
 .coach.talking .fil-head img { animation: fil-talk-bob .84s ease-in-out infinite; }
 @keyframes fil-breathe { 50% { transform: translateY(-1.2%) scale(1.012); } }
-@keyframes fil-blink { 0%, 93%, 100% { transform: scaleY(0); } 95.5% { transform: scaleY(1); } }
 @keyframes fil-talk-bob { 50% { transform: translateY(-1.5%) rotate(.6deg); } }
 /* Moods are moves of the head: a nod, a hop for a great move, a shake for a mistake, a tilt while thinking. */
 .coach[data-mood="happy"] .fil-head { animation: fil-nod .8s var(--ease) 1; }
@@ -442,7 +443,7 @@ a.btn { text-decoration: none; display: inline-block; }
 .paste-alt { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.25rem; }
 @media (prefers-reduced-motion: reduce) {
   /* Still: no breathing, nods or blinks. The mouth still shows when Fischer talks, gently. */
-  .fil-head, .fil-head img, .fil-lid, .fil-dots i { animation: none !important; }
+  .fil-head, .fil-head img, .fil-eyes, .fil-dots i { animation: none !important; }
   .fil-jaw, .fil-lips, .fil-frame { transition: none; }
 }
 
@@ -576,4 +577,21 @@ a.btn { text-decoration: none; display: inline-block; }
   .act-next { min-height: 3.5rem; margin-left: 0.5rem; border: 0; border-radius: 1rem; background: var(--sage); color: var(--sage-ink); font-size: 1.25rem; font-weight: 800; letter-spacing: -0.01em; cursor: pointer; box-shadow: inset 0 1px 0 rgb(255 255 255 / .4); -webkit-tap-highlight-color: transparent; transition: transform .12s var(--ease-out); }
   .act-next:active:not(:disabled) { transform: scale(0.97); }
   .act-next:disabled { opacity: .45; cursor: default; }
+}
+
+/* A training session's strip, under the game's title. */
+.rv-session { flex: none; margin: 0.75rem 0.75rem 0; padding: 0.625rem 0.75rem 0.6875rem; border: 1px solid var(--line-2); border-radius: 0.75rem; background: var(--bg); }
+.rv-session-top { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; font-size: 0.8125rem; }
+.rv-session-top b { font-weight: 800; letter-spacing: -0.01em; }
+.rv-session-clock { display: inline-flex; align-items: center; gap: 0.3125rem; color: var(--muted); font-weight: 700; font-variant-numeric: tabular-nums; }
+.rv-session-clock svg { width: 0.9375rem; height: 0.9375rem; }
+.rv-session-bar { height: 0.375rem; border-radius: 999em; background: var(--line); overflow: hidden; margin: 0.5rem 0; }
+.rv-session-bar i { display: block; height: 100%; width: 0; border-radius: inherit; background: var(--sage); transition: width .3s; }
+.rv-session[data-done="1"] .rv-session-bar i { background: var(--win); }
+.rv-session-row { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; font-size: 0.8125rem; color: var(--muted); line-height: 1.35; }
+.rv-session-row .btn { flex: none; }
+@media (prefers-reduced-motion: reduce) { .rv-session-bar i { transition: none; } }
+/* Phones: the panel's parts are laid out one by one, so the strip goes first, under the bar. */
+@media (max-width: 40em) {
+  .rv-session { order: -1; margin: 0.5rem 0.75rem 0.25rem; }
 }

@@ -4,6 +4,7 @@ import AppBar from '../components/AppBar.astro';
 import TrainTabs from '../components/TrainTabs.astro';
 import '../styles/review.css';
 import '../styles/pages.css';
+import filPortrait from '../assets/fil.webp';
 ---
 <Base title="Training · Shohmot" description="Train on the positions where you went wrong in your own games, until you find the right move every time." guard>
   <AppBar current="train" />
@@ -18,6 +19,33 @@ import '../styles/pages.css';
     </section>
 
     <div class="banners" id="banners" aria-live="polite"></div>
+
+    <!-- Today: the coach's session (your last games, reviewed start to end) and
+         the day so far against yesterday (training/today.mjs). -->
+    <section class="tr-today" aria-label="Today’s training">
+      <div class="tr-coach" id="tr-coach" data-state="empty">
+        <img class="tr-coach-face" src={filPortrait.src} alt="" width="256" height="256" decoding="async">
+        <div class="tr-coach-body">
+          <p class="tr-coach-who"><b>Fischer</b> your coach</p>
+          <h2 class="tr-coach-say" id="tr-coach-say">Looking at your games…</h2>
+          <p class="muted" id="tr-coach-sub"></p>
+          <div class="tr-session-bar" id="tr-session-bar" role="progressbar" aria-label="Games reviewed in this session" aria-valuemin="0" aria-valuemax="5" aria-valuenow="0" hidden><i></i></div>
+          <ol class="tr-games" id="tr-games"></ol>
+          <div class="tr-actions" id="tr-coach-actions"></div>
+        </div>
+      </div>
+      <div class="tr-day" id="tr-day">
+        <div class="tr-day-top">
+          <p class="tr-clock"><small>Focus today</small><b id="tr-clock">00:00</b></p>
+          <p class="tr-streak" id="tr-streak" hidden></p>
+        </div>
+        <p class="tr-day-say" id="tr-day-say"></p>
+        <div class="tr-cmp" id="tr-cmp"></div>
+        <ol class="tr-week" id="tr-week" aria-label="Focus time, last 7 days"></ol>
+      </div>
+    </section>
+
+    <h2 class="sec-h" id="tr-pos-h">Your positions</h2>
 
     <section class="tr-main" id="tr-main" aria-label="Training position">
       <div class="tr-board-wrap">

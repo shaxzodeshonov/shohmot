@@ -2,6 +2,7 @@
 // and (if you turn it on) its voice. Fischer is Shohmot's own coach character.
 // The facts (the label, what was lost, the better move) come from the review;
 // Fischer adds the lesson in plain words.
+import { timeline } from './lipsync.mjs';
 
 // ---------- what Fischer says ----------
 
@@ -102,9 +103,11 @@ export function setMood(el, mood) {
 }
 
 // ---------- Fischer's voice ----------
-// The browser's own speech, nothing sent anywhere. Off until you turn it on;
-// a calm, natural voice if the device has one, a little slower and quieter
-// than usual.
+// Off until you turn it on. For accounts that have it (src/voice.js), Fischer's
+// own cloned voice: each line is fetched from /api/voice and played. For
+// everyone else, and whenever that fails, the browser's own speech, with
+// nothing sent anywhere: a calm, natural voice if the device has one, a
+// little slower and quieter than usual.
 const PIECE = { K: 'king', Q: 'queen', R: 'rook', B: 'bishop', N: 'knight' };
 const SAN = /\b(O-O-O|O-O|([KQRBN])?([a-h])?([1-8])?(x)?([a-h][1-8])(=([QRBN]))?([+#])?)(?=[\s.,!?;:)]|$)/g;
 
@@ -139,8 +142,62 @@ const SOFT = [/natural.*(aria|jenny|ava|emma|sonia|libby|michelle)/i, /(ava|sama
 // reached, end().
 export function createVoice({ key = 'shohmot-coach-voice', onTalk = () => {}, lip = null } = {}) {
   const synth = typeof speechSynthesis !== 'undefined' ? speechSynthesis : null;
+  const AC = globalThis.AudioContext || globalThis.webkitAudioContext;
+  let cloud = false; // this account has Fischer's own voice
   let on = false;
-  try { on = !!synth && localStorage.getItem(key) === '1'; } catch { /* private mode */ }
+  try { on = localStorage.getItem(key) === '1'; } catch { /* private mode */ }
+  const signedIn = typeof document !== 'undefined' && document.cookie.split('; ').includes('shohmot_in=1');
+  // Asked once per page; signed-out visitors never have it, so they aren't asked.
+  const ready = signedIn && AC && typeof fetch === 'function'
+    ? fetch('/api/voice').then((r) => r.json()).then((d) => { cloud = !!(d && d.on); return cloud; }).catch(() => false)
+    : Promise.resolve(false);
+  const can = () => !!synth || cloud;
+
+  // ----- the cloned voice: fetched, decoded and played through Web Audio -----
+  let ctx = null;
+  let node = null;
+  let turn = 0;
+  const clips = new Map(); // words -> Promise<AudioBuffer>, the newest 40
+  const audio = () => (ctx ||= new AC());
+  function clip(words) {
+    if (clips.has(words)) return clips.get(words);
+    const p = fetch('/api/voice', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: words }) })
+      .then((r) => { if (!r.ok) throw new Error(`voice ${r.status}`); return r.arrayBuffer(); })
+      .then((b) => audio().decodeAudioData(b));
+    clips.set(words, p);
+    p.catch(() => clips.delete(words));
+    if (clips.size > 40) clips.delete(clips.keys().next().value);
+    return p;
+  }
+  function hush() {
+    turn++;
+    if (node) { const n = node; node = null; try { n.stop(); } catch { /* not started */ } }
+  }
+  // Resolves false when the line couldn't be played (the caller falls back to the browser's speech).
+  async function sayCloud(words) {
+    const mine = ++turn;
+    let buf;
+    try {
+      if (audio().state === 'suspended') await Promise.race([audio().resume(), new Promise((r) => setTimeout(r, 400))]);
+      buf = await clip(words);
+    } catch { return false; }
+    if (mine !== turn || !on) return true; // something newer was said meanwhile
+    if (audio().state !== 'running') return false;
+    const src = audio().createBufferSource();
+    const gain = audio().createGain();
+    gain.gain.value = 0.9;
+    src.buffer = buf;
+    src.connect(gain).connect(audio().destination);
+    // The mouth follows the words at the pace this recording says them.
+    const spoken = timeline(words);
+    const natural = spoken.length ? spoken[spoken.length - 1].end : 0;
+    const rate = natural && buf.duration ? Math.min(2, Math.max(0.5, natural / (buf.duration * 1000))) : 1;
+    src.onended = () => { if (node === src) { node = null; talking(false); } };
+    node = src;
+    src.start();
+    talking(true, words, rate, buf.duration * 1000 + 600);
+    return true;
+  }
   let voice = null;
   const choose = () => {
     const all = synth.getVoices().filter((v) => /^en(-|_|$)/i.test(v.lang));
@@ -154,29 +211,38 @@ export function createVoice({ key = 'shohmot-coach-voice', onTalk = () => {}, li
   let current = null;
   // Some browsers don't always say when speech ends (or was cut off), so a
   // timer from the length of the text closes the mouth anyway.
-  const talking = (on, words = '', rate = 1) => {
+  const talking = (on, words = '', rate = 1, ms = 1500 + words.length * 90) => {
     clearTimeout(guard);
     onTalk(on);
     if (lip) { if (on) lip.start(words, rate); else lip.end(true); }
-    if (on) guard = setTimeout(() => talking(false), 1500 + words.length * 90);
+    if (on) guard = setTimeout(() => talking(false), ms);
   };
+  const quiet = () => { clearTimeout(timer); hush(); synth && synth.cancel(); last = ''; talking(false); };
   return {
-    supported: !!synth,
-    get on() { return on; },
+    get supported() { return can(); },
+    // Resolves (true or false) once it's known whether this account has Fischer's own voice.
+    ready,
+    get cloned() { return cloud; },
+    get on() { return on && can(); },
     set(value) {
-      on = !!value && !!synth;
+      on = !!value && can();
       try { localStorage.setItem(key, on ? '1' : '0'); } catch { /* private mode */ }
-      if (!on) { clearTimeout(timer); synth && synth.cancel(); last = ''; talking(false); }
+      // Turning it on is a click: the one moment a browser lets a page start sound.
+      if (on && cloud) audio().resume().catch(() => {});
+      if (!on) quiet();
     },
     // Says it once things settle (stepping quickly through moves doesn't queue them up).
     say(text) {
-      if (!on || !synth) return;
+      if (!on || !can()) return;
       const words = sayable(text);
       if (!words || words === last) return;
       clearTimeout(timer);
-      timer = setTimeout(() => {
+      timer = setTimeout(async () => {
         last = words;
-        synth.cancel();
+        hush();
+        synth && synth.cancel();
+        if (cloud && await sayCloud(words)) return;
+        if (!synth || last !== words) return;
         const u = new SpeechSynthesisUtterance(words);
         if (voice) u.voice = voice;
         u.lang = voice ? voice.lang : 'en-US';
@@ -192,6 +258,6 @@ export function createVoice({ key = 'shohmot-coach-voice', onTalk = () => {}, li
         synth.speak(u);
       }, 280);
     },
-    stop() { clearTimeout(timer); synth && synth.cancel(); last = ''; talking(false); },
+    stop: quiet,
   };
 }
