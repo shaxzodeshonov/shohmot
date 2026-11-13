@@ -346,6 +346,53 @@ a.who-name:hover { text-decoration: underline; text-underline-offset: 0.1875rem;
 a.me-chip { text-decoration: none; padding: 0.1875rem 0.625rem 0.1875rem 0.1875rem; border-radius: 62.4375rem; border: 1px solid transparent; }
 a.me-chip:hover, a.me-chip[aria-current="page"] { border-color: var(--line-2); background: var(--raise); color: var(--ink); }
 .plan-badge { font-size: 0.6875rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; padding: 0.0625rem 0.4375rem; border-radius: 62.4375rem; background: var(--sage); color: var(--sage-ink); }
+/* ---------- sidebar (signed-in pages) ----------
+   A fixed column on the left; the page makes room for it. Below 56.25em it
+   becomes a top bar again: wordmark and you on the first row, then the page's
+   buttons, then the sections as a row you can scroll. */
+.side { view-transition-name: side-bar; display: flex; align-items: center; flex-wrap: wrap; gap: 0.75rem 1rem; padding: 1rem 1.5rem; }
+.side-nav { display: flex; gap: 0.125rem; overflow-x: auto; scrollbar-width: none; min-width: 0; order: 5; width: 100%; margin: 0 -0.25rem; }
+.side-nav::-webkit-scrollbar { display: none; }
+.side-nav a { display: inline-flex; align-items: center; gap: 0.625rem; text-decoration: none; color: var(--muted); font-size: 0.875rem; font-weight: 600; padding: 0.375rem 0.75rem; border-radius: 62.4375rem; white-space: nowrap; transition: background-color .15s var(--ease), color .15s var(--ease); }
+.side-nav a svg { display: none; width: 1.125rem; height: 1.125rem; flex: none; }
+.side-nav a:hover, .side-nav a[aria-current="page"] { color: var(--ink); background: var(--raise); }
+.side-nav a[aria-current="page"] { box-shadow: inset 0 0 0 1px var(--line-2); }
+.side-actions { order: 2; width: 100%; display: flex; align-items: center; gap: 0.625rem; flex-wrap: wrap; }
+.side-actions:not(:has(> :not([hidden]))) { display: none; }
+.side-foot { display: contents; }
+.side-foot #upgrade { order: 1; margin-left: auto; }
+.side-foot .me-chip { order: 1; }
+.side-foot #upgrade[hidden] + .me-chip { margin-left: auto; }
+
+@media (min-width: 56.3125em) {
+  :root { --side-w: 15rem; }
+  body:has(> .side) { padding-left: var(--side-w); }
+  .side {
+    position: fixed; inset: 0 auto 0 0; width: var(--side-w); z-index: 20;
+    flex-direction: column; align-items: stretch; flex-wrap: nowrap; gap: 1.5rem;
+    padding: 1.5rem 0.875rem 1.25rem; overflow-y: auto; overscroll-behavior: contain;
+    background: var(--raise); border-right: 1px solid var(--line);
+  }
+  .side .wordmark { padding: 0 0.5rem; }
+  .side-nav { flex-direction: column; gap: 0.25rem; overflow: visible; order: 0; width: auto; margin: 0; }
+  .side-nav a { padding: 0.5625rem 0.75rem; border-radius: 0.75rem; }
+  .side-nav a svg { display: block; }
+  .side-actions { order: 0; width: auto; flex-direction: column; align-items: stretch; gap: 0.5rem; padding-top: 1.25rem; border-top: 1px solid var(--line); }
+  .side-actions .btn { justify-content: center; }
+  .side-actions .status { margin: 0 0 0.25rem; padding: 0 0.25rem; }
+  .side-foot { display: flex; flex-direction: column; align-items: stretch; gap: 0.75rem; margin-top: auto; }
+  .side-foot #upgrade { order: 0; margin-left: 0; justify-content: center; }
+  .side-foot .me-chip { order: 0; }
+  .side-foot #upgrade[hidden] + .me-chip { margin-left: 0; }
+  .side-foot a.me-chip { padding: 0.375rem 0.625rem 0.375rem 0.375rem; border-radius: 0.75rem; }
+  .side .me-name { flex: 1; min-width: 0; max-width: none; }
+  /* The skip link now jumps past the sidebar. */
+  .skip-link { z-index: 100; }
+}
+@media (max-width: 47.5em) {
+  .side { padding: 1rem; }
+}
+
 .banners { display: grid; gap: 0.75rem; margin-top: 1.25rem; }
 .banners:empty { display: none; }
 .banner { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; padding: 0.875rem 1rem 0.875rem 1.125rem; border-radius: 1rem; background: var(--raise); border: 1px solid var(--line-2); }

@@ -1,34 +1,51 @@
 ---
-// The top bar on the signed-in pages: the sections, an Upgrade button for
-// free accounts (when paid plans are on), and who's signed in, which opens
-// Settings. Page-specific buttons go in the default slot.
+// The sidebar on the signed-in pages: the sections, then the page's own
+// buttons (default slot), then an Upgrade button for free accounts (when paid
+// plans are on) and who's signed in, which opens Settings. On phones it folds
+// back into a top bar (see app.css).
 import Logo from './Logo.astro';
 interface Props { current?: 'counter' | 'train' | 'brilliants' | 'coach' | 'settings' | 'admin' }
 const { current } = Astro.props;
 const here = (k: string) => (k === current ? 'page' : undefined);
 ---
-<header class="bar app-bar">
+<aside class="side" aria-label="Shohmot">
   <a class="wordmark" href="/app.html">
     <Logo />
     Shohmot
   </a>
-  <nav class="app-nav" aria-label="Sections">
-    <a href="/app.html" aria-current={here('counter')}>Counter</a>
-    <a href="/train.html" aria-current={here('train')} data-astro-prefetch="false">Training</a>
-    <a href="/brilliants.html" aria-current={here('brilliants')} data-astro-prefetch="false">Brilliants</a>
-    <a href="/analysis.html" data-astro-prefetch="false">Analysis</a>
-    <a href="/play-yourself.html" data-astro-prefetch="false">Play yourself</a>
-    <a href="/coach.html" aria-current={here('coach')} data-astro-prefetch="false" data-for="coach" hidden>Students</a>
-    <a href="/admin.html" aria-current={here('admin')} data-astro-prefetch="false" data-for="admin" hidden>Admin</a>
+  <nav class="side-nav" aria-label="Sections">
+    <a href="/app.html" aria-current={here('counter')}>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10m5.3 10V4m5.4 16v-7m5.3 7V8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Counter
+    </a>
+    <a href="/train.html" aria-current={here('train')} data-astro-prefetch="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>Training
+    </a>
+    <a href="/brilliants.html" aria-current={here('brilliants')} data-astro-prefetch="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.2 5.6L20 9.3l-4.4 3.9 1.4 5.8L12 15.9 7 19l1.4-5.8L4 9.3l5.8-.7z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>Brilliants
+    </a>
+    <a href="/analysis.html" data-astro-prefetch="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h7v7H4zm9 9h7v7h-7z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M13 4h7v7h-7zM4 13h7v7H4z" fill="currentColor" opacity=".35"/></svg>Analysis
+    </a>
+    <a href="/play-yourself.html" data-astro-prefetch="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5 20c.6-3.6 3.4-5.5 7-5.5s6.4 1.9 7 5.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Play yourself
+    </a>
+    <a href="/coach.html" aria-current={here('coach')} data-astro-prefetch="false" data-for="coach" hidden>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8.5" r="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3.5 19c.5-3 2.7-4.5 5.5-4.5s5 1.5 5.5 4.5M16 6a3 3 0 0 1 0 5.5M17.5 14.7c1.7.5 2.7 2 3 4.3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Students
+    </a>
+    <a href="/admin.html" aria-current={here('admin')} data-astro-prefetch="false" data-for="admin" hidden>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 5 6v5.5c0 4.3 2.8 7.5 7 9.5 4.2-2 7-5.2 7-9.5V6z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>Admin
+    </a>
   </nav>
-  <div class="bar-actions">
+  <div class="side-actions">
     <slot />
-    <a class="btn btn-solid" href="/pricing.html" id="upgrade" hidden>Upgrade</a>
   </div>
-  <!-- In place from the first paint (these pages are for signed-in people), so
-       the bar doesn't grow when the name comes in. On phones it sits beside the wordmark. -->
-  <a class="me-chip" href="/settings.html" id="me" title="Settings and account" aria-current={here('settings')}>
-    <span class="me-av" id="me-av" aria-hidden="true"></span><span class="me-name" id="me-name"></span><span class="plan-badge" id="me-plan" hidden></span>
-  </a>
-</header>
+  <div class="side-foot">
+    <a class="btn btn-solid" href="/pricing.html" id="upgrade" hidden>Upgrade</a>
+    <!-- In place from the first paint (these pages are for signed-in people), so
+         the sidebar doesn't shift when the name comes in. -->
+    <a class="me-chip" href="/settings.html" id="me" title="Settings and account" aria-current={here('settings')}>
+      <span class="me-av" id="me-av" aria-hidden="true"></span><span class="me-name" id="me-name"></span><span class="plan-badge" id="me-plan" hidden></span>
+    </a>
+  </div>
+</aside>
 <script>import '../scripts/appbar.js';</script>
