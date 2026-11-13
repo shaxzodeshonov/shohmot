@@ -98,7 +98,7 @@ function emailFor(req, user, s) {
     heading: `Your chess week, ${user.name}`,
     body: lines,
     button: { label: 'Open Shohmot', url: `${mail.siteUrl(req)}/app.html` },
-    footer: `You get this every Monday because the weekly email is on in your Shohmot settings. <a href="${mail.esc(unsub)}" style="color:#6f5e4a">Unsubscribe</a>.`,
+    footer: `You get this every Monday because the weekly email is on in your Shohmot settings. <a href="${mail.esc(unsub)}" style="color:#5d6f64">Unsubscribe</a>.`,
   });
   return {
     to: user.email,

@@ -4,10 +4,10 @@
 // a deploy is never hidden behind an old copy.
 const OFFLINE = 'shohmot-offline-v2';
 const OFFLINE_HTML = `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Offline · Shohmot</title>
-<body style="margin:0;min-height:100vh;display:grid;place-items:center;background:#1b140f;color:#efe1c6;font-family:system-ui,sans-serif;padding:1rem">
+<body style="margin:0;min-height:100vh;display:grid;place-items:center;background:#0d1712;color:#f2edd8;font-family:system-ui,sans-serif;padding:1rem">
 <div style="max-width:26rem"><h1 style="font-size:1.75rem;margin:0 0 .5rem">You’re offline</h1>
-<p style="color:#b8a385;margin:0 0 1rem">Shohmot needs the internet to fetch your games. It will pick up where you left off once you’re back.</p>
-<button onclick="location.reload()" style="font:inherit;font-weight:700;background:#c6ceb2;color:#1d2417;border:0;border-radius:999px;padding:.6rem 1.1rem">Try again</button></div></body>`;
+<p style="color:#a8b8aa;margin:0 0 1rem">Shohmot needs the internet to fetch your games. It will pick up where you left off once you’re back.</p>
+<button onclick="location.reload()" style="font:inherit;font-weight:700;background:#6cd49a;color:#04240f;border:0;border-radius:999px;padding:.6rem 1.1rem">Try again</button></div></body>`;
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(OFFLINE).then((c) => c.put('/__offline', new Response(OFFLINE_HTML, { headers: { 'Content-Type': 'text/html; charset=utf-8' } }))));

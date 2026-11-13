@@ -14,13 +14,13 @@
 .field { display: block; }
 .field-label { display: flex; gap: 0.5rem; align-items: center; font-weight: 600; font-size: 0.875rem; margin-bottom: 0.4375rem; }
 .field input, .field select { width: 100%; background: var(--raise); border: 1px solid var(--line-2); border-radius: 0.75rem; padding: 0.625rem 0.875rem; font-size: 1rem; }
-.field input:focus-visible, .field select:focus-visible { outline: none; border-color: var(--sage); box-shadow: 0 0 0 0.1875rem rgb(198 206 178 / 0.2); }
+.field input:focus-visible, .field select:focus-visible { outline: none; border-color: var(--sage); box-shadow: 0 0 0 0.1875rem rgb(108 212 154 / 0.2); }
 .field input:disabled { opacity: 0.5; }
 .plan-now { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.03em; }
 .pro-tag { font-size: 0.625rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; padding: 0.0625rem 0.375rem; border-radius: 62.4375rem; background: var(--sage); color: var(--sage-ink); }
-.danger { margin-top: 1.25rem; border: 1px solid rgb(232 135 107 / 0.45); border-radius: 1rem; padding: 0.875rem 1rem; }
+.danger { margin-top: 1.25rem; border: 1px solid rgb(244 122 104 / 0.45); border-radius: 1rem; padding: 0.875rem 1rem; }
 .danger summary { cursor: pointer; font-weight: 700; color: var(--loss); }
-.btn-danger { background: var(--loss); color: #1b140f; border-color: var(--loss); }
+.btn-danger { background: var(--loss); color: #0d1712; border-color: var(--loss); }
 .btn-danger:hover { background: #f09a80; border-color: #f09a80; }
 
 /* ---------- wider pages ---------- */
@@ -51,8 +51,8 @@
 .bz-move em { font-style: normal; color: #1baca6; margin-left: 0.125rem; }
 .bz-list .empty { grid-column: 1 / -1; padding: 1.5rem 0; }
 .mb { position: relative; display: grid; grid-template-columns: repeat(8, 1fr); aspect-ratio: 1; border-radius: 0.375rem; overflow: hidden; }
-.mb-sq { position: relative; background: #a9825b; }
-.mb-sq.l { background: #e9d9b8; }
+.mb-sq { position: relative; background: #5b8a63; }
+.mb-sq.l { background: #eeebd0; }
 .mb-sq.hl { box-shadow: inset 0 0 0 100vmax rgb(27 172 166 / 0.45); }
 .mb-sq img { position: absolute; inset: 4%; width: 92%; height: 92%; }
 .mb svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
@@ -143,7 +143,7 @@
 .lead-s { font-size: 1.0625rem; max-width: 44rem; margin: 0.5rem 0 1.25rem; }
 .py-form { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
 .py-form input { flex: 1 1 14rem; max-width: 22rem; background: var(--raise); border: 1px solid var(--line-2); border-radius: 62.4375rem; padding: 0.625rem 1rem; font-size: 1rem; }
-.py-form input:focus-visible { outline: none; border-color: var(--sage); box-shadow: 0 0 0 0.1875rem rgb(198 206 178 / 0.2); }
+.py-form input:focus-visible { outline: none; border-color: var(--sage); box-shadow: 0 0 0 0.1875rem rgb(108 212 154 / 0.2); }
 .py-mine { display: flex; gap: 0.375rem; flex-wrap: wrap; align-items: center; margin-top: 0.75rem; }
 .py-mine small { color: var(--faint); }
 .py-profile { margin-top: 2rem; padding: 1.25rem; border: 1px solid var(--line-2); border-radius: 1.25rem; background: var(--raise); }
@@ -151,7 +151,7 @@
 .py-head h2 { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.03em; }
 .py-av { width: 3.25rem; height: 3.25rem; border-radius: 1rem; display: grid; place-items: center; font-weight: 800; font-size: 1.5rem; background: var(--sage); color: var(--sage-ink); flex: none; }
 .py-traits { display: flex; gap: 0.375rem; flex-wrap: wrap; margin: 1rem 0; }
-.py-trait { font-size: 0.8125rem; font-weight: 700; padding: 0.25rem 0.75rem; border-radius: 62.4375rem; background: rgb(198 206 178 / 0.14); color: var(--sage); }
+.py-trait { font-size: 0.8125rem; font-weight: 700; padding: 0.25rem 0.75rem; border-radius: 62.4375rem; background: rgb(108 212 154 / 0.14); color: var(--sage); }
 .py-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 1.25rem; }
 .py-grid h3 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--faint); margin-bottom: 0.375rem; }
 .py-grid small { color: var(--faint); }
@@ -298,14 +298,14 @@ html:has(.double), body:has(.double) { overflow-x: clip; }
 /* The floor: a chessboard seen from the players' side, lit warm on your half and teal on the robot's. */
 .py-hero .lab::before {
   content: ''; position: absolute; z-index: -1; left: -30%; right: -30%; top: 38%; height: 14rem; pointer-events: none;
-  background: conic-gradient(rgb(239 225 198 / .07) 25%, transparent 0 50%, rgb(239 225 198 / .07) 0 75%, transparent 0) 50% 0 / 4rem 4rem;
+  background: conic-gradient(rgb(242 237 216 / .07) 25%, transparent 0 50%, rgb(242 237 216 / .07) 0 75%, transparent 0) 50% 0 / 4rem 4rem;
   transform: perspective(26rem) rotateX(62deg); transform-origin: 50% 0;
   -webkit-mask-image: radial-gradient(closest-side, #000 25%, transparent 100%); mask-image: radial-gradient(closest-side, #000 25%, transparent 100%);
 }
 /* The glow is sized in % of its own box and masked to fade out before the edges, so it never ends in a straight line. */
 .py-hero .lab::after {
   content: ''; position: absolute; z-index: -2; inset: -5rem -38%; pointer-events: none;
-  background: radial-gradient(ellipse 26% 46% at 30% 50%, rgb(224 122 95 / .22), transparent), radial-gradient(ellipse 26% 46% at 70% 50%, rgb(63 224 208 / .2), transparent);
+  background: radial-gradient(ellipse 26% 46% at 30% 50%, rgb(240 144 111 / .22), transparent), radial-gradient(ellipse 26% 46% at 70% 50%, rgb(63 224 208 / .2), transparent);
   -webkit-mask-image: radial-gradient(closest-side, #000 30%, transparent); mask-image: radial-gradient(closest-side, #000 30%, transparent);
 }
 .py-hero .lab-stage { grid-template-columns: minmax(0, 1fr) 4.5rem minmax(0, 1fr); gap: 0.5rem; }
@@ -327,7 +327,7 @@ html:has(.double), body:has(.double) { overflow-x: clip; }
 
 /* The one thing to do: site, username and the button in a single bar. */
 .py-hero .py-form { display: flex; flex-wrap: nowrap; align-items: center; gap: 0.25rem; max-width: 38rem; margin: 1.5rem auto 0; padding: 0.375rem; background: var(--raise); border: 1px solid var(--line-2); border-radius: 62.4375rem; box-shadow: 0 1.5rem 3rem -1.5rem rgb(0 0 0 / .8); transition: border-color .2s var(--ease), box-shadow .2s var(--ease); }
-.py-hero .py-form:focus-within { border-color: var(--sage); box-shadow: 0 0 0 0.1875rem rgb(198 206 178 / .2), 0 1.5rem 3rem -1.5rem rgb(0 0 0 / .8); }
+.py-hero .py-form:focus-within { border-color: var(--sage); box-shadow: 0 0 0 0.1875rem rgb(108 212 154 / .2), 0 1.5rem 3rem -1.5rem rgb(0 0 0 / .8); }
 .py-site select { appearance: none; -webkit-appearance: none; border: 0; background: var(--bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m6 9 6 6 6-6' fill='none' stroke='%23b8a385' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") right 0.625rem center / 1rem no-repeat; border-radius: 62.4375rem; padding: 0.75rem 2rem 0.75rem 1rem; font-size: 0.9375rem; font-weight: 600; cursor: pointer; }
 .py-hero .py-form input { flex: 1 1 8rem; min-width: 0; max-width: none; background: none; border: 0; border-radius: 62.4375rem; padding: 0.75rem 0.75rem; font-size: 1.0625rem; }
 .py-hero .py-form input:focus-visible { outline: none; border: 0; box-shadow: none; }
