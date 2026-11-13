@@ -2,8 +2,11 @@
 // Every page: head, self-hosted font, page transitions, and a tiny inline
 // script that knows before first paint whether the visitor is signed in.
 // `guard` pages send signed-out visitors to sign in before anything draws.
-import '@fontsource-variable/bricolage-grotesque/opsz.css';
-import fontUrl from '@fontsource-variable/bricolage-grotesque/files/bricolage-grotesque-latin-opsz-normal.woff2?url';
+import '@fontsource-variable/onest/wght.css';
+import '@fontsource-variable/geologica/wght.css';
+import '@fontsource-variable/jetbrains-mono/wght.css';
+import displayFontUrl from '@fontsource-variable/geologica/files/geologica-latin-wght-normal.woff2?url';
+import fontUrl from '@fontsource-variable/onest/files/onest-latin-wght-normal.woff2?url';
 import '../styles/app.css';
 import { SITE } from '../data/site';
 
@@ -47,11 +50,12 @@ const canonical = `${SITE.url}${path === '/' ? '/' : path}`;
   <meta property="og:url" content={canonical}>
   <meta property="og:image" content={`${SITE.url}/og.png`}>
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="theme-color" content="#1b140f">
+  <meta name="theme-color" content="#0d1712">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="preload" href={fontUrl} as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href={displayFontUrl} as="font" type="font/woff2" crossorigin>
   <slot name="head" />
 </head>
 <body class={bodyClass}>
