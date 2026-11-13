@@ -7,6 +7,9 @@ const path = require('path');
 const zlib = require('zlib');
 const { dispatch } = require('./src/routes');
 
+// Settings from a local .env file, if there is one (on Vercel they come from the project).
+try { process.loadEnvFile(path.join(__dirname, '.env')); } catch { /* no .env: fine */ }
+
 const PORT = Number(process.env.PORT) || 3001;
 const PUBLIC = path.join(__dirname, 'dist');
 const TYPES = {

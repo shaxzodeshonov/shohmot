@@ -92,6 +92,13 @@ const useFrames = frames.some((f) => f.name === 'rest') && frames.some((f) => f.
     </section>
 
     <aside class="panel" aria-label="Review">
+      <!-- A training session's strip (training/session-bar.mjs): which game of the
+           session this is, the focus clock and how much of the game you've seen. -->
+      <div class="rv-session" id="rv-session" hidden>
+        <p class="rv-session-top"><b id="rv-session-n">Training session</b><span class="rv-session-clock" title="Focus time today"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="7.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 9v4.5l2.5 1.5M9.5 2.5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="rv-session-clock">00:00</span></span></p>
+        <div class="rv-session-bar" role="presentation"><i id="rv-session-bar"></i></div>
+        <p class="rv-session-row"><span id="rv-session-say" aria-live="polite"></span><a class="btn" id="rv-session-next" href="/train.html" data-astro-prefetch="false">Skip this game</a></p>
+      </div>
       <header class="panel-head">
         <h1 class="rv-title" id="title">Loading the game…</h1>
         <p class="rv-meta" id="meta"></p>
@@ -144,7 +151,16 @@ const useFrames = frames.some((f) => f.name === 'rest') && frames.some((f) => f.
             ) : (
               <div class="fil-head">
                 <img src={filPortrait.src} alt="" width="256" height="256" decoding="async">
-                <i class="fil-lid fil-lid-l"></i><i class="fil-lid fil-lid-r"></i>
+                <!-- The eyelids (review/eyes.mjs), in the portrait's own pixels: each lid's
+                     skin and its lash line, drawn only while Fischer blinks. -->
+                <svg class="fil-eyes" id="fil-eyes" viewBox="0 0 256 256">
+                  <defs>
+                    <linearGradient id="fil-lid-l" gradientUnits="userSpaceOnUse" x1="0" y1="107" x2="0" y2="125"><stop offset="0" stop-color="#e2a590"/><stop offset="1" stop-color="#f1bb9d"/></linearGradient>
+                    <linearGradient id="fil-lid-r" gradientUnits="userSpaceOnUse" x1="0" y1="107" x2="0" y2="125"><stop offset="0" stop-color="#d99a85"/><stop offset="1" stop-color="#ecb398"/></linearGradient>
+                  </defs>
+                  <g data-eye="l"><path class="fil-lidskin" fill="url(#fil-lid-l)"/><path class="fil-lash"/></g>
+                  <g data-eye="r"><path class="fil-lidskin" fill="url(#fil-lid-r)"/><path class="fil-lash"/></g>
+                </svg>
                 <!-- Drawn in the original image's pixel coordinates: skin over the
                      drawn lips, then a mouth whose lower half opens while Fischer talks. -->
                 <svg class="fil-mouth" viewBox="628 356 136 64">
@@ -306,6 +322,7 @@ const useFrames = frames.some((f) => f.name === 'rest') && frames.some((f) => f.
 
   <script>
   import '../scripts/review/review.mjs';
+  import '../scripts/training/session-bar.mjs';
   </script>
   <ReviewPicker />
 </Base>

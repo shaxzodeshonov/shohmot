@@ -12,6 +12,7 @@ import { track } from '../track.js';
 import { drawBoard, squareAtPoint } from './board.mjs';
 import { get, record, totals } from './openings-store.mjs';
 import { parseLines, families, bookIndex, bookMove, isOwn, playable, status, order, progress } from './openings.mjs';
+import { startTimer } from './timer.mjs';
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -432,3 +433,6 @@ async function start() {
 
 freshUser(); // signs you out of this page if the session is gone
 start();
+
+// Time on the openings counts toward the day's focus time (shown on Training).
+startTimer();

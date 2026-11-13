@@ -38,6 +38,8 @@ function save() {
 const keyOf = (platform, id) => `${platform}:${id}`;
 export const isAnalyzed = (platform, id) => !!load().games[keyOf(platform, id)];
 export const gameInfo = (platform, id) => load().games[keyOf(platform, id)] || null;
+// Every checked game, by "<platform>:<id>" (the coach's session picks from these).
+export const checkedGames = () => load().games;
 
 function put(platform, id, info, source) {
   const s = load();
@@ -82,10 +84,13 @@ export function itemsOf(gameKey) {
 }
 
 // Positions to train now: due ones, worst mistakes and newest games first.
-// With a game key, that game's positions come first, due or not.
+// With a game key (or several), those games' positions come first, due or not,
+// in the order the games were given.
 export function queue({ now = Date.now(), game = null } = {}) {
   const all = Object.entries(load().items).map(([key, it]) => ({ key, ...it })).filter((it) => it.box < LEARNED);
-  const first = game ? all.filter((it) => it.key.startsWith(`${game}:`)).sort((a, b) => a.ply - b.ply) : [];
+  const games = [].concat(game || []);
+  const rank = (it) => games.findIndex((g) => it.key.startsWith(`${g}:`));
+  const first = all.filter((it) => rank(it) >= 0).sort((a, b) => rank(a) - rank(b) || a.ply - b.ply);
   const rest = all.filter((it) => !first.includes(it) && it.due <= now)
     .sort((a, b) => a.due - b.due || WORST[a.label] - WORST[b.label] || b.end - a.end);
   return [...first, ...rest];
