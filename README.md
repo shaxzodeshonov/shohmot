@@ -4,17 +4,17 @@
 
 <br><br>
 
-**Free chess game counter and Stockfish coach for the web.**
+**Play there. Improve here.**
 
-Shohmot follows your [Chess.com](https://www.chess.com) and [Lichess](https://lichess.org) accounts, tells you how many games you played today and how many you lost, then lets Stockfish turn your mistakes into training. All of the engine work happens in your browser.
+Shohmot follows your [Chess.com](https://www.chess.com) and [Lichess](https://lichess.org) accounts, counts today's games, then lets Stockfish and a coach named Fischer turn your mistakes into training. All of the engine work happens in your browser.
 
 <br>
 
 ![Astro](https://img.shields.io/badge/Astro-7-ff5d01?style=flat-square&logo=astro&logoColor=white)
 ![Node](https://img.shields.io/badge/Node-22.23%2B-5fa04e?style=flat-square&logo=nodedotjs&logoColor=white)
-![Stockfish](https://img.shields.io/badge/Stockfish-19-c6ceb2?style=flat-square&labelColor=1d2417)
+![Stockfish](https://img.shields.io/badge/Stockfish-19-6cd49a?style=flat-square&labelColor=0d1712)
 ![Deploys on](https://img.shields.io/badge/Deploys_on-Vercel-000000?style=flat-square&logo=vercel&logoColor=white)
-![Free](https://img.shields.io/badge/Price-Free-a6c97a?style=flat-square&labelColor=1d2417)
+![Free](https://img.shields.io/badge/Price-Free-6cd49a?style=flat-square&labelColor=0d1712)
 
 [Quick start](#-quick-start) · [Features](#-features) · [How it works](#-how-the-review-works) · [Deploy](#-deploy) · [Docs](docs/DETAILS.md)
 
@@ -79,6 +79,10 @@ Paste a Lichess link or any PGN and get a full Stockfish 19 review: accuracy for
 
 After every game Shohmot says "You lost to X, here's what to work on" and lists your worst moves. Every mistake becomes a position to solve, scheduled with spaced repetition (1, 3, 7 and 21 days), so you meet it again just before you'd forget it.
 
+**Today's session:** Fischer lines up your five newest games with mistakes and walks you through them one by one, with a focus timer and a day-by-day streak.
+
+**Opening training:** drill about 3,900 named opening lines from Lichess's list, every variation in a family, from either side. Study a line, then play it from memory. It's free and has no daily limit.
+
 <br clear="right">
 
 ### Brilliant moves
@@ -119,7 +123,7 @@ Set up any position and play it out against Stockfish at six strengths, from Beg
 
 Fischer sits at the top of every review. It breathes, blinks, moves its mouth in time with its voice, and reacts to your moves: a nod for good ones, a hop for great ones, a shake for mistakes. It walks you through the key moments of the game and gives you a short lesson for each kind of mistake.
 
-Set `ANTHROPIC_API_KEY` and Fischer becomes an AI agent powered by Claude. It leads the review moment by moment, moves the board itself, and answers your questions about the game. It is grounded in Stockfish's numbers and told not to invent analysis. Without a key, Fischer still steps through the game using the review's own notes. Its voice is off until you turn it on.
+Set `ANTHROPIC_API_KEY` and Fischer becomes an AI agent powered by Claude. It leads the review moment by moment, moves the board itself, and answers your questions about the game. It is grounded in Stockfish's numbers and told not to invent analysis. Without a key, Fischer still steps through the game using the review's own notes. Its voice is off until you turn it on, and with an `ELEVENLABS_API_KEY` it speaks in a deep, natural man's voice instead of the browser's.
 
 <br clear="left">
 
