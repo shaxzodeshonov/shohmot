@@ -20,12 +20,12 @@
   --l-miss: #ee7a5e;
   --l-blunder: #dc4f42;
 
-  --player-h: 2.75rem;  /* each player row */
+  --player-h: 2rem;     /* each player row */
   --eval-w: 1.5rem;     /* eval bar */
   --eval-gap: 0.625rem; /* between eval bar and board */
   --panel-w: clamp(20rem, 27vw, 27rem);
-  --bar-h: 4rem;
-  --page-pad: 1.25rem;  /* under the board and panel */
+  --bar-h: 3.5rem;
+  --page-pad: 0.5rem;   /* under the board and panel */
 }
 [data-l="brilliant"] { --l: var(--l-brilliant); }
 [data-l="great"] { --l: var(--l-great); }
@@ -124,6 +124,37 @@ a.btn { text-decoration: none; display: inline-block; }
 .arrow { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
 .arrow polygon { fill: rgb(126 190 80 / .82); }
 .arrow .a-live { fill: rgb(95 160 220 / .75); }
+/* What you draw with the right button (board-marks.mjs): marked squares and
+   arrows. Red squares and orange arrows; Shift, Ctrl, Alt for the others. */
+.cb .sq[data-mk] { box-shadow: inset 0 0 0 100vmax var(--mk); }
+.cb .sq[data-mk="r"] { --mk: rgb(235 97 80 / .8); }
+.cb .sq[data-mk="g"] { --mk: rgb(172 206 89 / .8); }
+.cb .sq[data-mk="b"] { --mk: rgb(82 176 220 / .8); }
+.cb .sq[data-mk="y"] { --mk: rgb(245 200 70 / .8); }
+.marks { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 3; pointer-events: none; }
+.mk-arrow { opacity: .8; }
+.mk-arrow polyline { fill: none; stroke: var(--mk); stroke-width: 0.2; stroke-linejoin: miter; }
+.mk-arrow polygon { fill: var(--mk); }
+.mk-arrow.c-r { --mk: rgb(255 170 0); }
+.mk-arrow.c-g { --mk: rgb(140 200 60); }
+.mk-arrow.c-b { --mk: rgb(72 180 240); }
+.mk-arrow.c-y { --mk: rgb(250 215 60); }
+/* Board-only mode (board-focus.mjs, Ctrl+Z): the page is hidden and the board
+   sits alone in the middle of the window, as big as fits. The review board's
+   area is a size container, which would hold a fixed board inside it, so
+   that is switched off while this is on. */
+html.board-focus { overflow: hidden; background: var(--bg); }
+html.board-focus body { visibility: hidden; }
+html.board-focus .rv-board { container-type: normal; }
+html.board-focus #board, html.board-focus .pc.ghost { visibility: visible; }
+html.board-focus .pc.ghost { z-index: 1001; } /* the piece in your hand stays above the board */
+html.board-focus #board {
+  --s: calc(min(100vw, 100dvh) - 2rem);
+  position: fixed; left: 50%; top: 50%; z-index: 1000;
+  width: var(--s); height: var(--s);
+  translate: -50% -50%;
+  box-shadow: 0 1.5rem 4rem -1rem rgb(0 0 0 / .6);
+}
 
 /* Moving pieces: the picked square, dots where it can go (rings on captures),
    the piece under the pointer while dragging, and the promotion picker. */

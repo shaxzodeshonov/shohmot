@@ -10,10 +10,18 @@
 // api.move(from, to) -> play the move
 // api.clear() -> drop the selection
 // api.redraw() -> draw the board again (after a drag that went nowhere)
+//
+// The right button draws on the board (board-marks.mjs). Pressing it while a
+// piece is held puts the piece back where it was, as on Chess.com.
+// Ctrl+Z shows the board alone (board-focus.mjs).
 import { dropped } from './slide.mjs';
+import { boardMarks } from './board-marks.mjs';
+import { boardFocus } from './board-focus.mjs';
 
 export function boardInput(el, api) {
   let drag = null; // { from, x, y, ghost, piece, wasSelected }
+  const marks = boardMarks(el, api.squareAt);
+  boardFocus(el);
 
   const cleanup = () => {
     if (!drag) return;
@@ -45,6 +53,14 @@ export function boardInput(el, api) {
 
   el.addEventListener('pointermove', (e) => {
     if (!drag) return;
+    // The right button pressed while the left one holds a piece: put it back.
+    // (A second button down is a pointermove, not a pointerdown.)
+    if (e.buttons & 2) {
+      cleanup();
+      api.clear();
+      api.redraw();
+      return;
+    }
     if (!drag.ghost) {
       // A few pixels of movement before it counts as a drag, so a click stays a click.
       if (Math.hypot(e.clientX - drag.x, e.clientY - drag.y) < 4) return;
@@ -77,5 +93,5 @@ export function boardInput(el, api) {
 
   el.addEventListener('pointercancel', () => { cleanup(); api.redraw(); });
 
-  return { get dragging() { return !!(drag && drag.ghost); } };
+  return { marks, get dragging() { return !!(drag && drag.ghost); } };
 }
