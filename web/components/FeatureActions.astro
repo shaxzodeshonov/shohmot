@@ -14,5 +14,5 @@ const [label, href] = f.open;
     <a class={cls} href={href} data-astro-prefetch="false" data-signed-in>{label}</a>
   </>
 ) : (
-  <a class={cls} href={href} data-astro-prefetch="false" data-review-picker={f.slug === 'review' ? 'user' : undefined}>{label}</a>
+  <a class={cls} href={href} data-astro-prefetch="false" data-review-picker={href === '/review.html' ? 'user' : undefined}>{label}</a>
 )}

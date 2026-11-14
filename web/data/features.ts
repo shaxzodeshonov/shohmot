@@ -1,8 +1,13 @@
 // What each feature page and landing-page section says. The pages in
 // web/pages/features/ are generated from this list, in this order.
 export interface Feature {
-  slug: 'counter' | 'training' | 'brilliants' | 'double' | 'review' | 'analysis' | 'play';
+  slug: 'counter' | 'training' | 'brilliants' | 'double' | 'review' | 'coach' | 'analysis' | 'play';
   name: string;
+  /**
+   * The page's <title> when it should say what people search for rather than
+   * the feature's name (the default is "<name> · Shohmot").
+   */
+  seoTitle?: string;
   eyebrow: string;
   /** The page heading; the part in *stars* is drawn in sage. */
   title: string;
@@ -17,7 +22,7 @@ export interface Feature {
    * visitors are sent to sign up first and come back to it.
    */
   account: boolean;
-  /** The button that opens it: [label, link]. The review opens the review pop-up. */
+  /** The button that opens it: [label, link]. A link to /review.html opens the review pop-up. */
   open: [string, string];
 }
 
@@ -66,11 +71,12 @@ export const FEATURES: Feature[] = [
   {
     slug: 'brilliants',
     name: 'Brilliant moves',
-    eyebrow: 'Brilliant move finder',
-    title: 'Every brilliant move you’ve ever *played.*',
-    lead: 'Shohmot goes through all the games on your accounts and finds your brilliant moves: real piece sacrifices that were also the best move. It runs in your browser and never checks a game twice.',
-    short: 'Every brilliant move across all your games: piece sacrifices that were also the best move, found by Stockfish in your browser.',
-    ticks: ['All your games, on every account', 'Real sacrifices, checked by Stockfish', '“!!” on your game list the moment you play one'],
+    seoTitle: 'Brilliant Move Counter for Chess.com and Lichess · Shohmot',
+    eyebrow: 'Brilliant move counter',
+    title: 'How many brilliant moves have you *played?*',
+    lead: 'Shohmot counts the brilliant moves in every game on your Chess.com and Lichess accounts: real piece sacrifices that were also the best move. You get your brilliant move count, week by week, and every one of them to replay. It runs in your browser and never checks a game twice.',
+    short: 'Your brilliant move count across every game on Chess.com and Lichess: piece sacrifices that were also the best move, found by Stockfish in your browser.',
+    ticks: ['Your brilliant move count, week by week', 'Real sacrifices, checked by Stockfish', '“!!” on your game list the moment you play one'],
     points: [
       ['Every game', 'Up to 26 weeks of games on each Chess.com and Lichess account.'],
       ['Real sacrifices', 'Counts a piece left hanging even when taking it loses: the classic brilliant move.'],
@@ -105,11 +111,12 @@ export const FEATURES: Feature[] = [
   },
   {
     slug: 'review',
-    name: 'Game review',
-    eyebrow: 'Game review',
-    title: 'A free Stockfish review of any *game.*',
-    lead: 'Paste a Lichess link or any PGN, no account needed, or press Review on a game in your list. Stockfish 19 analyses it in your browser and labels every move, Brilliant to Blunder, with accuracy on the scale of the site you played on.',
-    short: 'Stockfish 19 reviews any game in your browser: accuracy, a label on every move, and the better move with the reason.',
+    name: 'Free game review',
+    seoTitle: 'Free Chess Game Review for Chess.com and Lichess · Shohmot',
+    eyebrow: 'Free chess game review',
+    title: 'Free chess game review, for any *game.*',
+    lead: 'Review any Chess.com or Lichess game free, with no account: find your games by username, paste a Lichess link, or paste any PGN. Stockfish 19 analyses it in your browser and labels every move, Brilliant to Blunder, with accuracy on the scale of the site you played on.',
+    short: 'A free chess game review for Chess.com and Lichess games: Stockfish 19 in your browser, accuracy, a label on every move, and the better move with the reason.',
     ticks: ['Accuracy on the scale of the site you played on', 'Every move labelled, Brilliant to Blunder', 'The better move as an arrow, and why yours wasn’t'],
     points: [
       ['Accuracy you can trust', 'Lichess games use Lichess’s published formula. Other games use the same formula, tuned against real reviewed games.'],
@@ -122,6 +129,27 @@ export const FEATURES: Feature[] = [
     steps: [['Pick a game', 'Paste a link or PGN, or press Review in your list.'], ['Let it run', 'Quick to Deep, Strong by default.'], ['Share it', 'Press N for your next mistake, or share the review as an image.']],
     account: false,
     open: ['Review a game', '/review.html'],
+  },
+  {
+    slug: 'coach',
+    name: 'Chess coach',
+    seoTitle: 'Free Chess Coach for Every Game You Play · Shohmot',
+    eyebrow: 'Free chess coach',
+    title: 'A chess coach for every game you *play.*',
+    lead: 'Fischer, Shohmot’s chess coach, goes through your games with you: what happened on each move, the better move, and the lesson in it. Read it or hear it aloud. And if you coach players yourself, invite your students and see every one’s week on one page.',
+    short: 'Fischer, your free chess coach, talks you through every move of your games. Chess coaches get a dashboard with every student’s games, losses and rating.',
+    ticks: ['Every move explained, out loud if you like', 'Your mistakes turned into training', 'For chess coaches: every student’s week on one page'],
+    points: [
+      ['Every move explained', 'What happened, the better move and the lesson in it, move by move, in plain words.'],
+      ['Hear it aloud', 'Turn on Fischer’s voice and listen while you watch the board.'],
+      ['Then train it', 'With a free account, your mistakes become positions you solve until you find the right move every time.'],
+      ['For chess coaches', 'Send your students one invite link. They join with a free account and their Chess.com and Lichess usernames.'],
+      ['Every student’s week', 'Games today and this week, how many they lost, and their rating change, with whoever played last on top.'],
+      ['Ready for the lesson', 'Open a student’s last games and review any of them with Stockfish before you meet.'],
+    ],
+    steps: [['Pick a game', 'Find your games by username, or paste a Lichess link or PGN.'], ['Listen to Fischer', 'Step through the moves and hear what each one did.'], ['Coaching players?', 'Settings → Coach gives you an invite link for your students.']],
+    account: false,
+    open: ['Get a game coached', '/review.html'],
   },
   {
     slug: 'analysis',
