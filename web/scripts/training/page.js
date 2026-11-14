@@ -9,10 +9,11 @@ import { LABELS } from '../review/analysis.mjs';
 import { KINDS } from '../review/label.mjs';
 import { currentUser, freshUser, features, unlocked } from '../session.js';
 import { track } from '../track.js';
-import { queue, record, stats, doneToday, LEARNED } from './store.mjs';
+import { queue, record, stats, doneToday, LEARNED, markSeen } from './store.mjs';
+import { newsCardHtml, ackNews } from './news.mjs';
 import { analyzeMany } from './analyze.mjs';
 import { drawBoard, squareAtPoint } from './board.mjs';
-import { session, addSolved } from './focus.mjs';
+import { session, addSolved, today } from './focus.mjs';
 import { startTimer } from './timer.mjs';
 import { drawCoach, wireCoach, drawDay, drawClock } from './today.mjs';
 
@@ -241,12 +242,23 @@ $('#tr-coach').addEventListener('click', (e) => {
   // "Check my older losses": go there and start it.
   if (e.target.closest('a[href="#tr-old-h"]') && !oldJob) $('#tr-old-go').click();
 });
-startTimer((sec) => {
-  const minute = Math.floor(sec / 60) !== Math.floor(focusSeconds / 60);
-  focusSeconds = sec;
-  drawClock($('#tr-day'), sec);
-  if (minute) drawDay($('#tr-day'), sec);
-});
+// The focus clock starts when you start training: a move on the board, Hint,
+// Show answer or Next, or coming here from "Train these positions". Just
+// having the page open doesn't count. (A review keeps its own clock.)
+let timer = null;
+function startFocus() {
+  if (timer) return;
+  timer = startTimer((sec) => {
+    const minute = Math.floor(sec / 60) !== Math.floor(focusSeconds / 60);
+    focusSeconds = sec;
+    drawClock($('#tr-day'), sec);
+    if (minute) drawDay($('#tr-day'), sec);
+  });
+}
+drawClock($('#tr-day'), today().t);
+if (focusGame) startFocus();
+$('#tr-main').addEventListener('pointerdown', (e) => { if (e.target.closest('#board, .tr-actions button')) startFocus(); });
+$('#tr-main').addEventListener('keydown', (e) => { if (e.target.closest('#board, .tr-actions button')) startFocus(); });
 // Back from a review in another tab, or from the session's last game.
 addEventListener('pageshow', (e) => { if (e.persisted) { list = upNext(); renderToday(); renderStats(); } });
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') renderToday(); });
@@ -293,8 +305,21 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') { sel = null; targets = []; renderBoard(); }
 });
 
+// The newest game with mistakes, moved here from the counter. Opening this
+// page clears the dot on Training; the card stays until it's dismissed.
+function renderNews() {
+  const accounts = (me && me.accounts) || [];
+  $('#tr-news').innerHTML = newsCardHtml(accounts);
+  ackNews(accounts);
+}
+$('#tr-news').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-seen]');
+  if (b) { markSeen(b.dataset.seen); renderNews(); }
+});
+
 function setUser(u) {
   me = u;
+  renderNews();
   $('#banners').innerHTML = isPro(me) || !features().billing ? '' : `<div class="banner" data-kind="info"><p><b>Free: ${FREE_PER_DAY} positions a day</b>, and older games from the last 7 days. Pro trains without a limit and checks 26 weeks of games.</p>${features().billing ? '<div class="banner-actions"><a class="btn btn-solid" href="/pricing.html">See Pro</a></div>' : ''}</div>`;
 }
 

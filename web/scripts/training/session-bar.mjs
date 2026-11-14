@@ -11,6 +11,9 @@ import { track } from '../track.js';
 
 const $ = (s) => document.querySelector(s);
 const inSession = new URLSearchParams(location.search).has('session');
+// Opened from Training: the strip says which game this is, so the game's
+// title, details and share buttons step aside (review.css).
+if (inSession) document.documentElement.dataset.session = '1';
 const signedIn = () => document.cookie.split('; ').includes('shohmot_in=1');
 // Going through a game means seeing most of it, not pressing End.
 const ENOUGH = 0.6;
@@ -56,7 +59,8 @@ document.addEventListener('shohmot:review', (e) => {
   if (!d.mine || !signedIn()) return;
   if (d.key !== key) { key = d.key; seen = new Set(); done = wasReviewed(key); }
   seen.add(d.ply);
-  if (!timer) timer = startTimer((sec) => { const c = $('#rv-session-clock'); if (c) c.textContent = clock(sec); });
+  // Focus time counts here only for a review started from Training.
+  if (!timer && inSession) timer = startTimer((sec) => { const c = $('#rv-session-clock'); if (c) c.textContent = clock(sec); });
   if (!done && d.ready && d.ply >= d.total && seen.size >= (d.total + 1) * ENOUGH) {
     done = true;
     if (markReviewed(key)) track('game_reviewed_through');

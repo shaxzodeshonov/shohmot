@@ -1,6 +1,16 @@
-// Fills in the app sidebar: who's signed in, their plan, and the links only
-// coaches and admins see.
+// Fills in the app sidebar: who's signed in, their plan, the links only
+// coaches and admins see, and the dot on Training when a game has new
+// positions to train.
 import { currentUser, features, onUser } from './session.js';
+import { hasNews } from './training/news.mjs';
+
+let accounts = [];
+function dot() {
+  const el = document.querySelector('#train-dot');
+  if (!el) return;
+  const here = document.querySelector('.side-nav a[href="/train.html"][aria-current="page"]');
+  el.hidden = !!here || !hasNews(accounts);
+}
 
 function show(user) {
   if (!user) return;
@@ -16,7 +26,12 @@ function show(user) {
   for (const a of document.querySelectorAll('.side-nav [data-for]')) {
     a.hidden = a.dataset.for === 'coach' ? !(user.plan === 'coach' || user.students > 0) : !user.admin;
   }
+  accounts = user.accounts || [];
+  dot();
 }
 
 onUser(show);
 currentUser().then(show);
+// The counter's check found mistakes, or Training was opened (training/news.mjs).
+document.addEventListener('shohmot:news', dot);
+addEventListener('storage', dot);
