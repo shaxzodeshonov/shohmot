@@ -9,7 +9,9 @@
 //   resend-verify                  sends the confirmation email again
 //   signout-all                    ends every session, including this one
 //   password { current, password } changes the password, ends other sessions
+//                                  (Google-only accounts set their first one without `current`)
 //   delete { password }            deletes the account for good
+//                                  (Google-only accounts confirm with { email } instead)
 // GET /api/account                 downloads everything stored about you (JSON)
 // GET /api/account?unsubscribe=<email>&sig=<hmac>   stops the weekly email
 const crypto = require('crypto');
@@ -52,7 +54,8 @@ async function sendVerify(req, user) {
 // if email can't be sent.
 auth.hooks.afterRegister = async (req, user) => {
   try {
-    if (mail.configured()) await sendVerify(req, user);
+    // Google sign-ups are confirmed already.
+    if (mail.configured() && !user.verified) await sendVerify(req, user);
   } catch (err) {
     console.error('verify email failed', err.message);
   }
@@ -122,13 +125,18 @@ async function verify(body) {
 }
 
 async function remove(req, res, user, body) {
-  const password = typeof body.password === 'string' ? body.password.slice(0, 128) : '';
-  if (!(await auth.verifyPassword(password, user.hash))) throw new HttpError(401, 'That password isn’t right.');
+  if (user.hash) {
+    const password = typeof body.password === 'string' ? body.password.slice(0, 128) : '';
+    if (!(await auth.verifyPassword(password, user.hash))) throw new HttpError(401, 'That password isn’t right.');
+  } else if (String(body.email ?? '').trim().toLowerCase() !== user.email) {
+    throw new HttpError(401, 'Type your account’s email exactly, to confirm.');
+  }
   // Stop billing first, so nobody pays for an account that's gone.
   await require('./billing').cancelFor(user);
   await require('./coach').forget(user);
   await store.del(auth.userKey(user.email));
   if (user.id) await store.del(`uid:${user.id}`);
+  if (user.googleSub) await store.del(`google:${user.googleSub}`);
   if (user.stripeCustomer) await store.del(`stripe-customer:${user.stripeCustomer}`);
   await store.srem(auth.USERS, user.email);
   const token = auth.readCookie(req);
@@ -146,6 +154,7 @@ function exportOf(user) {
       email: user.email,
       createdAt: new Date(user.createdAt).toISOString(),
       verified: user.verified === true,
+      signInWith: [user.hash && 'password', user.googleSub && 'google'].filter(Boolean),
       plan: plans.planOf(user),
       planRenews: user.planRenews ? new Date(user.planRenews).toISOString() : null,
     },
@@ -213,7 +222,8 @@ const account = handler(async (req, res) => {
       const user = await requireUser(req, res);
       const current = typeof body.current === 'string' ? body.current.slice(0, 128) : '';
       await auth.rateLimit(`pw-change:${sha256(user.email)}`, 10, 900, 'Too many tries. Wait 15 minutes and try again.');
-      if (!(await auth.verifyPassword(current, user.hash))) throw new HttpError(401, 'Your current password isn’t right.');
+      // Accounts made with Google have no password to check yet.
+      if (user.hash && !(await auth.verifyPassword(current, user.hash))) throw new HttpError(401, 'Your current password isn’t right.');
       auth.checkPassword(body.password, user.email);
       if (await auth.isBreached(body.password)) throw new HttpError(400, 'That password has shown up in a data breach, so attackers try it first. Pick another.');
       user.hash = await auth.hashPassword(body.password);

@@ -83,12 +83,13 @@ import { PRICES } from '../data/site';
         <button class="btn" type="button" id="sign-out">Sign out</button>
         <button class="btn" type="button" id="sign-out-all">Sign out everywhere</button>
       </div>
+      <p class="muted small" id="signin-ways" hidden></p>
       <details class="pw-change">
-        <summary>Change password</summary>
+        <summary id="pw-summary">Change password</summary>
         <form id="pw-form" class="set-grid">
-          <label class="field"><span class="field-label">Current password</span><input type="password" name="current" required autocomplete="current-password" maxlength="128"></label>
+          <label class="field" id="pw-current"><span class="field-label">Current password</span><input type="password" name="current" required autocomplete="current-password" maxlength="128"></label>
           <label class="field"><span class="field-label">New password <small>At least 8 characters</small></span><input type="password" name="password" required minlength="8" autocomplete="new-password" maxlength="128"></label>
-          <div class="wide"><button class="btn btn-solid" type="submit">Change password</button> <span class="muted small">Other devices get signed out.</span></div>
+          <div class="wide"><button class="btn btn-solid" type="submit" id="pw-submit">Change password</button> <span class="muted small">Other devices get signed out.</span></div>
         </form>
       </details>
     </section>
@@ -103,7 +104,8 @@ import { PRICES } from '../data/site';
         <summary>Delete my account</summary>
         <form id="delete-form" class="set-row">
           <p class="grow">This deletes your account, your saved chess accounts and settings straight away, and cancels any paid plan. It can’t be undone.</p>
-          <label class="field grow"><span class="field-label">Your password, to confirm</span><input type="password" name="password" required autocomplete="current-password" maxlength="128"></label>
+          <label class="field grow" id="del-password"><span class="field-label">Your password, to confirm</span><input type="password" name="password" required autocomplete="current-password" maxlength="128"></label>
+          <label class="field grow" id="del-email" hidden><span class="field-label">Type your email, to confirm</span><input type="email" name="email" autocomplete="off" maxlength="254" autocapitalize="none" spellcheck="false" disabled></label>
           <button class="btn btn-danger" type="submit">Delete for good</button>
         </form>
       </details>

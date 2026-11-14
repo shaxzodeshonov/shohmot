@@ -4,6 +4,7 @@
 const handlers = require('./handlers');
 const auth = require('./auth');
 const { account } = require('./account');
+const { google } = require('./google');
 const { billing, webhook } = require('./billing');
 const { event, admin, health } = require('./events');
 const { coach } = require('./coach');
@@ -30,6 +31,7 @@ const ROUTES = {
   login: auth.login,
   logout: auth.logout,
   me: auth.me,
+  google,
   account,
   billing,
   'stripe-webhook': webhook,

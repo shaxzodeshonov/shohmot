@@ -29,6 +29,7 @@ function render(user) {
   $('#name').value = user.name;
   $('#email-line').innerHTML = `${esc(user.email)} · ${user.verified ? '<span class="ok">confirmed</span>' : '<span class="warn">not confirmed yet</span>'}`;
   $('#resend').hidden = user.verified || !features().mail;
+  renderSignIn(user);
 
   const names = { free: 'Free', pro: 'Pro', coach: 'Coach' };
   $('#plan-name').textContent = names[user.plan] || 'Free';
@@ -138,6 +139,25 @@ $('#sign-out-all').addEventListener('click', async () => {
   location.href = '/login.html';
 });
 
+// Accounts made with Google have no password until they set one: no
+// "current password" to ask for, and deleting is confirmed with the email.
+function renderSignIn(user) {
+  const noPassword = user.hasPassword === false;
+  const ways = $('#signin-ways');
+  ways.hidden = !user.google;
+  ways.textContent = noPassword
+    ? 'You sign in with Google. Set a password too if you’d like to sign in with your email.'
+    : user.google ? 'You sign in with Google or with your email and password.' : '';
+  $('#pw-summary').textContent = noPassword ? 'Set a password' : 'Change password';
+  $('#pw-submit').textContent = noPassword ? 'Set password' : 'Change password';
+  for (const [el, off] of [[$('#pw-current'), noPassword], [$('#del-password'), noPassword], [$('#del-email'), !noPassword]]) {
+    el.hidden = off;
+    el.querySelector('input').disabled = off;
+  }
+  $('#del-email input').required = noPassword;
+  $('#del-email input').placeholder = user.email;
+}
+
 $('#pw-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const data = Object.fromEntries(new FormData(e.target));
@@ -146,16 +166,17 @@ $('#pw-form').addEventListener('submit', async (e) => {
     remember(out.user);
     e.target.reset();
     e.target.closest('details').open = false;
-    toast('Password changed. Other devices are signed out.');
+    toast(me && me.hasPassword === false ? 'Password set. You can now sign in with your email too.' : 'Password changed. Other devices are signed out.');
+    render(out.user);
   } catch (err) { toast(err.message); }
 });
 
 $('#delete-form').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const password = new FormData(e.target).get('password');
+  const data = Object.fromEntries(new FormData(e.target)); // { password } or, for Google-only accounts, { email }
   if (!confirm('Delete your Shohmot account for good?')) return;
   try {
-    await api('/api/account', { action: 'delete', password });
+    await api('/api/account', { action: 'delete', ...data });
     forget();
     try { for (const k of Object.keys(localStorage)) if (k.startsWith('shohmot-')) localStorage.removeItem(k); } catch { /* private mode */ }
     location.href = '/?deleted=1';

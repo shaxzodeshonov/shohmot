@@ -6,6 +6,10 @@ import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
 
+// Settings from a local .env file, for the API in `astro dev` (Vite only gives
+// .env to page code, not to process.env). On Vercel they come from the project.
+try { process.loadEnvFile(new URL('./.env', import.meta.url)); } catch { /* no .env: fine */ }
+
 // In `astro dev`, answer /api/* with the same handlers Vercel runs.
 function apiRoutes() {
   return {

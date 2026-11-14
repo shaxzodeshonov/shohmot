@@ -29,6 +29,21 @@ export const features = () => read(FEATURES) || { mail: true, billing: false };
 // Can this account use Pro's features? Everyone can while billing is off.
 export const unlocked = (u) => !!u && (u.unlocked ?? (!features().billing || (!!u.plan && u.plan !== 'free')));
 
+// Just back from "Continue with Google" (src/google.js adds ?signed=new or
+// ?signed=google): the cached profile may be someone else's, so drop it, and
+// take the marker out of the address bar.
+try {
+  const url = new URL(location.href);
+  const how = url.searchParams.get('signed');
+  if (how) {
+    forget();
+    url.searchParams.delete('signed');
+    history.replaceState(history.state, '', url.pathname + url.search + url.hash);
+    // New accounts are counted by the server; sign-ins are counted here, as with email.
+    if (how !== 'new') import('./track.js').then(({ track }) => track('login')).catch(() => {});
+  }
+} catch { /* never break a page over this */ }
+
 export const signedIn = () => document.cookie.split('; ').includes('shohmot_in=1');
 
 // Pages that show the user (the app bar) hear about every change.
