@@ -3,6 +3,7 @@
 // visitor can swap in their own usernames (kept in this browser only).
 import Base from '../layouts/Base.astro';
 import Logo from '../components/Logo.astro';
+import ThemeButton from '../components/ThemeButton.astro';
 import Counter from '../components/Counter.astro';
 import '../styles/app.css';
 
@@ -14,6 +15,7 @@ export const DEMO = 'chesscom:Hikaru,chesscom:MagnusCarlsen,lichess:DrNykterstei
     <a class="wordmark" href="/"><Logo /> Shohmot</a>
     <span class="demo-tag">Live demo</span>
     <div class="bar-actions">
+      <ThemeButton />
       <p class="status" id="status" aria-live="polite" hidden><span class="status-dot"></span><span id="status-text">Connecting</span></p>
       <button class="btn" id="sync-now" type="button" hidden>Sync now</button>
       <button class="btn" id="open-accounts" type="button">Try your username</button>

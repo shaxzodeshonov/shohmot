@@ -2,6 +2,7 @@
 // Play against your own double: built from your public games, no account needed.
 import Base from '../layouts/Base.astro';
 import Logo from '../components/Logo.astro';
+import ThemeButton from '../components/ThemeButton.astro';
 import '../styles/review.css';
 import '../styles/pages.css';
 ---
@@ -15,6 +16,7 @@ import '../styles/pages.css';
       <a href="/play-yourself.html" aria-current="page">Play yourself</a>
     </nav>
     <div class="bar-actions">
+      <ThemeButton />
       <a class="btn" href="/login.html" data-signed-out>Sign in</a>
       <a class="btn btn-solid" href="/signup.html" data-signed-out>Create free account</a>
     </div>

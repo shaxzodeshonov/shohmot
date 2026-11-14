@@ -4,6 +4,7 @@
 // plans are on) and who's signed in, which opens Settings. On phones it folds
 // back into a top bar (see app.css).
 import Logo from './Logo.astro';
+import ThemeButton from './ThemeButton.astro';
 interface Props { current?: 'counter' | 'train' | 'brilliants' | 'coach' | 'settings' | 'admin' }
 const { current } = Astro.props;
 const here = (k: string) => (k === current ? 'page' : undefined);
@@ -37,6 +38,7 @@ const here = (k: string) => (k === current ? 'page' : undefined);
     </a>
   </nav>
   <div class="side-actions">
+      <ThemeButton />
     <slot />
   </div>
   <div class="side-foot">

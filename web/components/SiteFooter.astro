@@ -1,5 +1,6 @@
 ---
 import Logo from './Logo.astro';
+import ThemeButton from './ThemeButton.astro';
 import { FEATURES } from '../data/features';
 import { SITE } from '../data/site';
 ---
@@ -39,6 +40,7 @@ import { SITE } from '../data/site';
       </nav>
     </div>
     <div class="foot-base">
+      <span class="foot-theme"><ThemeButton /> Light or dark</span>
       <span>© {new Date().getFullYear()} Shohmot</span>
       <span>Not affiliated with Chess.com or Lichess. Engine: Stockfish (GPL v3).</span>
     </div>
