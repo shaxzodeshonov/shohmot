@@ -2,8 +2,8 @@ import { currentUser, freshUser, remember, features, onUser, api, unlocked } fro
 import { track } from './track.js';
 import { tiltAlerts } from './tilt.mjs';
 import { foundIn } from './brilliants/store.mjs';
-import { gameInfo, latestUnseen, markSeen } from './training/store.mjs';
-import { LABELS } from './review/analysis.mjs';
+import { gameInfo } from './training/store.mjs';
+import { note } from './notes.mjs';
 import { PLATFORM, BASE_SPEEDS, ALL_SPEEDS, SPEED_NAME, esc, cellLabel, gridHeadHtml, loadingRowsHtml } from './counter-markup.js';
 
 (() => {
@@ -384,36 +384,30 @@ import { PLATFORM, BASE_SPEEDS, ALL_SPEEDS, SPEED_NAME, esc, cellLabel, gridHead
         if (state && dayKnown()) renderGames();
       },
       onGame: (platform, g, out) => {
-        if (out.brilliants.length) toast(`Brilliant move against ${g.opponent}: ${out.brilliants.map((b) => b.san).join(', ')}!`);
+        if (out.brilliants.length) noteBrilliant(platform, g, out.brilliants);
+        // New mistakes light the dot on Training in the sidebar (appbar.js).
+        if (out.items.length) document.dispatchEvent(new Event('shohmot:news'));
         render();
       },
       onDone: () => { checkJob = null; checking = null; render(); },
     });
   }
 
-  // The "what to work on" card for the newest game with mistakes.
-  function needsWorkHtml() {
-    if (!myAccounts.length) return '';
-    const nw = latestUnseen(myAccounts, startOfDay(Date.now()) - DAY);
-    if (!nw) return '';
-    const g = nw.g;
-    const counts = {};
-    for (const it of nw.items) counts[it.label] = (counts[it.label] || 0) + 1;
-    const summary = ['blunder', 'mistake', 'miss'].filter((l) => counts[l]).map((l) => plural(counts[l], LABELS[l].name.toLowerCase(), `${LABELS[l].name.toLowerCase()}${l === 'miss' ? 'es' : 's'}`)).join(', ');
-    const head = g.r === 'loss' ? `You lost to ${g.o}. Here’s what to work on.` : `Your game vs ${g.o}: room to improve.`;
-    const list = nw.items.slice(0, 3).map((it) => {
-      const no = `${Math.ceil(it.ply / 2)}${it.ply % 2 ? '.' : '…'}`;
-      return `<li><b class="nw-move" data-l="${it.label}">${no} ${esc(it.san)}${LABELS[it.label].mark}</b> ${esc(it.why)} <span class="muted">Better was <b>${esc(it.bestSan)}</b>.</span></li>`;
+  // Brilliant moves found by the check: one notification, top right, that
+  // gathers them all and stays until you close it. Closed, the next find
+  // starts a fresh one.
+  let brils = [];
+  function noteBrilliant(platform, g, found) {
+    const a = state && state.accounts.find((x) => x.platform === platform && x.games.some((y) => y.id === g.id));
+    brils.push({ platform, g, found, u: a ? a.username : '' });
+    const n = brils.reduce((s, b) => s + b.found.length, 0);
+    const rows = brils.map(({ platform: p, g: x, found: f, u }) => {
+      const qs = new URLSearchParams({ p, u, id: x.id, t: String(x.end), ply: String(f[0].ply) });
+      return `<li><a href="/review.html?${esc(qs.toString())}" data-astro-prefetch="false"><b>${esc(f.map((b) => b.san).join(', '))}</b> vs ${esc(x.opponent)}</a></li>`;
     }).join('');
-    const first = nw.items[0];
-    const qs = new URLSearchParams({ p: nw.platform, u: g.u || '', id: nw.id, t: String(g.e), ply: String(first.ply) });
-    return `<div class="banner needs-work" data-kind="warn">
-      <div class="nw-body"><p><b>${esc(head)}</b> ${esc(summary)}${g.acc != null ? ` · accuracy ${Math.round(g.acc)}` : ''}.</p><ol class="nw-list">${list}</ol></div>
-      <div class="banner-actions">
-        <a class="btn btn-solid" href="/train.html?game=${encodeURIComponent(nw.key)}" data-astro-prefetch="false">Train ${nw.items.length === 1 ? 'this position' : `these ${nw.items.length} positions`}</a>
-        <a class="btn" href="/review.html?${esc(qs.toString())}" data-astro-prefetch="false">Full review</a>
-        <button class="btn" type="button" data-seen="${esc(nw.key)}">Dismiss</button>
-      </div></div>`;
+    note('brilliants', `<p class="note-head"><i class="note-bril" aria-hidden="true">!!</i><b>${n === 1 ? 'A brilliant move' : `${n} brilliant moves`}</b></p>
+      <ul class="note-list">${rows}</ul>
+      <a class="note-more" href="/brilliants.html" data-astro-prefetch="false">See all brilliants</a>`, { onClose: () => { brils = []; } });
   }
 
   // Stockfish review, for standard chess only.
@@ -490,13 +484,14 @@ import { PLATFORM, BASE_SPEEDS, ALL_SPEEDS, SPEED_NAME, esc, cellLabel, gridHead
 
 
 
+  // Syncing happens on its own every minute; the clock and "Sync now" are
+  // for admins only.
+  function syncNowShown() { $('#sync-now').hidden = !myAccounts.length || !(me && me.admin); }
   function renderStatus() {
     const el = $('#status');
     const text = $('#status-text');
     $('#sync-now').disabled = syncing;
-    // The sync clock is for admins; everyone else only hears when the server
-    // can't be reached.
-    el.hidden = !(me && me.admin) && connection !== 'offline';
+    el.hidden = !(me && me.admin);
     if (syncing) { el.dataset.state = 'syncing'; text.textContent = 'Syncing…'; return; }
     const next = Math.max(0, Math.round((nextSyncAt - Date.now()) / 1000));
     if (connection === 'offline') {
@@ -522,7 +517,7 @@ import { PLATFORM, BASE_SPEEDS, ALL_SPEEDS, SPEED_NAME, esc, cellLabel, gridHead
     lastFetchedAt = 0;
     fullAt = 0;
     connection = 'connecting';
-    $('#sync-now').hidden = !myAccounts.length;
+    syncNowShown();
     render();
     if (myAccounts.length) sync(true);
   }
@@ -817,7 +812,6 @@ import { PLATFORM, BASE_SPEEDS, ALL_SPEEDS, SPEED_NAME, esc, cellLabel, gridHead
       out.push(`<div class="banner" data-kind="info"><p><b>Confirm your email.</b> We sent a link to ${esc(me.email)}. It lets you reset your password and get your weekly recap.</p>
         <div class="banner-actions"><button class="btn" type="button" data-act="resend">Send it again</button></div></div>`);
     }
-    if (state) out.push(needsWorkHtml());
     if (me && state) {
       const games = state.accounts.flatMap((a) => a.games);
       for (const alert of tiltAlerts(games, me.prefs || {}, { pro: unlocked(me), now: Date.now() })) {
@@ -847,8 +841,6 @@ import { PLATFORM, BASE_SPEEDS, ALL_SPEEDS, SPEED_NAME, esc, cellLabel, gridHead
   $('#banners').addEventListener('click', async (e) => {
     const d = e.target.closest('[data-dismiss]');
     if (d) return dismiss(d.dataset.dismiss);
-    const seenBtn = e.target.closest('[data-seen]');
-    if (seenBtn) { markSeen(seenBtn.dataset.seen); return renderBanners(); }
     if (e.target.closest('[data-act="demo-reset"]')) { try { localStorage.removeItem(DEMO_KEY); } catch { /* */ } useAccounts(DEMO_LIST); return; }
     const r = e.target.closest('[data-act="resend"]');
     if (r) {
@@ -861,6 +853,7 @@ import { PLATFORM, BASE_SPEEDS, ALL_SPEEDS, SPEED_NAME, esc, cellLabel, gridHead
   function showUser(user) {
     me = user;
     renderStatus();
+    syncNowShown();
     if (state) renderBanners();
   }
   onUser(showUser);
@@ -890,7 +883,7 @@ import { PLATFORM, BASE_SPEEDS, ALL_SPEEDS, SPEED_NAME, esc, cellLabel, gridHead
           state = null;
           lastFetchedAt = 0;
           fullAt = 0;
-          $('#sync-now').hidden = !myAccounts.length;
+          syncNowShown();
           render();
           if (myAccounts.length) sync(true); else popup.open();
         }
@@ -903,7 +896,7 @@ import { PLATFORM, BASE_SPEEDS, ALL_SPEEDS, SPEED_NAME, esc, cellLabel, gridHead
       if (!myAccounts.length && Array.isArray(legacy) && legacy.length) fromLink = legacy.slice(0, MAX_ACCOUNTS);
     }
     if (fromLink.length) { delete document.documentElement.dataset.snap; useAccounts(fromLink); return; }
-    $('#sync-now').hidden = !myAccounts.length;
+    syncNowShown();
     // Last visit's copy, if it's for these accounts: the whole page at once.
     if (!myAccounts.length || !loadSnapshot()) delete document.documentElement.dataset.snap;
     render();

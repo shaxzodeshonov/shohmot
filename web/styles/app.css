@@ -259,6 +259,24 @@ a.who-name:hover { text-decoration: underline; text-underline-offset: 0.1875rem;
 .tip strong { display: block; }
 
 .toast { position: fixed; left: 50%; bottom: 1.625rem; transform: translateX(-50%); z-index: 30; background: var(--sage); color: var(--sage-ink); font-weight: 600; padding: 0.75rem 1.25rem; border-radius: 62.4375rem; box-shadow: 0 1rem 2.5rem -0.75rem rgb(0 0 0 / .7); animation: toast-in .45s var(--ease-out); max-width: calc(100vw - 2rem); text-align: center; }
+/* Notifications, top right (notes.mjs): they stay until you close them. */
+.notes { position: fixed; top: 1rem; right: 1rem; z-index: 40; display: grid; gap: 0.625rem; width: min(22rem, calc(100vw - 2rem)); pointer-events: none; }
+.note { pointer-events: auto; position: relative; display: flex; gap: 0.5rem; padding: 0.875rem 0.5rem 0.875rem 1rem; border-radius: 1rem; background: var(--raise); border: 1px solid var(--line-2); box-shadow: 0 1rem 2.5rem -0.75rem rgb(0 0 0 / .7); animation: note-in .45s var(--ease-out) both; }
+.note.leaving { animation: note-out .2s var(--ease) both; }
+@keyframes note-in { from { opacity: 0; transform: translateX(1.5rem); } }
+@keyframes note-out { to { opacity: 0; transform: translateX(1.5rem); } }
+.note-body { flex: 1; min-width: 0; }
+.note-head { display: flex; align-items: center; gap: 0.5rem; }
+.note-head b { color: var(--ink); }
+.note-bril { font-style: normal; font-weight: 800; letter-spacing: -0.04em; font-size: 0.75rem; padding: 0 0.3125rem; border-radius: 0.375rem; background: #1baca6; color: #04211f; }
+.note-list { list-style: none; margin: 0.5rem 0 0; padding: 0; display: grid; gap: 0.25rem; max-height: 12rem; overflow-y: auto; }
+.note-list a { color: var(--muted); text-decoration: none; font-size: 0.875rem; }
+.note-list a b { color: var(--ink); font-family: var(--font-mono); font-weight: 700; }
+.note-list a:hover { color: var(--ink); }
+.note-more { display: inline-block; margin-top: 0.625rem; font-size: 0.8125rem; font-weight: 700; color: var(--sage); text-decoration: none; }
+.note-more:hover { text-decoration: underline; }
+.note-x { flex: none; align-self: flex-start; width: 1.75rem; height: 1.75rem; display: grid; place-items: center; border: 0; border-radius: 50%; background: none; color: var(--faint); font-size: 0.875rem; cursor: pointer; }
+.note-x:hover { background: var(--line); color: var(--ink); }
 @keyframes toast-in { from { opacity: 0; transform: translate(-50%, 1rem) scale(.96); } }
 
 /* ---------- account pop-up ---------- */
@@ -361,6 +379,11 @@ a.me-chip:hover, a.me-chip[aria-current="page"] { border-color: var(--line-2); b
 .side-nav a svg { display: none; width: 1.125rem; height: 1.125rem; flex: none; }
 .side-nav a:hover, .side-nav a[aria-current="page"] { color: var(--ink); background: var(--raise); }
 .side-nav a[aria-current="page"] { box-shadow: inset 0 0 0 1px var(--line-2); }
+/* "Something new here": a red dot after the section's name. */
+.nav-dot { width: 0.5rem; height: 0.5rem; border-radius: 50%; background: var(--loss); box-shadow: 0 0 0 0.1875rem rgb(244 122 104 / .18); margin-left: auto; flex: none; animation: dot-in .4s var(--ease-out) both; }
+.side-nav a .nav-dot { margin-left: 0.125rem; }
+@media (min-width: 56.3125em) { .side-nav a .nav-dot { margin-left: auto; } }
+@keyframes dot-in { from { transform: scale(0); } }
 .side-actions { order: 2; width: 100%; display: flex; align-items: center; gap: 0.625rem; flex-wrap: wrap; }
 .side-actions:not(:has(> :not([hidden]))) { display: none; }
 .side-foot { display: contents; }
