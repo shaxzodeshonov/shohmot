@@ -51,6 +51,7 @@ const canonical = `${SITE.url}${path === '/' ? '/' : path}`;
   <meta property="og:image" content={`${SITE.url}/og.png`}>
   <meta name="twitter:card" content="summary_large_image">
   <meta name="theme-color" content="#0d1712">
+  <script is:inline>try{var t=localStorage.getItem('shohmot-theme');if(t!=='light'&&t!=='dark')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';document.documentElement.dataset.theme=t;if(t==='light')document.querySelector('meta[name=theme-color]').content='#f3f0df'}catch(e){document.documentElement.dataset.theme='dark'}</script>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
   <link rel="manifest" href="/manifest.webmanifest">
@@ -64,6 +65,7 @@ const canonical = `${SITE.url}${path === '/' ? '/' : path}`;
   <script>
   import '../scripts/track.js';
   import '../scripts/pwa.js';
+  import '../scripts/theme.js';
   </script>
 </body>
 </html>
