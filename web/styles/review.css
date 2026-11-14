@@ -27,6 +27,8 @@
   --bar-h: 4rem;
   --page-pad: 1.25rem;  /* under the board and panel */
 }
+/* Light theme: the same labels, deep enough to read as text on a pale page. */
+:root[data-theme="light"] { --l-brilliant: #0d8076; --l-great: #2c68a8; --l-best: #3c7a22; --l-excellent: #4a7f28; --l-good: #586b4b; --l-book: #7d5a35; --l-forced: #586b4b; --l-inaccuracy: #8a6400; --l-mistake: #a85600; --l-miss: #b8452e; --l-blunder: #b82c20; }
 [data-l="brilliant"] { --l: var(--l-brilliant); }
 [data-l="great"] { --l: var(--l-great); }
 [data-l="best"] { --l: var(--l-best); }
@@ -421,7 +423,7 @@ a.btn { text-decoration: none; display: inline-block; }
 .paste { display: grid; gap: 0.875rem; padding: 0 1.25rem 1.25rem; }
 .paste-field { display: grid; gap: 0.4375rem; font-weight: 600; font-size: 0.875rem; }
 .paste-field textarea { width: 100%; resize: vertical; background: var(--bg); border: 1px solid var(--line-2); border-radius: 0.75rem; padding: 0.75rem 0.875rem; font: inherit; font-size: 0.875rem; font-weight: 400; color: var(--ink); font-family: var(--font-mono); }
-.paste-field textarea:focus-visible { outline: none; border-color: var(--sage); box-shadow: 0 0 0 0.1875rem rgb(108 212 154 / 0.2); }
+.paste-field textarea:focus-visible { outline: none; border-color: var(--sage); box-shadow: 0 0 0 0.1875rem rgb(var(--sage-rgb) / 0.2); }
 .paste-row { display: flex; gap: 0.75rem; align-items: center; justify-content: space-between; flex-wrap: wrap; }
 .small-note { font-size: 0.8125rem; }
 /* Title on the left, share and copy-link buttons beside it. */
@@ -452,7 +454,7 @@ a.btn { text-decoration: none; display: inline-block; }
 .fil-msg { font-size: 0.9375rem; line-height: 1.5; padding: 0.625rem 0.75rem; border-radius: 0.875rem; max-width: 92%; white-space: pre-wrap; overflow-wrap: anywhere; }
 .fil-msg[data-who="fil"] { background: var(--bg); border: 1px solid var(--line); border-top-left-radius: 0.25rem; justify-self: start; }
 .fil-msg[data-who="you"] { background: var(--sage); color: var(--sage-ink); border-top-right-radius: 0.25rem; justify-self: end; font-weight: 600; }
-.fil-msg.error { border-color: rgb(244 122 104 / 0.55); color: var(--loss); }
+.fil-msg.error { border-color: rgb(var(--loss-rgb) / 0.55); color: var(--loss); }
 /* Three dots while Fischer is thinking (still for reduced motion). */
 .fil-msg.thinking { min-width: 3.5rem; min-height: 2.5rem; }
 .fil-msg.thinking::after { content: '•••'; letter-spacing: 0.2em; color: var(--muted); animation: fil-dots 1.2s infinite; }
@@ -472,7 +474,7 @@ a.btn { text-decoration: none; display: inline-block; }
   .fil-foot { position: static; margin: 0; padding: 0.625rem 0 0; background: none; }
 }
 .fil-form input { flex: 1; min-width: 0; background: var(--bg); border: 1px solid var(--line-2); border-radius: 62.4375rem; padding: 0.5rem 0.875rem; font-size: 0.9375rem; color: var(--ink); }
-.fil-form input:focus-visible { outline: none; border-color: var(--sage); box-shadow: 0 0 0 0.1875rem rgb(108 212 154 / 0.2); }
+.fil-form input:focus-visible { outline: none; border-color: var(--sage); box-shadow: 0 0 0 0.1875rem rgb(var(--sage-rgb) / 0.2); }
 @media (prefers-reduced-motion: reduce) {
   .fil-msg.thinking::after { animation: none; }
 }

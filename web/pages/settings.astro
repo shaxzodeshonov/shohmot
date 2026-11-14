@@ -10,6 +10,16 @@ import { PRICES } from '../data/site';
     <h1 class="page-title">Settings</h1>
     <div class="banners" id="banners" aria-live="polite"></div>
 
+    <section class="set" aria-labelledby="s-look" id="appearance">
+      <h2 id="s-look">Appearance</h2>
+      <div class="theme-pick" role="radiogroup" aria-labelledby="s-look">
+        <label><input type="radio" name="theme" value="system"><span>Match my device</span></label>
+        <label><input type="radio" name="theme" value="light"><span>Light</span></label>
+        <label><input type="radio" name="theme" value="dark"><span>Dark</span></label>
+      </div>
+      <p class="muted small">Shohmot follows your device’s light or dark setting unless you pick one. Kept on this device. The sun or moon button at the top of every page switches it too.</p>
+    </section>
+
     <section class="set" aria-labelledby="s-profile">
       <h2 id="s-profile">Profile</h2>
       <form class="set-row" id="name-form">

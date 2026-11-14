@@ -59,7 +59,7 @@
 
 .sim-actions { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
 .sim-go { flex: 1; padding-block: 0.5625rem; font-size: 0.9375rem; font-weight: 800; }
-.sim-go[data-state="pause"] { background: var(--focus); border-color: var(--focus); color: #0d1712; }
+.sim-go[data-state="pause"] { background: var(--focus); border-color: var(--focus); color: var(--sage-ink); }
 .sim-actions .btn[hidden] { display: none; }
 .btn:disabled { cursor: not-allowed; }
 

@@ -1,5 +1,6 @@
 ---
 import Logo from './Logo.astro';
+import ThemeButton from './ThemeButton.astro';
 interface Props { current?: string }
 const { current } = Astro.props;
 const here = (k: string) => (k === current ? 'page' : undefined);
@@ -14,6 +15,7 @@ const here = (k: string) => (k === current ? 'page' : undefined);
       <a href="/play-yourself.html" data-astro-prefetch="false">Play yourself</a>
     </nav>
     <div class="site-actions">
+      <ThemeButton />
       <a class="btn" href="/login.html" data-signed-out>Sign in</a>
       <a class="btn btn-solid" href="/signup.html" data-signed-out><span class="wide-only">Create account</span><span class="narrow-only">Sign up</span></a>
       <a class="btn btn-solid" href="/app.html" data-signed-in>Open Shohmot</a>

@@ -3,6 +3,7 @@
 // free accounts (when paid plans are on), and who's signed in, which opens
 // Settings. Page-specific buttons go in the default slot.
 import Logo from './Logo.astro';
+import ThemeButton from './ThemeButton.astro';
 interface Props { current?: 'counter' | 'train' | 'brilliants' | 'coach' | 'settings' | 'admin' }
 const { current } = Astro.props;
 const here = (k: string) => (k === current ? 'page' : undefined);
@@ -22,6 +23,7 @@ const here = (k: string) => (k === current ? 'page' : undefined);
     <a href="/admin.html" aria-current={here('admin')} data-astro-prefetch="false" data-for="admin" hidden>Admin</a>
   </nav>
   <div class="bar-actions">
+      <ThemeButton />
     <slot />
     <a class="btn btn-solid" href="/pricing.html" id="upgrade" hidden>Upgrade</a>
   </div>
