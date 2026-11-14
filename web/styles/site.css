@@ -231,7 +231,7 @@ html { scroll-behavior: smooth; }
 .auth-status[data-kind="ok"] { color: var(--win); }
 .auth-status[data-kind="busy"] { color: var(--muted); }
 .auth-switch { margin-top: 1.5rem; color: var(--muted); text-align: center; }
-.auth-switch a { color: var(--sage); font-weight: 700; }
+.auth-switch a:not(.btn) { color: var(--sage); font-weight: 700; } /* a button keeps its own colours */
 .field-link { color: var(--sage); font-weight: 600; font-size: 0.8125rem; text-decoration: none; }
 .field-link:hover { text-decoration: underline; text-underline-offset: 0.1875rem; }
 .auth-legal { margin-top: 0.875rem; color: var(--faint); font-size: 0.8125rem; text-align: center; }
