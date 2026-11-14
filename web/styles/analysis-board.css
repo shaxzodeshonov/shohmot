@@ -59,7 +59,7 @@
 
 .sim-actions { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
 .sim-go { flex: 1; padding-block: 0.5625rem; font-size: 0.9375rem; font-weight: 800; }
-.sim-go[data-state="pause"] { background: var(--focus); border-color: var(--focus); color: #1b140f; }
+.sim-go[data-state="pause"] { background: var(--focus); border-color: var(--focus); color: #0d1712; }
 .sim-actions .btn[hidden] { display: none; }
 .btn:disabled { cursor: not-allowed; }
 
@@ -136,7 +136,7 @@
 
 /* ---------- load box ---------- */
 .load { width: min(32rem, calc(100vw - 2rem)); padding: 1.25rem; border: 1px solid var(--line-2); border-radius: 1rem; background: var(--raise); color: var(--ink); }
-.load::backdrop { background: rgb(10 7 5 / .6); }
+.load::backdrop { background: rgb(5 9 7 / .6); }
 .load h2 { font-size: 1.125rem; font-weight: 800; }
 .load p.muted { font-size: 0.875rem; margin-top: 0.25rem; }
 .load textarea { width: 100%; margin-top: 0.75rem; padding: 0.625rem 0.75rem; border: 1px solid var(--line-2); border-radius: 0.5rem; background: var(--bg); color: var(--ink); font: 0.8125rem/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; resize: vertical; }

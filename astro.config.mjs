@@ -36,5 +36,7 @@ export default defineConfig({
   experimental: { clientPrerender: true },
   server: { port: Number(process.env.PORT) || 4321 },
   devToolbar: { enabled: false },
-  vite: { plugins: [apiRoutes()] },
+  // Small font files stay files: the Content-Security-Policy only allows
+  // fonts from this site, so one inlined into the CSS would be blocked.
+  vite: { plugins: [apiRoutes()], build: { assetsInlineLimit: (file) => (file.endsWith('.woff2') ? false : undefined) } },
 });

@@ -162,10 +162,10 @@ function unsubscribePage(res, ok) {
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Cache-Control', 'no-store');
   res.end(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Shohmot</title>
-<body style="background:#1b140f;color:#efe1c6;font-family:system-ui,sans-serif;display:grid;place-items:center;min-height:100vh;margin:0;padding:1rem">
+<body style="background:#0d1712;color:#f2edd8;font-family:system-ui,sans-serif;display:grid;place-items:center;min-height:100vh;margin:0;padding:1rem">
 <div style="max-width:28rem"><h1 style="font-size:1.75rem">${ok ? 'You’re unsubscribed' : 'That link didn’t work'}</h1>
-<p style="color:#b8a385">${ok ? 'Shohmot won’t send you the weekly recap any more. You can turn it back on in Settings.' : 'Turn the weekly email off in Settings instead.'}</p>
-<p><a href="/settings.html" style="color:#c6ceb2">Open Settings</a></p></div></body>`);
+<p style="color:#a8b8aa">${ok ? 'Shohmot won’t send you the weekly recap any more. You can turn it back on in Settings.' : 'Turn the weekly email off in Settings instead.'}</p>
+<p><a href="/settings.html" style="color:#6cd49a">Open Settings</a></p></div></body>`);
 }
 
 const account = handler(async (req, res) => {

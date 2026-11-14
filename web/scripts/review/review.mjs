@@ -14,6 +14,7 @@ import { labelGame, explain } from './label.mjs';
 import { coachFor, summaryFor, setMood, createVoice } from './coach.mjs';
 import { createFil } from './fil-chat.mjs';
 import { createLipSync } from './lipsync.mjs';
+import { wireEyes } from './eyes.mjs';
 import { saveReviewedMistakes } from '../training/store.mjs';
 import { mistakesOf } from '../training/mistakes.mjs';
 import { reviewUrlFor, go as openReview } from './open-game.mjs';
@@ -708,9 +709,11 @@ function showViseme(v) {
   if (!c.hasAttribute('data-frames')) return;
   if (lip.playing) showFrame(FRAME_FOR[v] || 'rest'); else idleFrame();
 }
-// Frames: a blink now and then, while Fischer isn't talking.
+// The portrait's own eyelids (eyes.mjs); with drawn frames, a blink frame instead.
+let eyes = { blink() {} };
 function wireBlink() {
   const c = $('#coach');
+  eyes = wireEyes($('#fil-eyes'), { still: matchMedia('(prefers-reduced-motion: reduce)').matches });
   if (!c.hasAttribute('data-frames') || !frameEls().blink || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   const blink = () => {
     const on = frameEls().rest.classList.contains('on');
@@ -724,6 +727,8 @@ function wireBlink() {
 }
 
 function coach(mood, tip, spoken = '') {
+  // People blink as their head moves: so does Fischer, when the mood changes.
+  if ($('#coach').dataset.mood !== mood) eyes.blink();
   setMood($('#coach'), mood);
   if ($('#coach').hasAttribute('data-frames') && !lip.playing) idleFrame();
   const t = $('#coach-tip');
@@ -796,9 +801,15 @@ function wireFil() {
 }
 function wireCoach() {
   const btn = $('#coach-voice');
-  if (!voice.supported) return;
-  btn.hidden = false;
-  btn.setAttribute('aria-pressed', String(voice.on));
+  const show = () => {
+    if (!voice.supported) return;
+    btn.hidden = false;
+    btn.setAttribute('aria-pressed', String(voice.on));
+    if (voice.cloned) btn.title = 'Fischer’s voice (V)';
+  };
+  show();
+  // Fischer's own voice, on accounts that have it, works without the browser's speech.
+  voice.ready.then(show);
   btn.addEventListener('click', () => {
     voice.set(!voice.on);
     btn.setAttribute('aria-pressed', String(voice.on));
@@ -923,6 +934,8 @@ function render() {
   if (tab === 'report') renderReport();
   else if (tab === 'moves') renderMoves();
   $('#next-bad').disabled = !review;
+  // The training session's strip and the focus timer follow along (training/session-bar.mjs).
+  document.dispatchEvent(new CustomEvent('shohmot:review', { detail: { key: `${PLATFORM}:${GAME_ID}`, ply, total: game.moves.length, ready: !!review, mine: SAVE } }));
 }
 
 // Every change of position comes through here: draw, sound, follow with the engine.
