@@ -233,6 +233,9 @@ html { scroll-behavior: smooth; }
 .btn-google:active { transform: scale(0.98); }
 .btn-google:focus-visible { outline: 2px solid var(--sage); outline-offset: 3px; }
 .btn-google[aria-disabled="true"] { opacity: .6; pointer-events: none; }
+/* Google's light button in the light theme: white, stroke #747775, text #1f1f1f. */
+:root[data-theme="light"] .btn-google { background: #fff; border-color: #747775; color: #1f1f1f; }
+:root[data-theme="light"] .btn-google:hover { background: #f8faf8; border-color: #1f1f1f; }
 .auth-or { display: flex; align-items: center; gap: 0.875rem; margin: 1.5rem 0; color: var(--faint); font-size: 0.8125rem; font-weight: 500; }
 .auth-or::before, .auth-or::after { content: ""; flex: 1; height: 1px; background: var(--line-2); }
 .auth-status { min-height: 1.5rem; margin-top: 1rem; font-size: 0.9375rem; font-weight: 500; }
