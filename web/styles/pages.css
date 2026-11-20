@@ -154,7 +154,7 @@
 }
 
 /* ---------- opening training ---------- */
-.tr-tabs { display: flex; gap: 0.25rem; margin-bottom: 1.25rem; }
+.tr-tabs { display: flex; gap: 0.25rem; margin: 1.5rem 0 1.25rem; } /* first on the page: level with the sidebar's wordmark */
 .tr-tabs a { padding: 0.4375rem 0.9375rem; border-radius: 999em; font-size: 0.875rem; font-weight: 700; color: var(--muted); text-decoration: none; transition: background-color .15s, color .15s; }
 .tr-tabs a:hover { color: var(--ink); }
 .tr-tabs a[aria-current="page"] { background: var(--sage); color: var(--sage-ink); }
