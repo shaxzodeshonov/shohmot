@@ -13,60 +13,60 @@ const pick = (list, seed) => list[Math.abs(seed) % list.length];
 // A lesson for each kind of mistake (label.mjs explain() names the kind).
 const MY_LESSONS = {
   mate: [
-    'Before every move, look at every check your opponent could give next. Mates come from the checks we didn’t look at.',
-    'When your king is short of squares, a quiet move can be the losing one. Make room for it, or cover the checks first.',
+    'You walked into mate. Every move, look at every check he can give. Every one. Mates come from the checks you didn’t look at.',
+    'Your king had no air, and you played a quiet move. Make room for the king or cover the checks first. That’s not optional.',
   ],
   missedMate: [
-    'When the enemy king is boxed in, look at checks first, then captures, then threats. Mate was there.',
-    'A king with no escape squares is a target. Try every check before anything else.',
+    'He was mated and you let him live. Boxed-in king: checks first, then captures, then threats. Finish him.',
+    'A king with no squares is a target. You had mate. Try every check before anything else, every time.',
   ],
   hung: [
-    'Before you let go of a piece, ask what it was guarding and who guards it now.',
-    'A piece that nothing defends is a gift. Check every piece that just lost its defender.',
+    'You just gave a piece away. Before you let go of anything, ask what it was guarding and who guards it now.',
+    'An undefended piece is a gift, and you gave one. Check every piece that just lost its defender.',
   ],
   material: [
-    'Count attackers and defenders on that square before you move away or trade.',
-    'Every move undefends something. Look at what this one left behind.',
+    'That costs material. Count attackers and defenders on the square before you move away or trade. Count. Don’t hope.',
+    'Every move leaves something behind. This one left too much. Look at what you stopped defending.',
   ],
   missed: [
-    'Your opponent had just slipped. After each of their moves, ask: what changed, and what can I take now?',
-    'When the other side makes a mistake, slow down. That’s the moment to look for the punishment.',
+    'He blundered and you didn’t punish it. After every one of his moves: what changed, and what can I take? That’s how you win games.',
+    'He handed you the game and you handed it back. When he slips, slow down. That’s the moment to go for the kill.',
   ],
   position: [
-    'Nothing is lost straight away, but the position gets harder to play. Before you move, ask what your opponent’s best reply would be.',
-    'Here the position starts to slide. Check your opponent’s most forcing replies (checks, captures, threats) before you commit.',
+    'Nothing is lost yet, but now you’re the one suffering. Before you move, find his best reply. Not the one you hope for.',
+    'This is where it starts to slide. Checks, captures, threats: his most forcing replies first, then commit.',
   ],
   // A blunder with nothing lost straight away: the damage is a move or two deeper.
   swing: [
-    'That’s a big swing, even though nothing is lost at once. Before a capture or a check, look one move deeper: what is their best answer?',
-    'The trouble here comes a move later. When a move looks good, check your opponent’s strongest reply before you play it.',
+    'Big swing, even if nothing falls at once. You stopped calculating one move too early. What is his best answer? Find it.',
+    'The trouble comes a move later. When a move looks good, that’s exactly when you check his strongest reply.',
   ],
   inaccuracy: [
-    'A small slip. Look for moves that do two jobs at once: develop and defend, attack and improve.',
-    'Not a disaster, but there was something more useful. Ask what the position needs most before you move.',
+    'Loose. Look for moves that do two jobs: develop and defend, attack and improve.',
+    'Not a disaster, but not the best move either. Ask what the position needs most, then play that.',
   ],
 };
 const THEIR_LESSONS = {
-  mate: ['Your opponent left their king open. Look at every check: one of them mates.'],
-  missedMate: ['Your opponent let you off: they had mate. Keep an eye on your king’s escape squares.'],
-  hung: ['Your opponent left something loose. Spot the undefended piece and take it.'],
-  material: ['Your opponent just gave something away. Look at what their move stopped defending.'],
-  missed: ['Your opponent missed their chance. Make sure you don’t give them a second one.'],
-  position: ['Your opponent drifted. This is the time to push your advantage.'],
-  inaccuracy: ['A small slip by your opponent. Little edges add up, so keep pressing.'],
+  mate: ['He left his king open. Look at every check: one of them mates.'],
+  missedMate: ['He had mate and missed it. You got lucky. Watch your king’s escape squares.'],
+  hung: ['He left something hanging. Take it. Free material wins games.'],
+  material: ['He just gave something away. See what his move stopped defending, and take it.'],
+  missed: ['He missed his chance. Don’t give him a second one.'],
+  position: ['He’s drifting. Now push. Don’t let him breathe.'],
+  inaccuracy: ['A small slip by him. Small edges add up. Keep squeezing.'],
 };
 const PRAISE = {
-  brilliant: ['A real sacrifice, and it works. That’s a move to remember.', 'Brilliant! You gave something up and the position holds. Beautiful.'],
-  great: ['The only move that holds it together. Finding those under pressure wins games.', 'Great move: anything else and the position slips.'],
-  best: ['Exactly what the engine wanted.', 'Spot on. That’s the best move.', 'Perfect. Nothing better here.'],
-  excellent: ['Very strong. Almost as good as the best move.', 'Excellent, that keeps everything under control.'],
-  good: ['A good, solid move.', 'Fine. Not the very best, but it keeps you on track.'],
-  book: ['Still in opening theory. Good players have played this many times.'],
-  forced: ['The only legal move. Nothing to think about here.'],
+  brilliant: ['A real sacrifice, and it works. That’s how you break a man.', 'Brilliant. You gave something up and the attack holds. That’s chess.'],
+  great: ['The only move. Finding those under pressure is what wins games.', 'Great move. Anything else and it slips away.'],
+  best: ['The best move. Good.', 'Correct. Nothing better here.', 'Exactly right. Keep playing like this.'],
+  excellent: ['Strong. Almost the best move.', 'Excellent. Everything stays under control.'],
+  good: ['Solid. Not the sharpest, but fine.', 'It does the job. There was more, though.'],
+  book: ['Still theory. Know your openings cold.'],
+  forced: ['The only legal move. Nothing to think about.'],
 };
 const THEIR_GOOD = {
-  brilliant: ['Your opponent found a brilliant sacrifice. Worth studying how it works.'],
-  great: ['Your opponent found the only move. A tough one to see coming.'],
+  brilliant: ['He found a brilliant sacrifice. Study it. Then never let it happen again.'],
+  great: ['He found the only move. Tough to see coming. Respect it.'],
 };
 
 // What Fischer adds for one move: { mood, tip }.
@@ -88,11 +88,11 @@ export function coachFor({ label, kind, mine, ply }) {
 
 // Fischer's greeting once the review is done.
 export function summaryFor({ accuracy, theirs, mistakes, blunders, brilliants }) {
-  const acc = accuracy != null ? `You played with ${accuracy.toFixed(1)} accuracy${theirs != null ? `, your opponent ${theirs.toFixed(1)}` : ''}. ` : '';
-  const praise = brilliants ? `And you found ${brilliants === 1 ? 'a brilliant move' : `${brilliants} brilliant moves`}! ` : '';
+  const acc = accuracy != null ? `You played with ${accuracy.toFixed(1)} accuracy${theirs != null ? `, he played ${theirs.toFixed(1)}` : ''}. ` : '';
+  const praise = brilliants ? `You found ${brilliants === 1 ? 'a brilliant move' : `${brilliants} brilliant moves`}. Good. ` : '';
   const todo = mistakes + blunders
-    ? `I’ve marked ${mistakes + blunders === 1 ? 'one moment' : `${mistakes + blunders} moments`} worth a closer look. Press N to jump to the next one, or step through with the arrow keys.`
-    : 'No mistakes or blunders: a clean game. Step through with the arrow keys and enjoy it.';
+    ? `${mistakes + blunders === 1 ? 'One moment' : `${mistakes + blunders} moments`} where it went wrong. We go through ${mistakes + blunders === 1 ? 'it' : 'every one'}. Press N for the next, or step through with the arrow keys.`
+    : 'No mistakes, no blunders. A clean game. That’s how it should be played. Step through with the arrow keys.';
   return { mood: blunders ? 'calm' : 'happy', tip: `${acc}${praise}${todo}` };
 }
 
@@ -106,8 +106,8 @@ export function setMood(el, mood) {
 // Off until you turn it on. For accounts that have it (src/voice.js), Fischer's
 // own cloned voice: each line is fetched from /api/voice and played. For
 // everyone else, and whenever that fails, the browser's own speech, with
-// nothing sent anywhere: a calm, natural voice if the device has one, a
-// little slower and quieter than usual.
+// nothing sent anywhere: a man's voice if the device has one, pitched a
+// little low.
 const PIECE = { K: 'king', Q: 'queen', R: 'rook', B: 'bishop', N: 'knight' };
 const SAN = /\b(O-O-O|O-O|([KQRBN])?([a-h])?([1-8])?(x)?([a-h][1-8])(=([QRBN]))?([+#])?)(?=[\s.,!?;:)]|$)/g;
 
@@ -134,8 +134,26 @@ export function sayable(text) {
     .trim();
 }
 
-// Voices that sound calm, best first. Names differ by system; any English voice will do after these.
-const SOFT = [/natural.*(aria|jenny|ava|emma|sonia|libby|michelle)/i, /(ava|samantha|allison|serena|karen|moira|tessa|fiona)/i, /google uk english female/i, /(aria|jenny|zira|hazel)/i, /google us english/i];
+// A man's voice, low and quick, best first. Names differ by system: Edge's
+// natural voices, then Windows, macOS/iOS, Chrome's and Android's.
+const MALE = [
+  /natural.*(guy|christopher|eric|andrew|brian|davis|roger|steffan|tony|jason)/i,
+  /(guy|christopher|andrew|brian|davis|roger|steffan).*online/i,
+  /google uk english male/i,
+  /(david|mark|james|george|richard|sean)/i,
+  /(alex|daniel|aaron|evan|nathan|reed|tom|fred|oliver|arthur|rishi|gordon)/i,
+  /male/i,
+];
+// Never these when guessing: the system defaults that sound like a woman.
+const FEMALE = /female|woman|aria|jenny|ava|emma|sonia|libby|michelle|samantha|allison|serena|karen|moira|tessa|fiona|zira|hazel|susan|victoria|kate|catherine|linda|heera|nicky|joanna|salli|kimberly|ivy|kendra|amy|emily|olivia|ana|google us english/i;
+
+// The voice the coach gets on this device: a male English voice if there is
+// one, or at least not a female one.
+export function pickVoice(voices) {
+  const all = voices.filter((v) => /^en(-|_|$)/i.test(v.lang));
+  for (const re of MALE) { const v = all.find((x) => re.test(x.name) && !FEMALE.test(x.name)); if (v) return v; }
+  return all.find((v) => !FEMALE.test(v.name) && v.localService) || all.find((v) => !FEMALE.test(v.name)) || all[0] || null;
+}
 
 // onTalk(true/false): Fischer is speaking. lip (lipsync.mjs): the mouth
 // follows the words: start(text, rate), boundary(charIndex) as each word is
@@ -199,11 +217,7 @@ export function createVoice({ key = 'shohmot-coach-voice', onTalk = () => {}, li
     return true;
   }
   let voice = null;
-  const choose = () => {
-    const all = synth.getVoices().filter((v) => /^en(-|_|$)/i.test(v.lang));
-    for (const re of SOFT) { const v = all.find((x) => re.test(x.name)); if (v) { voice = v; return; } }
-    voice = all.find((v) => v.localService) || all[0] || null;
-  };
+  const choose = () => { voice = pickVoice(synth.getVoices()); };
   if (synth) { choose(); synth.addEventListener?.('voiceschanged', choose); }
   let timer = 0;
   let last = '';
@@ -246,9 +260,10 @@ export function createVoice({ key = 'shohmot-coach-voice', onTalk = () => {}, li
         const u = new SpeechSynthesisUtterance(words);
         if (voice) u.voice = voice;
         u.lang = voice ? voice.lang : 'en-US';
-        u.rate = 0.92;
-        u.pitch = 1.05;
-        u.volume = 0.85;
+        // Quick and low: a man who knows what he's talking about.
+        u.rate = 1;
+        u.pitch = 0.8;
+        u.volume = 0.95;
         current = u;
         // A cut-off earlier utterance reports its end late: only the current one moves the mouth.
         u.onstart = () => { if (current === u) talking(true, words, u.rate); };

@@ -1,5 +1,6 @@
 ---
 import Logo from '../components/Logo.astro';
+import ThemeButton from '../components/ThemeButton.astro';
 import Base from '../layouts/Base.astro';
 import '../styles/review.css';
 import ReviewPicker from '../components/ReviewPicker.astro';
@@ -29,6 +30,7 @@ const useFrames = frames.some((f) => f.name === 'rest') && frames.some((f) => f.
     </a>
     <p class="rv-bar-title" aria-hidden="true">Game Review</p>
     <div class="bar-actions">
+      <ThemeButton />
       <button class="rv-bar-btn rv-find" type="button" data-review-picker="user" aria-label="Review another game" title="Review another game">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="m16 16 4.5 4.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
       </button>

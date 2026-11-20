@@ -17,7 +17,7 @@ const call = async (req) => {
 };
 const off = () => { for (const k of ['ELEVENLABS_API_KEY', 'COACH_VOICE_ID', 'COACH_VOICE_EMAILS', 'ADMIN_EMAILS']) delete process.env[k]; };
 
-test('the voice is off until a key and a voice are set', async () => {
+test('the voice is off until the ElevenLabs key is set', async () => {
   off();
   assert.equal(configured(), false);
   assert.equal(JSON.parse((await call({ method: 'GET' })).body).on, false);

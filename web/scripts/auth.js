@@ -17,7 +17,29 @@ import { track } from './track.js';
   }
 
   // Keep ?next= when switching between sign-up and sign-in.
-  for (const a of document.querySelectorAll('[data-keep-next]')) a.search = location.search;
+  const params = new URLSearchParams(location.search);
+  const keep = new URLSearchParams(params.has('next') ? { next: params.get('next') } : {}).toString();
+  for (const a of document.querySelectorAll('[data-keep-next]')) a.search = keep;
+
+  // "Continue with Google" (src/google.js) leaves for Google, then comes back
+  // signed in, or here with ?google=<why it didn't work>.
+  const google = document.querySelector('#google-btn');
+  if (google) {
+    google.search = new URLSearchParams({ next: nextPage() }).toString();
+    google.addEventListener('click', () => {
+      google.setAttribute('aria-disabled', 'true');
+      say('Taking you to Google…', 'busy');
+    });
+    // Back from Google with the browser's back button: the button works again.
+    addEventListener('pageshow', (e) => { if (e.persisted) { google.removeAttribute('aria-disabled'); say('', 'busy'); } });
+  }
+  const GOOGLE_ERRORS = {
+    cancelled: 'Google sign-in was cancelled. Try again, or use your email.',
+    expired: 'That Google sign-in took too long or was started in another tab. Try again.',
+    failed: 'Google didn’t confirm who you are. Try again in a moment.',
+    unverified: 'Your Google account’s email isn’t verified, so Shohmot can’t use it. Sign up with your email instead.',
+    off: 'Signing in with Google isn’t set up on this server yet. Use your email for now.',
+  };
 
   // Already signed in: skip the form.
   if (signedIn()) fetch('/api/me', { cache: 'no-store' }).then((res) => { if (res.ok) location.replace(nextPage()); }).catch(() => {});
@@ -35,6 +57,12 @@ import { track } from './track.js';
   function say(msg, kind = 'bad') {
     status.textContent = msg;
     status.dataset.kind = kind;
+  }
+
+  if (params.has('google')) {
+    say(GOOGLE_ERRORS[params.get('google')] || GOOGLE_ERRORS.failed);
+    params.delete('google');
+    history.replaceState(null, '', location.pathname + (params.size ? `?${params}` : '') + location.hash);
   }
 
   form.addEventListener('submit', async (e) => {

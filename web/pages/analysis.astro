@@ -1,5 +1,6 @@
 ---
 import Logo from '../components/Logo.astro';
+import ThemeButton from '../components/ThemeButton.astro';
 import Base from '../layouts/Base.astro';
 import '../styles/review.css';
 import '../styles/analysis-board.css';
@@ -12,6 +13,7 @@ import '../styles/analysis-board.css';
       Shohmot
     </a>
     <div class="bar-actions">
+      <ThemeButton />
       <!-- Everything that isn't needed on every visit lives behind this one button. -->
       <details class="opts" id="opts">
         <summary class="icon-btn" aria-label="Options" title="Options">

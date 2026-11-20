@@ -182,6 +182,9 @@ function publicUser(u) {
     accounts: u.accounts || [],
     createdAt: u.createdAt,
     verified: u.verified === true,
+    // How this account signs in: with a password, with Google, or both.
+    hasPassword: !!u.hash,
+    google: !!u.googleSub,
     plan: plans.planOf(u),
     planRenews: u.planRenews || null,
     planCancels: !!u.planCancels,
@@ -283,7 +286,7 @@ const register = handler(async (req, res) => {
 // Other modules hook in here (email verification, analytics) without auth.js
 // having to require them, which keeps the require graph a tree.
 const hooks = { afterRegister: async () => {} };
-const features = () => ({ mail: require('./mail').configured(), billing: plans.billingOn() });
+const features = () => ({ mail: require('./mail').configured(), billing: plans.billingOn(), google: require('./google').configured() });
 
 // Older accounts join the users set (and get a uid) the first time they're seen.
 async function index(user) {
@@ -310,7 +313,12 @@ const login = handler(async (req, res) => {
   // The ready-made admin account: the first sign-in with an ADMIN_EMAILS
   // address and ADMIN_PASSWORD creates it, so there's a login without signing up.
   if (!user) user = await seedAdmin(email, password);
-  const ok = await verifyPassword(password, user ? user.hash : await getDummyHash());
+  const ok = await verifyPassword(password, user && user.hash ? user.hash : await getDummyHash());
+  if (user && !user.hash) {
+    // Made with Google and no password set yet. (Sign-up already tells
+    // anyone which emails have accounts, so saying so here leaks nothing new.)
+    throw new HttpError(401, 'This account signs in with Google. Use Continue with Google above, or reset your password to add one.');
+  }
   if (!user || !ok) {
     await store.incr(failKey, 900);
     throw new HttpError(401, 'Wrong email or password.');

@@ -9,7 +9,7 @@ import { SITE } from '../data/site';
 
     <h2>What we keep on our server</h2>
     <ul>
-      <li><b>Your account:</b> your name, your email address, and your password, which is stored only as a salted scrypt hash, never in a form anyone can read.</li>
+      <li><b>Your account:</b> your name, your email address, and your password, which is stored only as a salted scrypt hash, never in a form anyone can read. If you sign in with Google, we keep your Google account’s ID, name and email instead of a password.</li>
       <li><b>Your chess usernames</b> on Chess.com and Lichess, which are public on those sites, and your settings (tilt guard, weekly email).</li>
       <li><b>Sign-in sessions:</b> a random token in a cookie on your device. We keep only a hash of it, for up to 30 days.</li>
       <li><b>Coaching:</b> if you join a coach, which coach. Your coach can see your chess usernames and your games, and you can leave whenever you like.</li>
@@ -28,6 +28,7 @@ import { SITE } from '../data/site';
       <li><b>Chess.com and Lichess:</b> we ask their public APIs for the games of the usernames you add. Your browser also asks Lichess for cloud evaluations of positions in a review.</li>
       <li><b>Vercel</b> hosts the site and <b>Upstash</b> stores the account data above.</li>
       <li><b>Resend</b> delivers our emails: password resets, email confirmation and the weekly recap.</li>
+      <li><b>Google</b>, only if you choose “Continue with Google”: Google confirms who you are and shares your name and email with us. We never see your Google password or anything else in your Google account.</li>
       <li><b>Have I Been Pwned:</b> when you choose a password, we send the first 5 characters of its SHA-1 hash, never the password, to check it hasn’t leaked in a data breach.</li>
       <li><b>unpkg</b> serves the Stockfish engine file your browser downloads.</li>
       <li><b>Anthropic</b> writes Fischer’s AI coaching, only when you ask for it (see above).</li>

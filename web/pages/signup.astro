@@ -1,6 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import Logo from '../components/Logo.astro';
+import GoogleButton from '../components/GoogleButton.astro';
 import '../styles/site.css';
 ---
 <Base title="Create your account · Shohmot" description="Make a free Shohmot account to follow your Chess.com and Lichess games." bodyClass="auth-page">
@@ -12,7 +13,8 @@ import '../styles/site.css';
       <div class="auth-card">
         <h1>Create your account</h1>
         <p>It’s free. Your chess accounts and settings follow you to any device.</p>
-  
+
+        <GoogleButton label="Sign up with Google" />
         <form id="auth-form" data-mode="register" novalidate>
           <label class="field">
             <span class="field-label">Your name <small>What Shohmot calls you</small></span>
@@ -30,7 +32,7 @@ import '../styles/site.css';
             </div>
           </div>
           <button type="submit" class="btn btn-solid btn-lg auth-submit">Create account</button>
-          <p class="auth-legal">By creating an account you agree to the <a href="/terms.html">Terms</a> and <a href="/privacy.html">Privacy policy</a>.</p>
+          <p class="auth-legal">By creating an account, with email or Google, you agree to the <a href="/terms.html">Terms</a> and <a href="/privacy.html">Privacy policy</a>.</p>
           <p class="auth-status" id="auth-status" aria-live="polite"></p>
         </form>
   

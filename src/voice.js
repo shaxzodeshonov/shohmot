@@ -7,10 +7,13 @@
 //
 // Settings:
 //   ELEVENLABS_API_KEY   the account that holds the voice (off without it)
-//   COACH_VOICE_ID       the voice (scripts/clone-voice.mjs makes one and prints its id)
+//   COACH_VOICE_ID       the voice. Default: Brian, one of ElevenLabs' own voices
+//                        (a deep American man), so the key alone switches it on.
+//                        Any voice id from your ElevenLabs account works here.
 //   COACH_VOICE_EMAILS   who hears it: emails, comma-separated, or * for every
 //                        signed-in account. Default: the ADMIN_EMAILS.
-//   COACH_VOICE_MODEL    default eleven_flash_v2_5 (quick and cheap)
+//   COACH_VOICE_MODEL    default eleven_multilingual_v2 (the most natural;
+//                        eleven_flash_v2_5 is quicker and half the price)
 //   ELEVENLABS_API_URL   default https://api.elevenlabs.io (their regional servers work too)
 //   COACH_VOICE_HOURLY_LIMIT   lines an hour per account (default 150)
 //   COACH_VOICE_DAILY_CHARS    characters a day for the whole site (default 150000)
@@ -24,9 +27,11 @@ const { store } = require('./store');
 const plans = require('./plans');
 
 const MAX_TEXT = 600;
-const MODEL = () => process.env.COACH_VOICE_MODEL || 'eleven_flash_v2_5';
+const DEFAULT_VOICE = 'nPczCjzI2devNBz1zQrb'; // Brian
+const VOICE = () => process.env.COACH_VOICE_ID || DEFAULT_VOICE;
+const MODEL = () => process.env.COACH_VOICE_MODEL || 'eleven_multilingual_v2';
 const API = () => (process.env.ELEVENLABS_API_URL || 'https://api.elevenlabs.io').replace(/\/+$/, '');
-const configured = () => !!(process.env.ELEVENLABS_API_KEY && process.env.COACH_VOICE_ID);
+const configured = () => !!process.env.ELEVENLABS_API_KEY;
 
 function allowed(user) {
   if (!user) return false;
@@ -82,7 +87,7 @@ function clean(text) {
 }
 
 async function speak(text) {
-  const voice = process.env.COACH_VOICE_ID;
+  const voice = VOICE();
   const key = crypto.createHash('sha256').update(`${voice}|${MODEL()}|${text}`).digest('hex');
   const hit = cache.get(key);
   if (hit) return hit;
@@ -90,7 +95,7 @@ async function speak(text) {
   const res = await fetcher(`${API()}/v1/text-to-speech/${encodeURIComponent(voice)}?output_format=mp3_44100_64`, {
     method: 'POST',
     headers: { 'xi-api-key': process.env.ELEVENLABS_API_KEY, 'Content-Type': 'application/json', Accept: 'audio/mpeg' },
-    body: JSON.stringify({ text, model_id: MODEL(), voice_settings: { stability: 0.5, similarity_boost: 0.8, speed: 1 } }),
+    body: JSON.stringify({ text, model_id: MODEL(), voice_settings: { stability: 0.4, similarity_boost: 0.8, style: 0.25, use_speaker_boost: true, speed: 1.05 } }),
     signal: AbortSignal.timeout(20000),
   });
   if (!res.ok) {
