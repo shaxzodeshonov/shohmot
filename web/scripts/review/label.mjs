@@ -13,9 +13,14 @@ function balance(chess, color) {
   return s;
 }
 
+// Plays a UCI move. Castling written as the king taking its own rook (e1h1, as
+// Lichess's cloud evaluations and older saved reviews have it) is played as castling.
 export function playUci(chess, uci) {
+  let from = uci.slice(0, 2), to = uci.slice(2, 4);
+  const piece = chess.get(from), target = chess.get(to);
+  if (piece && piece.type === 'k' && target && target.type === 'r' && target.color === piece.color) to = `${to[0] > from[0] ? 'g' : 'c'}${from[1]}`;
   try {
-    return chess.move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] });
+    return chess.move({ from, to, promotion: uci[4] });
   } catch {
     return null;
   }

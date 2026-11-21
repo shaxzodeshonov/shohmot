@@ -62,9 +62,9 @@ const redisStore = {
     return (await redis(cmd)) === 'OK';
   },
   del: (key) => redis(['DEL', key]),
-  // Counts up within a window that starts at the first hit.
-  async incr(key, ttl) {
-    const [, n] = await redis([['SET', key, '0', 'EX', String(ttl), 'NX'], ['INCR', key]], true);
+  // Counts up (by 1, or by `by`) within a window that starts at the first hit.
+  async incr(key, ttl, by = 1) {
+    const [, n] = await redis([['SET', key, '0', 'EX', String(ttl), 'NX'], ['INCRBY', key, String(by)]], true);
     return n;
   },
   async mget(keys) { return keys.length ? redis(['MGET', ...keys]) : []; },
@@ -112,9 +112,9 @@ const fileStore = {
     return true;
   },
   async del(key) { if (live(key)) { delete mem[key]; save(); } },
-  async incr(key, ttl) {
+  async incr(key, ttl, by = 1) {
     const e = live(key) || (load()[key] = { v: '0', exp: Date.now() + ttl * 1000 });
-    e.v = String(Number(e.v) + 1);
+    e.v = String(Number(e.v) + by);
     save();
     return Number(e.v);
   },

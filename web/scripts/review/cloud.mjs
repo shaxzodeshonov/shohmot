@@ -3,7 +3,26 @@
 // than a few seconds of browser Stockfish, so we use it instead. They mostly
 // cover the opening, so we stop asking once a few positions in a row miss.
 // Lichess asks for one request at a time, and a 429 means back off.
+import { Chess } from 'chess.js';
+
 const CLOUD_URL = 'https://lichess.org/api/cloud-eval';
+
+// Lichess writes castling as the king taking its own rook (e1h1, e8a8). Ours
+// is the king's two-square move (e1g1, e8c8), which is what chess.js plays.
+export function standardUci(fen, moves) {
+  const chess = new Chess(fen);
+  const out = [];
+  for (let uci of moves) {
+    const from = uci.slice(0, 2), to = uci.slice(2, 4);
+    const piece = chess.get(from), target = chess.get(to);
+    if (piece && piece.type === 'k' && target && target.type === 'r' && target.color === piece.color) {
+      uci = `${from}${to[0] > from[0] ? 'g' : 'c'}${from[1]}`;
+    }
+    try { chess.move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] }); } catch { out.push(uci); break; }
+    out.push(uci);
+  }
+  return out;
+}
 
 // Cloud scores are from White's side; ours are from the side to move, like UCI.
 export function cloudLines(data, fen) {
@@ -11,7 +30,7 @@ export function cloudLines(data, fen) {
   return (data.pvs || []).map((pv) => ({
     depth: data.depth,
     score: pv.mate != null ? { mate: pv.mate * sign } : { cp: pv.cp * sign },
-    pv: String(pv.moves || '').split(' ').filter(Boolean).slice(0, 10),
+    pv: standardUci(fen, String(pv.moves || '').split(' ').filter(Boolean).slice(0, 10)),
     cloud: true,
   }));
 }

@@ -117,6 +117,18 @@ test('cloud scores turn from White\'s side to the side to move', async () => {
   assert.deepEqual(cloudLines({ depth: 50, pvs: [{ moves: 'e2e4', cp: 22 }] }, white)[0].score, { cp: 22 });
 });
 
+test('Lichess castling (king takes own rook) becomes the usual king move', async () => {
+  const { standardUci } = await import('../web/scripts/review/cloud.mjs');
+  // Both sides can castle short; Black can castle long too.
+  const fen = 'r3k2r/pppq1ppp/2np1n2/2b1p1B1/2B1P1b1/2NP1N2/PPPQ1PPP/R3K2R w KQkq - 0 1';
+  assert.deepEqual(standardUci(fen, ['e1h1', 'e8a8', 'a1e1']), ['e1g1', 'e8c8', 'a1e1']);
+  // A rook going from e1 to h1 is just a rook move.
+  assert.deepEqual(standardUci('4k3/8/8/8/8/8/8/K3R3 w - - 0 1', ['e1h1']), ['e1h1']);
+  // Saved reviews from before still have e1h1: it still reads as castling.
+  const { sanLine } = await import('../web/scripts/review/label.mjs');
+  assert.deepEqual(sanLine(fen, ['e1h1', 'e8a8']), ['O-O', 'O-O-O']);
+});
+
 test('Chess.com constants: perfect play is 100, one blunder costs less than on Lichess', async () => {
   const { ACCURACY } = await import('../web/scripts/review/analysis.mjs');
   const flat = Array(41).fill(50);

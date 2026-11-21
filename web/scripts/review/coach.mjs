@@ -10,68 +10,73 @@ import { timeline } from './lipsync.mjs';
 // doesn't reshuffle the text.
 const pick = (list, seed) => list[Math.abs(seed) % list.length];
 
+// Fischer's lines, in his manner: short, blunt, a little cocky, hard on the
+// move and never on the person. No assistant talk: no "Remember", no "Great
+// job", no explaining what the screen already shows.
+
 // A lesson for each kind of mistake (label.mjs explain() names the kind).
 const MY_LESSONS = {
   mate: [
-    'You walked into mate. Every move, look at every check he can give. Every one. Mates come from the checks you didn’t look at.',
-    'Your king had no air, and you played a quiet move. Make room for the king or cover the checks first. That’s not optional.',
+    'You walked into mate. Look at every check he has. Every one.',
+    'No air for your king and you play a quiet move. Coffeehouse chess. Give the king a square first.',
   ],
   missedMate: [
-    'He was mated and you let him live. Boxed-in king: checks first, then captures, then threats. Finish him.',
-    'A king with no squares is a target. You had mate. Try every check before anything else, every time.',
+    'He was dead and you let him walk. Checks first. Always.',
+    'Mate was right there. You didn’t look. Checks, captures, threats. In that order.',
   ],
   hung: [
-    'You just gave a piece away. Before you let go of anything, ask what it was guarding and who guards it now.',
-    'An undefended piece is a gift, and you gave one. Check every piece that just lost its defender.',
+    'You gave a piece away. For nothing. Before you let go, look at what’s hanging.',
+    'A free piece. Even a patzer takes that. Don’t hand them out.',
   ],
   material: [
-    'That costs material. Count attackers and defenders on the square before you move away or trade. Count. Don’t hope.',
-    'Every move leaves something behind. This one left too much. Look at what you stopped defending.',
+    'That drops material. Count attackers and defenders. Count. Don’t hope.',
+    'You stopped guarding something, and now it’s gone. Look at what every move leaves behind.',
   ],
   missed: [
-    'He blundered and you didn’t punish it. After every one of his moves: what changed, and what can I take? That’s how you win games.',
-    'He handed you the game and you handed it back. When he slips, slow down. That’s the moment to go for the kill.',
+    'He blundered and you let him off. When he slips, you punish him. Every time.',
+    'He handed you the game and you handed it back. I’d have seen that in two seconds.',
   ],
   position: [
-    'Nothing is lost yet, but now you’re the one suffering. Before you move, find his best reply. Not the one you hope for.',
-    'This is where it starts to slide. Checks, captures, threats: his most forcing replies first, then commit.',
+    'Nothing’s lost yet. But now you’re the one squirming. Find his best reply, not the one you want.',
+    'This is where it starts to slide. Forcing moves first. Then commit.',
   ],
   // A blunder with nothing lost straight away: the damage is a move or two deeper.
   swing: [
-    'Big swing, even if nothing falls at once. You stopped calculating one move too early. What is his best answer? Find it.',
-    'The trouble comes a move later. When a move looks good, that’s exactly when you check his strongest reply.',
+    'You stopped calculating one move too soon. What’s his best answer? Find it.',
+    'Looks fine. It isn’t. The trouble is one move deeper.',
   ],
   inaccuracy: [
-    'Loose. Look for moves that do two jobs: develop and defend, attack and improve.',
-    'Not a disaster, but not the best move either. Ask what the position needs most, then play that.',
+    'Loose. Every move should do two jobs.',
+    'Not a disaster. Not the best move either. I don’t play second-best moves.',
   ],
 };
 const THEIR_LESSONS = {
-  mate: ['He left his king open. Look at every check: one of them mates.'],
-  missedMate: ['He had mate and missed it. You got lucky. Watch your king’s escape squares.'],
+  mate: ['He left his king open. One of your checks mates. Find it.'],
+  missedMate: ['He had mate and missed it. You got lucky. Don’t count on it twice.'],
   hung: ['He left something hanging. Take it. Free material wins games.'],
-  material: ['He just gave something away. See what his move stopped defending, and take it.'],
-  missed: ['He missed his chance. Don’t give him a second one.'],
-  position: ['He’s drifting. Now push. Don’t let him breathe.'],
-  inaccuracy: ['A small slip by him. Small edges add up. Keep squeezing.'],
+  material: ['He just dropped material. See what his move stopped guarding, and take it.'],
+  missed: ['He missed his chance. Don’t give him another one.'],
+  position: ['He’s drifting. Squeeze him. Don’t let him breathe.'],
+  inaccuracy: ['Small slip by him. Small edges add up. Keep squeezing.'],
 };
 const PRAISE = {
-  brilliant: ['A real sacrifice, and it works. That’s how you break a man.', 'Brilliant. You gave something up and the attack holds. That’s chess.'],
-  great: ['The only move. Finding those under pressure is what wins games.', 'Great move. Anything else and it slips away.'],
-  best: ['The best move. Good.', 'Correct. Nothing better here.', 'Exactly right. Keep playing like this.'],
-  excellent: ['Strong. Almost the best move.', 'Excellent. Everything stays under control.'],
-  good: ['Solid. Not the sharpest, but fine.', 'It does the job. There was more, though.'],
-  book: ['Still theory. Know your openings cold.'],
-  forced: ['The only legal move. Nothing to think about.'],
+  brilliant: ['You gave up material and it holds. Now he’s squirming.', 'A real sacrifice, and it’s sound. That’s chess.'],
+  great: ['The only move, and you found it. Good.', 'Only move. Now you’re playing chess.'],
+  best: ['Good.', 'That’s the move.', 'Correct.'],
+  excellent: ['Strong. Almost the best.', 'Good move.'],
+  good: ['Fine. There was better.', 'It does the job. Not the best.'],
+  book: ['Book. Know your openings cold.'],
+  forced: ['Only legal move. Nothing to think about.'],
 };
 const THEIR_GOOD = {
-  brilliant: ['He found a brilliant sacrifice. Study it. Then never let it happen again.'],
-  great: ['He found the only move. Tough to see coming. Respect it.'],
+  brilliant: ['He found a real sacrifice. Study it. Then never allow it again.'],
+  great: ['He found the only move. Respect it. Then beat him.'],
 };
 
 // What Fischer adds for one move: { mood, tip }.
 // label: the review's label; kind: explain()'s kind for bad moves; mine: it was your move.
-export function coachFor({ label, kind, mine, ply }) {
+export function coachFor({ label, kind, mine, ply, san }) {
+  if (mine && ply === 1 && san === 'e4') return { mood: 'happy', tip: 'e4. Best by test.' };
   if (label === 'inaccuracy') kind = 'inaccuracy';
   if (label === 'blunder' && kind === 'position' && mine) kind = 'swing';
   if (['mistake', 'miss', 'blunder', 'inaccuracy'].includes(label)) {
@@ -86,14 +91,21 @@ export function coachFor({ label, kind, mine, ply }) {
   return { mood: 'happy', tip: pick(PRAISE[label] || PRAISE.good, ply) };
 }
 
-// Fischer's greeting once the review is done.
-export function summaryFor({ accuracy, theirs, mistakes, blunders, brilliants }) {
-  const acc = accuracy != null ? `You played with ${accuracy.toFixed(1)} accuracy${theirs != null ? `, he played ${theirs.toFixed(1)}` : ''}. ` : '';
-  const praise = brilliants ? `You found ${brilliants === 1 ? 'a brilliant move' : `${brilliants} brilliant moves`}. Good. ` : '';
-  const todo = mistakes + blunders
-    ? `${mistakes + blunders === 1 ? 'One moment' : `${mistakes + blunders} moments`} where it went wrong. We go through ${mistakes + blunders === 1 ? 'it' : 'every one'}. Press N for the next, or step through with the arrow keys.`
-    : 'No mistakes, no blunders. A clean game. That’s how it should be played. Step through with the arrow keys.';
-  return { mood: blunders ? 'calm' : 'happy', tip: `${acc}${praise}${todo}` };
+// Fischer's greeting once the review is done: one short line, your accuracy
+// and how many moments went wrong.
+export function summaryFor({ accuracy, mistakes, blunders }) {
+  const acc = accuracy != null ? `${accuracy.toFixed(1)} accuracy. ` : '';
+  const n = mistakes + blunders;
+  const todo = !n ? 'Clean game. That’s chess.' : n === 1 ? 'One bad move. We fix it.' : `${n} bad moves. We fix them.`;
+  return { mood: blunders ? 'calm' : 'happy', tip: `${acc}${todo}` };
+}
+
+// What Fischer says on the game's last move. result: 'win', 'loss', 'draw' or null.
+export function resultFor(result) {
+  if (result === 'win') return { mood: 'happy', tip: 'You won. That’s the point.' };
+  if (result === 'loss') return { mood: 'worried', tip: 'You lost. Now we find out why.' };
+  if (result === 'draw') return { mood: 'calm', tip: 'A draw. I don’t play for draws.' };
+  return null;
 }
 
 // ---------- Fischer's face ----------
@@ -104,10 +116,10 @@ export function setMood(el, mood) {
 
 // ---------- Fischer's voice ----------
 // Off until you turn it on. For accounts that have it (src/voice.js), Fischer's
-// own cloned voice: each line is fetched from /api/voice and played. For
-// everyone else, and whenever that fails, the browser's own speech, with
-// nothing sent anywhere: a man's voice if the device has one, pitched a
-// little low.
+// own cloned voice: each line is fetched from /api/voice and played; a line
+// that can't be fetched goes unspoken, never into a second voice. For everyone
+// else, the browser's own speech, with nothing sent anywhere: a man's voice if
+// the device has one, pitched a little low.
 const PIECE = { K: 'king', Q: 'queen', R: 'rook', B: 'bishop', N: 'knight' };
 const SAN = /\b(O-O-O|O-O|([KQRBN])?([a-h])?([1-8])?(x)?([a-h][1-8])(=([QRBN]))?([+#])?)(?=[\s.,!?;:)]|$)/g;
 
@@ -191,7 +203,7 @@ export function createVoice({ key = 'shohmot-coach-voice', onTalk = () => {}, li
     turn++;
     if (node) { const n = node; node = null; try { n.stop(); } catch { /* not started */ } }
   }
-  // Resolves false when the line couldn't be played (the caller falls back to the browser's speech).
+  // Resolves false when the line couldn't be played (it then goes unspoken).
   async function sayCloud(words) {
     const mine = ++turn;
     let buf;
@@ -206,14 +218,25 @@ export function createVoice({ key = 'shohmot-coach-voice', onTalk = () => {}, li
     gain.gain.value = 0.9;
     src.buffer = buf;
     src.connect(gain).connect(audio().destination);
-    // The mouth follows the words at the pace this recording says them.
+    // The mouth opens with the recording's own loudness; the words, spread over
+    // the recording's length, only pick the shapes (rounded, wide, lips closed).
+    const meter = audio().createAnalyser();
+    meter.fftSize = 512;
+    gain.connect(meter);
+    const samples = new Float32Array(meter.fftSize);
+    const level = () => {
+      meter.getFloatTimeDomainData(samples);
+      let sum = 0;
+      for (const s of samples) sum += s * s;
+      return Math.sqrt(sum / samples.length);
+    };
     const spoken = timeline(words);
     const natural = spoken.length ? spoken[spoken.length - 1].end : 0;
     const rate = natural && buf.duration ? Math.min(2, Math.max(0.5, natural / (buf.duration * 1000))) : 1;
     src.onended = () => { if (node === src) { node = null; talking(false); } };
     node = src;
     src.start();
-    talking(true, words, rate, buf.duration * 1000 + 600);
+    talking(true, words, rate, buf.duration * 1000 + 600, level);
     return true;
   }
   let voice = null;
@@ -225,10 +248,10 @@ export function createVoice({ key = 'shohmot-coach-voice', onTalk = () => {}, li
   let current = null;
   // Some browsers don't always say when speech ends (or was cut off), so a
   // timer from the length of the text closes the mouth anyway.
-  const talking = (on, words = '', rate = 1, ms = 1500 + words.length * 90) => {
+  const talking = (on, words = '', rate = 1, ms = 1500 + words.length * 90, level = null) => {
     clearTimeout(guard);
     onTalk(on);
-    if (lip) { if (on) lip.start(words, rate); else lip.end(true); }
+    if (lip) { if (on) lip.start(words, rate, { level }); else lip.end(true); }
     if (on) guard = setTimeout(() => talking(false), ms);
   };
   const quiet = () => { clearTimeout(timer); hush(); synth && synth.cancel(); last = ''; talking(false); };
@@ -255,8 +278,15 @@ export function createVoice({ key = 'shohmot-coach-voice', onTalk = () => {}, li
         last = words;
         hush();
         synth && synth.cancel();
-        if (cloud && await sayCloud(words)) return;
-        if (!synth || last !== words) return;
+        // Know first whether this account has Fischer's own voice, so an early
+        // line doesn't go to the browser's voice while that's being asked.
+        await ready;
+        if (last !== words) return;
+        // One voice per page: with Fischer's own voice, a line it can't say
+        // (budget used up, offline, sound not allowed yet) stays on the screen,
+        // unspoken, rather than coming out in the browser's robot voice.
+        if (cloud) { await sayCloud(words); return; }
+        if (!synth) return;
         const u = new SpeechSynthesisUtterance(words);
         if (voice) u.voice = voice;
         u.lang = voice ? voice.lang : 'en-US';
