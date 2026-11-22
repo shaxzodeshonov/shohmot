@@ -65,6 +65,13 @@
 
 /* ---------- views ---------- */
 .view-analysis { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+/* The panel is as tall as the board: the engine lines and the move buttons
+   stay where they are, and only the move list scrolls between them (it
+   keeps the current move in view as you step, analysis-board.mjs). */
+.view-analysis > :not(.panel-body) { flex: none; }
+.view-analysis > .panel-body { flex: 1 1 0; min-height: 6rem; overflow-y: auto; overscroll-behavior: contain; padding: 0.625rem 1.125rem 0.75rem; scrollbar-width: thin; scrollbar-color: var(--line-2) transparent; }
+/* Phones: the page scrolls, so the list gets a height of its own. */
+@media (max-width: 56.249em) { .view-analysis > .panel-body { flex: none; max-height: 45vh; } }
 .view-analysis[hidden], .home[hidden], .setup[hidden] { display: none; }
 
 /* ---------- start menu ---------- */
