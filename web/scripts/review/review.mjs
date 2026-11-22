@@ -1209,6 +1209,8 @@ async function main() {
     $('#paste-text').focus();
     return;
   }
+  // The page's own heading is for search engines; a game link shows this until the game is in.
+  $('#title').textContent = 'Loading the game…';
   const savedDepth = store.get('shohmot-review-depth');
   if (savedDepth && $('#depth').querySelector(`option[value="${savedDepth}"]`)) $('#depth').value = String(savedDepth);
   $('#depth').addEventListener('change', () => store.set('shohmot-review-depth', Number($('#depth').value)));

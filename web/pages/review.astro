@@ -23,7 +23,7 @@ const frames = Object.entries(found).map(([file, mod]) => {
 });
 const useFrames = frames.some((f) => f.name === 'rest') && frames.some((f) => f.name.startsWith('talk-'));
 ---
-<Base title="Free chess game review · Shohmot" description="Paste a Lichess link or any PGN for a free Stockfish 19 game review: accuracy, every move labelled Brilliant to Blunder, the best moves and the evaluation graph. No account needed." bodyClass="rv-page">
+<Base title="Review a chess game free · Shohmot" description="Find your Chess.com or Lichess games by username, or paste a Lichess link or any PGN, for a free Stockfish 19 game review: accuracy, every move labelled Brilliant to Blunder, the best moves and the evaluation graph. No account needed." bodyClass="rv-page">
 
   <header class="bar rv-bar">
     <a class="wordmark" href="/">
@@ -111,7 +111,7 @@ const useFrames = frames.some((f) => f.name === 'rest') && frames.some((f) => f.
         <p class="rv-session-row"><span id="rv-session-say" aria-live="polite"></span><a class="btn" id="rv-session-next" href="/train.html" data-astro-prefetch="false">Skip this game</a></p>
       </div>
       <header class="panel-head">
-        <h1 class="rv-title" id="title">Loading the game…</h1>
+        <h1 class="rv-title" id="title">Free chess game review</h1>
         <p class="rv-meta" id="meta"></p>
         <p class="rv-error" id="error" role="alert" hidden></p>
         <div class="rv-share" id="share-row" hidden>
