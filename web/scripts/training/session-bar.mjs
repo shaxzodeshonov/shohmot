@@ -8,6 +8,7 @@
 import { session, markReviewed, wasReviewed, reviewUrl, clock } from './focus.mjs';
 import { startTimer } from './timer.mjs';
 import { track } from '../track.js';
+import { tr } from '../tr.mjs';
 
 const $ = (s) => document.querySelector(s);
 const inSession = new URLSearchParams(location.search).has('session');
@@ -48,7 +49,7 @@ function draw(d) {
   next.textContent = done ? (stop.last ? 'Finish the session' : 'Next game') : (stop.last ? 'Skip to the end' : 'Skip this game');
   const left = Math.max(0, Math.ceil((d.total + 1) * ENOUGH) - seen.size);
   $('#rv-session-say').textContent = done
-    ? (stop.last ? 'Reviewed. That was the last game.' : `Reviewed. Next: your game vs ${stop.game.o || 'your opponent'}.`)
+    ? (stop.last ? 'Reviewed. That was the last game.' : tr('Reviewed. Next: your game vs {o}.', { o: stop.game.o || tr('your opponent') }))
     : !d.ready ? 'Stockfish is still checking the moves. Start stepping through.'
       : d.ply >= d.total && left ? `Step through the moves, not just the end: ${left} more to go.`
         : 'Go through it move by move, to the last move.';

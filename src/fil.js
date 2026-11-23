@@ -1,7 +1,7 @@
 // Fischer, the review's coach, as an AI agent (Claude, through Anthropic's API).
 //
 //   GET  /api/fil  -> { on }   whether Fischer can talk (ANTHROPIC_API_KEY is set)
-//   POST /api/fil  { game, messages, say } -> a stream of server-sent events:
+//   POST /api/fil  { game, messages, say, lang } -> a stream of server-sent events:
 //        { type: 'text', text }        Fischer's words, as they're written
 //        { type: 'show', ply }         put the board on this move (Fischer's show_move tool)
 //        { type: 'done', messages }    the turns to keep and send back next time
@@ -137,10 +137,17 @@ async function checkLimits(req) {
 }
 
 // ---------- one turn ----------
+// The site's other language: Fischer answers in it, same manner.
+const LANGUAGE = {
+  uz: 'Answer in Uzbek, in the Latin alphabet (o‘, g‘ and the ’ sign as Uzbek writes them), whatever language the player writes in. Keep your manner: short, plain, cocky. Chess words as Uzbek players say them: shoh, farzin, ruh, fil, ot, piyoda, shoh berish (check), mat, pat, durang, debyut, endshpil, qo‘pol xato (blunder). Moves stay in English notation, like 14...Nxe4.',
+};
+
 const MAX_STEPS = 4; // model calls per message: a reply can show a move, then go on talking
 
 // Sends events as they happen; returns the new turns.
-async function converse({ game, history, say, emit }) {
+async function converse({ game, history, say, emit, lang }) {
+  const system = [{ type: 'text', text: PERSONA }, { type: 'text', text: game.text }];
+  if (LANGUAGE[lang]) system.push({ type: 'text', text: LANGUAGE[lang] });
   const messages = [...history, { role: 'user', content: say }];
   const added = [messages[messages.length - 1]];
   let retried = false;
@@ -152,7 +159,7 @@ async function converse({ game, history, say, emit }) {
       fallbacks: 'default', // if the model declines, Anthropic's recommended fallback model answers
       output_config: { effort: 'low' }, // chat: quick replies
       cache_control: { type: 'ephemeral' }, // the instructions, the game and the conversation so far
-      system: [{ type: 'text', text: PERSONA }, { type: 'text', text: game.text }],
+      system,
       tools: TOOLS,
       messages,
     });
@@ -220,7 +227,7 @@ const fil = handler(async (req, res) => {
   res.setHeader('X-Accel-Buffering', 'no');
   const emit = (event) => { if (!res.writableEnded) res.write(`data: ${JSON.stringify(event)}\n\n`); };
   try {
-    const added = await converse({ game, history, say, emit });
+    const added = await converse({ game, history, say, emit, lang: body.lang });
     emit({ type: 'done', messages: added });
   } catch (err) {
     emit({ type: 'error', message: errorMessage(err) });

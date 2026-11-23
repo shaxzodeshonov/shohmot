@@ -1,6 +1,8 @@
 // The account pop-up: a username, a site (Chess.com or Lichess) and an add
 // button. The plus at the bottom adds another account; if something is
 // typed but not added yet, it first asks whether to save or discard it.
+import { tr } from './tr.mjs';
+
 (() => {
   'use strict';
 
@@ -53,7 +55,7 @@
         return `<li>
           <span class="saved-av" aria-hidden="true">${av ? `<img src="${esc(av)}" alt="" referrerpolicy="no-referrer">` : esc(a.username[0].toUpperCase())}</span>
           <span class="saved-name">${esc(a.username)}<small>${SITES[a.platform]}</small></span>
-          <button type="button" class="saved-x" data-remove="${i}" aria-label="Remove ${esc(a.username)} on ${SITES[a.platform]}">
+          <button type="button" class="saved-x" data-remove="${i}" aria-label="${esc(tr('Remove {user} on {site}', { user: a.username, site: SITES[a.platform] }))}">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
           </button>
         </li>`;

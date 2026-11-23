@@ -2,6 +2,7 @@
 // from your recent games, a Lichess link or PGN, or a .pgn file.
 import { accountGameUrl, reviewUrlFor, firstGame, go } from './review/open-game.mjs';
 import { track } from './track.js';
+import { tr } from './tr.mjs';
 
 const dialog = document.getElementById('rp');
 if (dialog) {
@@ -87,7 +88,7 @@ if (dialog) {
       shownFor = `${site}:${name}`;
       if (!games.length) {
         list.hidden = true;
-        say(`No games in the last ${days} days on ${acct.username || name}.`);
+        say(tr('No games in the last {days} days on {user}.', { days, user: acct.username || name }));
       } else {
         const user = acct.username || name;
         list.innerHTML = games.map((g) => {
@@ -98,7 +99,7 @@ if (dialog) {
           return ok ? `<li><a href="${esc(accountGameUrl(site, user, g))}">${inner}</a></li>` : `<li><span class="rp-off">${inner}</span></li>`;
         }).join('');
         list.hidden = false;
-        say(`${games.length === 50 ? 'Your 50 latest games' : `${games.length} game${games.length === 1 ? '' : 's'}`} on ${user}. Pick one to review.`);
+        say(tr(games.length === 50 ? 'Your 50 latest games on {user}. Pick one to review.' : games.length === 1 ? '{n} game on {user}. Pick one to review.' : '{n} games on {user}. Pick one to review.', { n: games.length, user }));
       }
       more.hidden = days >= 180;
       more.dataset.days = days >= 30 ? '180' : '30';

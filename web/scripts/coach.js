@@ -1,6 +1,7 @@
 // The coach dashboard: an invite link, and each student's week, from the
 // same game data the counter uses (/api/state), a few students at a time.
 import { api, currentUser } from './session.js';
+import { tr } from './tr.mjs';
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -66,7 +67,7 @@ function row(s) {
     <tr class="c-games" data-for="${esc(s.id)}" hidden><td colspan="7"><ol>${w.recent.slice(0, 12).map((g) => {
       const qs = new URLSearchParams({ p: g.account.platform, u: g.account.username, id: g.id, t: String(g.end), coach: '1' });
       const ok = g.variant === 'chess' || g.variant === 'standard';
-      return `<li><span class="res ${g.result}">${g.result === 'win' ? 'Won' : g.result === 'draw' ? 'Draw' : 'Lost'}</span> vs ${esc(g.opponent)} <small>${esc(g.speed)} · ${esc(dayFmt.format(g.end))}</small>${ok ? ` <a class="btn" href="/review.html?${esc(qs.toString())}" data-astro-prefetch="false">Review</a>` : ''}</li>`;
+      return `<li><span class="res ${g.result}">${g.result === 'win' ? 'Won' : g.result === 'draw' ? 'Draw' : 'Lost'}</span> vs ${esc(g.opponent)} <small><span>${esc(g.speed)}</span> · <span>${esc(dayFmt.format(g.end))}</span></small>${ok ? ` <a class="btn" href="/review.html?${esc(qs.toString())}" data-astro-prefetch="false">Review</a>` : ''}</li>`;
     }).join('') || '<li class="muted">No games this week.</li>'}</ol></td></tr>`;
 }
 
@@ -108,8 +109,8 @@ $('#c-rows').addEventListener('click', async (e) => {
   const rm = e.target.closest('[data-remove]');
   if (rm) {
     const s = students.find((x) => x.id === rm.dataset.remove);
-    if (!s || !confirm(`Remove ${s.name}? They stop being your student, and you stop seeing their games.`)) return;
-    try { students = (await api('/api/coach', { action: 'remove', student: s.id })).students; render(); toast(`${s.name} removed.`); } catch (err) { toast(err.message); }
+    if (!s || !confirm(tr('Remove {name}? They stop being your student, and you stop seeing their games.', { name: s.name }))) return;
+    try { students = (await api('/api/coach', { action: 'remove', student: s.id })).students; render(); toast(tr('{name} removed.', { name: s.name })); } catch (err) { toast(err.message); }
     return;
   }
   const r = e.target.closest('.c-row');

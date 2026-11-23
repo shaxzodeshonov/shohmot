@@ -3,14 +3,15 @@
 // The words and numbers are worked out by pure functions here; page.js draws them.
 import { session, startSession, picksFrom, reviewUrl, today, yesterday, lastDays, streak, minutes, clock, MIN_PER_GAME } from './focus.mjs';
 import { checkedGames, itemsOf, LEARNED } from './store.mjs';
+import { tr } from '../tr.mjs';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 const SPEED = { bullet: 'Bullet', blitz: 'Blitz', rapid: 'Rapid', daily: 'Daily', classical: 'Classical' };
 
 export function gameTitle(g) {
-  const o = g.o || 'your opponent';
-  return g.r === 'loss' ? `Lost to ${o}` : g.r === 'win' ? `Beat ${o}` : g.r === 'draw' ? `Drew with ${o}` : `Game vs ${o}`;
+  const o = g.o || tr('your opponent');
+  return tr(g.r === 'loss' ? 'Lost to {o}' : g.r === 'win' ? 'Beat {o}' : g.r === 'draw' ? 'Drew with {o}' : 'Game vs {o}', { o });
 }
 const gameNoun = (g) => (g.r === 'loss' ? 'loss to' : g.r === 'win' ? 'win over' : g.r === 'draw' ? 'draw with' : 'game vs');
 
@@ -22,7 +23,7 @@ export function coachSays(s, picks, toTrain = 0) {
     return {
       state: 'going',
       say: s.done ? `${s.done} of ${s.total} reviewed. ${plural(left, 'game')} to go.` : `Your ${plural(s.total, 'game')} ${s.total === 1 ? 'is' : 'are'} waiting.`,
-      sub: `Next: your ${gameNoun(s.next)} ${s.next.o || 'your opponent'}. Go through it move by move, to the last move.`,
+      sub: tr(`Next: your ${gameNoun(s.next)} {o}. Go through it move by move, to the last move.`, { o: s.next.o || tr('your opponent') }),
       go: { label: s.done ? 'Continue the review' : 'Start the review', href: reviewUrl(s.next) },
     };
   }
@@ -58,16 +59,22 @@ export function coachSays(s, picks, toTrain = 0) {
 // Pure: the sentence above the bars. y and t are days ({ t, g, p }).
 export function daySays(y, t) {
   const yMin = Math.floor(y.t / 60), tMin = Math.floor(t.t / 60);
-  const did = (d, min) => [min ? `focused for ${minutes(d.t)}` : '', d.g ? `reviewed ${plural(d.g, 'game')}` : '', d.p ? `solved ${plural(d.p, 'position')}` : ''].filter(Boolean);
-  const list = (a) => (a.length > 1 ? `${a.slice(0, -1).join(', ')} and ${a[a.length - 1]}` : a[0]);
+  const did = (d, min) => [
+    min ? tr('focused for {time}', { time: minutes(d.t) }) : '',
+    d.g ? tr(d.g === 1 ? 'reviewed {n} game' : 'reviewed {n} games', { n: d.g }) : '',
+    d.p ? tr(d.p === 1 ? 'solved {n} position' : 'solved {n} positions', { n: d.p }) : '',
+  ].filter(Boolean);
+  const list = (a) => (a.length > 1 ? tr('{a} and {b}', { a: a.slice(0, -1).join(', '), b: a[a.length - 1] }) : a[0]);
   const yDid = did(y, yMin), tDid = did(t, tMin);
-  if (!yDid.length && !tDid.length) return 'Your first minutes today set the mark to beat tomorrow.';
-  if (!yDid.length) return `Today you ${list(tDid)}. Nothing yesterday, so today already wins.`;
-  const first = `Yesterday you ${list(yDid)}.`;
-  if (!tDid.length) return `${first} Today hasn’t started yet.`;
-  if (tMin > yMin || (tMin === yMin && t.g + t.p > y.g + y.p)) return `${first} Today you ${list(tDid)}: you’ve beaten yesterday.`;
+  if (!yDid.length && !tDid.length) return tr('Your first minutes today set the mark to beat tomorrow.');
+  if (!yDid.length) return tr('Today you {did}. Nothing yesterday, so today already wins.', { did: list(tDid) });
+  const first = tr('Yesterday you {did}.', { did: list(yDid) });
+  if (!tDid.length) return tr('{first} Today hasn’t started yet.', { first });
+  if (tMin > yMin || (tMin === yMin && t.g + t.p > y.g + y.p)) return tr('{first} Today you {did}: you’ve beaten yesterday.', { first, did: list(tDid) });
   const gap = yMin - tMin;
-  return `${first} Today you ${list(tDid)}${gap > 0 ? `: ${gap} more min to beat yesterday` : ''}.`;
+  return gap > 0
+    ? tr('{first} Today you {did}: {gap} more min to beat yesterday.', { first, did: list(tDid), gap })
+    : tr('{first} Today you {did}.', { first, did: list(tDid) });
 }
 
 // ---------- drawing ----------

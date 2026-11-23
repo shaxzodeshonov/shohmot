@@ -14,6 +14,7 @@ import { EnginePool } from '../review/engine.mjs';
 import { winPercent, isBrilliant } from '../review/analysis.mjs';
 import { sacrificeOf } from '../review/sacrifice.mjs';
 import { isChecked, saveScanned } from './store.mjs';
+import { tr } from '../tr.mjs';
 
 const DAY = 86400000;
 // Window sizes per site: Chess.com keeps games in monthly archives; Lichess
@@ -115,7 +116,7 @@ export function scan({ accounts, since, until = Date.now(), engine = 'lite', onP
       if (stopped) return;
       let games;
       try {
-        p.note = `Loading games on ${a.username}…`;
+        p.note = tr('Loading games on {user}…', { user: a.username });
         onProgress({ ...p });
         games = await fetchWindow(a, w, shouldStop);
       } catch (err) {
@@ -137,7 +138,7 @@ export function scan({ accounts, since, until = Date.now(), engine = 'lite', onP
           saveScanned(a.platform, g.id, { end: g.end, found: [] });
           p.checked++;
         }
-        if (i % 8 === 7) { p.note = `Looking for sacrifices on ${a.username}…`; onProgress({ ...p }); await sleep(0); }
+        if (i % 8 === 7) { p.note = tr('Looking for sacrifices on {user}…', { user: a.username }); onProgress({ ...p }); await sleep(0); }
       }
       // Step 3: Stockfish on the candidates only.
       if (pending.length) {

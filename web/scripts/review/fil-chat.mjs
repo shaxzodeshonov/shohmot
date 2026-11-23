@@ -115,7 +115,7 @@ export function createFil(hooks) {
       const res = await fetch('/api/fil', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ game: hooks.facts(), messages: history, say: `[The board is on ${hooks.where()}.] ${text}` }),
+        body: JSON.stringify({ game: hooks.facts(), messages: history, say: `[The board is on ${hooks.where()}.] ${text}`, lang: document.documentElement.lang }),
       });
       if (!res.ok || !res.body) throw new Error((await res.json().catch(() => ({}))).error || 'Fischer couldn’t answer just now. Try again in a moment.');
       const reader = res.body.getReader();

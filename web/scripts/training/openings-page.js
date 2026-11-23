@@ -172,7 +172,7 @@ function attempt(from, to) {
   clean = false;
   tries++;
   const other = bookMove(book, line, i, m.san);
-  const msg = other ? `<b>${esc(m.san)} is a real book move</b>, but ${other.split(':')[0] === line.family ? `it’s another ${esc(line.family)} variation` : `it belongs to the ${esc(other.split(':')[0])}`}, not this line.` : `<b>${esc(m.san)} isn’t it.</b>`;
+  const msg = other ? `<b>${esc(m.san)} is a real book move</b>, but ${other.split(':')[0] === line.family ? `it’s another <span>${esc(line.family)}</span> variation` : `it belongs to the <span>${esc(other.split(':')[0])}</span>`}, not this line.` : `<b>${esc(m.san)} isn’t it.</b>`;
   if (tries >= 2) { reveal(msg); return; }
   $('#op-feedback').innerHTML = `<p class="tr-bad">${msg} One more try.</p>`;
   renderMoves();
@@ -278,7 +278,7 @@ function caughtUp() {
   $('#op-drill').hidden = false;
   $('#op-count').textContent = fam.name;
   $('#op-prompt').textContent = 'You’re caught up.';
-  $('#op-name').innerHTML = `Every ${esc(fam.name)} line you can play as ${SIDE[color]} is learned or scheduled for later. Pick any variation below to practise it anyway.`;
+  $('#op-name').innerHTML = `Every <span>${esc(fam.name)}</span> line you can play as ${SIDE[color]} is learned or scheduled for later. Pick any variation below to practise it anyway.`;
   $('#op-moves').innerHTML = '';
   $('#op-feedback').innerHTML = '';
   for (const id of ['#op-hint', '#op-show', '#op-again', '#op-next', '#op-retry', '#op-study']) $(id).hidden = true;
@@ -353,7 +353,7 @@ function renderVariations() {
       <span class="op-var-s" data-s="${s}">${STATUS[s]}</span>
     </button></li>`;
   });
-  $('#op-vars-h').textContent = `Every ${fam.name} line`;
+  $('#op-vars-h').innerHTML = `Every <span>${esc(fam.name)}</span> line`;
   $('#op-vars-sub').textContent = `${rows.length} lines you play as ${SIDE[color]}, shortest first. Pick one to train it now.`;
   $('#op-vars').innerHTML = rows.join('');
 }

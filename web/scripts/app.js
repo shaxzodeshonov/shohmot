@@ -4,6 +4,7 @@ import { tiltAlerts } from './tilt.mjs';
 import { foundIn } from './brilliants/store.mjs';
 import { gameInfo } from './training/store.mjs';
 import { note } from './notes.mjs';
+import { t as tr } from './i18n.js';
 import { PLATFORM, BASE_SPEEDS, ALL_SPEEDS, SPEED_NAME, esc, cellLabel, gridHeadHtml, loadingRowsHtml } from './counter-markup.js';
 
 (() => {
@@ -72,12 +73,15 @@ import { PLATFORM, BASE_SPEEDS, ALL_SPEEDS, SPEED_NAME, esc, cellLabel, gridHead
   function addDays(t, n) { const d = new Date(t); d.setDate(d.getDate() + n); return startOfDay(d.getTime()); }
   function isToday() { return day === startOfDay(Date.now()); }
   function isYesterday() { return day === addDays(startOfDay(Date.now()), -1); }
-  function dayWord() { return isToday() ? 'today' : isYesterday() ? 'yesterday' : `on ${shortDayFmt.format(day)}`; }
+  // "No games today.", "No losses yesterday.", "No games on Mon, Nov 23."
+  function noneOn(what, stop = '') {
+    return isToday() ? `No ${what} today${stop}` : isYesterday() ? `No ${what} yesterday${stop}` : esc(tr(`No ${what} on {day}${stop}`, { day: shortDayFmt.format(day) }));
+  }
   function dayKey(t) { const d = new Date(t); return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; }
   function ago(t) {
     const s = Math.round((t - Date.now()) / 1000);
     const a = Math.abs(s);
-    if (a < 45) return 'just now';
+    if (a < 45) return tr('just now');
     if (a < 3600) return rtf.format(Math.round(s / 60), 'minute');
     if (a < 86400) return rtf.format(Math.round(s / 3600), 'hour');
     return rtf.format(Math.round(s / 86400), 'day');
@@ -160,7 +164,7 @@ import { PLATFORM, BASE_SPEEDS, ALL_SPEEDS, SPEED_NAME, esc, cellLabel, gridHead
     renderDay();
     $('#main').classList.toggle('is-loading', !state || !dayKnown());
     if (state && !dayKnown()) {
-      $('#headline').textContent = `Loading ${shortDayFmt.format(day)}…`;
+      $('#headline').textContent = tr('Loading {day}…', { day: shortDayFmt.format(day) });
       setHTML($('#hero-sub'), '');
       setHTML($('#split'), '');
       $('#split').hidden = false;
@@ -222,8 +226,9 @@ import { PLATFORM, BASE_SPEEDS, ALL_SPEEDS, SPEED_NAME, esc, cellLabel, gridHead
     const lead = isToday() ? `Today ${who}` : isYesterday() ? `Yesterday ${who}` : `On ${shortDayFmt.format(day)} ${who}`;
     if (!accts.length) h.textContent = 'Add an account to start counting.';
     else if (!syncedOnce) h.textContent = `Counting ${DEMO ? 'their' : 'your'} games…`;
-    else if (!t.n) h.textContent = isToday() ? 'No games yet today.' : `No games ${dayWord()}.`;
-    else h.innerHTML = `${lead} played ${plural(t.n, 'game', 'games')} and lost <span class="n-lost">${nf.format(t.l)}</span>.`;
+    else if (!t.n) h.textContent = isToday() ? 'No games yet today.' : isYesterday() ? 'No games yesterday.' : tr('No games on {day}.', { day: shortDayFmt.format(day) });
+    // The date in its own element: the Uzbek page reads the sentence around it as one line.
+    else h.innerHTML = `${isToday() || isYesterday() ? lead : `On <span>${esc(shortDayFmt.format(day))}</span> ${who}`} played ${plural(t.n, 'game', 'games')} and lost <span class="n-lost">${nf.format(t.l)}</span>.`;
 
     setHTML($('#split'), t.n
       ? `<i class="w" style="width:${pct(t.w, t.n)}%"></i><i class="d" style="width:${pct(t.d, t.n)}%"></i><i class="l" style="width:${pct(t.l, t.n)}%"></i>`
@@ -281,15 +286,15 @@ import { PLATFORM, BASE_SPEEDS, ALL_SPEEDS, SPEED_NAME, esc, cellLabel, gridHead
       let meta = `<span class="site">${PLATFORM[a.platform]}</span>`;
       if (a.lastError) meta += `, <span class="err">${esc(a.lastError.message)}</span>`;
       else if (!a.lastSyncAt) meta += ', syncing for the first time…';
-      else if (t.n && isToday()) meta += `, last game ${ago(a.games[a.games.length - 1].end)}`;
+      else if (t.n && isToday()) meta += `, last game <span>${ago(a.games[a.games.length - 1].end)}</span>`;
       else if (t.n) {
         const g = filtered(a.games);
-        meta += `, ${timeFmt.format(g[0].end)} to ${timeFmt.format(g[g.length - 1].end)}`;
+        meta += `, <span>${timeFmt.format(g[0].end)}</span> to <span>${timeFmt.format(g[g.length - 1].end)}</span>`;
       }
       const who = `<div class="who"><span class="avatar" aria-hidden="true">${avatar}</span><div class="who-text">${name}<span class="who-meta">${meta}</span></div></div>`;
 
       if (!t.n) {
-        return `<div class="row idle" style="${cols}">${who}<p class="idle-note">No games ${dayWord()}</p></div>`;
+        return `<div class="row idle" style="${cols}">${who}<p class="idle-note">${noneOn('games')}</p></div>`;
       }
       return `
         <div class="row" style="${cols}" aria-label="${esc(a.username)} on ${PLATFORM[a.platform]}">
@@ -317,17 +322,17 @@ import { PLATFORM, BASE_SPEEDS, ALL_SPEEDS, SPEED_NAME, esc, cellLabel, gridHead
     }
     list.sort((x, y) => y.g.end - x.g.end);
     const label = { win: 'Won', draw: 'Draw', loss: 'Lost' };
-    $('#games-title').textContent = isToday() ? 'Games today' : isYesterday() ? 'Games yesterday' : `Games on ${shortDayFmt.format(day)}`;
+    $('#games-title').textContent = isToday() ? 'Games today' : isYesterday() ? 'Games yesterday' : tr('Games on {day}', { day: shortDayFmt.format(day) });
     setHTML($('#games'), list.map(({ g, a }) => `
       <li class="game">
         <span class="res ${g.result}">${label[g.result]}</span>
         <span class="opp">
           <span class="opp-name"><a href="${esc(g.url)}" target="_blank" rel="noopener">vs ${esc(g.opponent)}</a>${g.oppRating ? ` <small>${g.oppRating}</small>` : ''}${brilBadge(g, a)}${mistakeBadge(g, a)}</span>
-          <span class="opp-meta"><i style="--c:var(--${g.speed})">${SPEED_NAME[g.speed]}</i> on ${esc(a.username)}, ${PLATFORM[a.platform]}${g.rated ? '' : ', casual'}</span>
+          <span class="opp-meta"><i style="--c:var(--${g.speed})">${SPEED_NAME[g.speed]}</i> on <span>${esc(a.username)}</span>, ${PLATFORM[a.platform]}${g.rated ? '' : ', casual'}</span>
         </span>
         <span class="when" title="${esc(new Date(g.end).toLocaleString())}">${isToday() ? ago(g.end) : timeFmt.format(g.end)}</span>
         ${reviewLink(g, a)}
-      </li>`).join('') || `<li class="empty">${gamesFilter === 'loss' ? `No losses ${dayWord()}.` : `No games ${dayWord()}.`}</li>`);
+      </li>`).join('') || `<li class="empty">${noneOn(gamesFilter === 'loss' ? 'losses' : 'games', '.')}</li>`);
   }
 
   // How many mistakes a checked game had; it opens Training on that game.
@@ -502,7 +507,7 @@ import { PLATFORM, BASE_SPEEDS, ALL_SPEEDS, SPEED_NAME, esc, cellLabel, gridHead
     if (!lastSyncAt) { el.dataset.state = 'connecting'; text.textContent = 'Connecting'; return; }
     el.dataset.state = 'live';
     const s = Math.max(0, Math.round((Date.now() - lastSyncAt) / 1000));
-    text.textContent = `Synced ${s < 5 ? 'just now' : s < 60 ? `${s}s ago` : ago(lastSyncAt)}, next in ${next}s`;
+    text.textContent = tr('Synced {ago}, next in {next}s', { ago: s < 5 ? tr('just now') : s < 60 ? tr('{s}s ago', { s }) : ago(lastSyncAt), next });
   }
 
   // Saving a new account list: load its games right away (behind the pop-up).
@@ -688,7 +693,7 @@ import { PLATFORM, BASE_SPEEDS, ALL_SPEEDS, SPEED_NAME, esc, cellLabel, gridHead
           const seen = new Set(prev.games.map((g) => g.id));
           const latest = prev.games[prev.games.length - 1].end;
           const n = a.games.filter((g) => !seen.has(g.id) && g.end > latest).length;
-          if (n) added.push(`${n} on ${a.username} (${PLATFORM[a.platform]})`);
+          if (n) added.push(tr('{n} on {user} ({site})', { n, user: a.username, site: PLATFORM[a.platform] }));
         }
       }
       if (kind === 'full') {
@@ -707,7 +712,7 @@ import { PLATFORM, BASE_SPEEDS, ALL_SPEEDS, SPEED_NAME, esc, cellLabel, gridHead
       firstAnswer = false;
       ok = true;
       render();
-      if (added.length) toast(`New games: ${added.join(', ')}`);
+      if (added.length) toast(tr('New games: {list}', { list: added.join(', ') }));
       saveSnapshot();
       analyzeSoon();
       // In the demo, if nobody has played yet today, show their latest day.
@@ -809,7 +814,7 @@ import { PLATFORM, BASE_SPEEDS, ALL_SPEEDS, SPEED_NAME, esc, cellLabel, gridHead
       return;
     }
     if (me && !me.verified && features().mail) {
-      out.push(`<div class="banner" data-kind="info"><p><b>Confirm your email.</b> We sent a link to ${esc(me.email)}. It lets you reset your password and get your weekly recap.</p>
+      out.push(`<div class="banner" data-kind="info"><p><b>Confirm your email.</b> We sent a link to <span>${esc(me.email)}</span>. It lets you reset your password and get your weekly recap.</p>
         <div class="banner-actions"><button class="btn" type="button" data-act="resend">Send it again</button></div></div>`);
     }
     if (me && state) {
@@ -832,10 +837,10 @@ import { PLATFORM, BASE_SPEEDS, ALL_SPEEDS, SPEED_NAME, esc, cellLabel, gridHead
     store.set(SEEN, [key, ...seen()].slice(0, 40));
     if (!alert.upsell) track('tilt_alert');
     if (!me.prefs || !me.prefs.notify || alert.upsell || !('Notification' in window) || Notification.permission !== 'granted') return;
-    const opts = { body: alert.text, icon: '/icons/icon-192.png', tag: 'shohmot-tilt', data: { url: '/app.html' } };
+    const opts = { body: tr(alert.text), icon: '/icons/icon-192.png', tag: 'shohmot-tilt', data: { url: '/app.html' } };
     navigator.serviceWorker && navigator.serviceWorker.ready
-      ? navigator.serviceWorker.ready.then((r) => r.showNotification(alert.title, opts)).catch(() => {})
-      : new Notification(alert.title, opts);
+      ? navigator.serviceWorker.ready.then((r) => r.showNotification(tr(alert.title), opts)).catch(() => {})
+      : new Notification(tr(alert.title), opts);
   }
 
   $('#banners').addEventListener('click', async (e) => {

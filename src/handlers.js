@@ -66,7 +66,7 @@ async function check(req, res) {
   } catch {
     return send(res, 502, { error: `Could not reach ${site}. Try again in a moment.` });
   }
-  if (!found) return send(res, 404, { error: `No ${site} player named ${username}.` });
+  if (!found) return send(res, 404, { error: `No ${site} player with this name.` });
   send(res, 200, { ok: true, platform, ...found }, 'public, s-maxage=3600');
 }
 
@@ -117,7 +117,7 @@ async function moves(req, res) {
   try {
     games = await fetchMoves(platform, username, since, until);
   } catch (err) {
-    if (err.status === 404) return send(res, 404, { error: `No ${site} player named ${username}.` });
+    if (err.status === 404) return send(res, 404, { error: `No ${site} player with this name.` });
     if (err.status === 429) return send(res, 429, { error: `${site} is busy. The scan will carry on in a minute.` });
     return send(res, 502, { error: `Could not reach ${site}. Try again in a moment.` });
   }

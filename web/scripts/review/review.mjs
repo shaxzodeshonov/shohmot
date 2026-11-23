@@ -24,6 +24,7 @@ import { saveReviewed } from '../brilliants/store.mjs';
 import { slidePieces } from './slide.mjs';
 import './options-menu.mjs';
 import { boardFx, checkOf } from './fx.mjs';
+import { tr } from '../tr.mjs';
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -1175,8 +1176,9 @@ function renderHead() {
   const r = h.Result;
   const won = (r === '1-0' && game.me === 'w') || (r === '0-1' && game.me === 'b');
   const lost = (r === '1-0' && game.me === 'b') || (r === '0-1' && game.me === 'w');
-  $('#title').innerHTML = won ? `You beat ${esc(opp)}` : lost ? `You lost to <span class="n-lost">${esc(opp)}</span>` : r === '1/2-1/2' ? `You drew with ${esc(opp)}` : `You vs ${esc(opp)}`;
-  document.title = `${$('#title').textContent} · Shohmot`;
+  // The name in its own element: the Uzbek page reads the words around it as one line.
+  $('#title').innerHTML = won ? `You beat <span>${esc(opp)}</span>` : lost ? `You lost to <span class="n-lost">${esc(opp)}</span>` : r === '1/2-1/2' ? `You drew with <span>${esc(opp)}</span>` : `You vs <span>${esc(opp)}</span>`;
+  document.title = `${tr(won ? 'You beat {o}' : lost ? 'You lost to {o}' : r === '1/2-1/2' ? 'You drew with {o}' : 'You vs {o}', { o: opp })} · Shohmot`;
   const bits = [SITE];
   const date = (h.UTCDate || h.Date || '').replace(/\./g, '-');
   if (/^\d{4}-\d{2}-\d{2}$/.test(date)) bits.push(new Date(`${date}T12:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }));

@@ -9,6 +9,7 @@
 //   await lab.finish(p)   cast the robot and show the specs for profile p
 //   lab.close()           something went wrong: put the lab away
 import { avatarSvg, avatarFor, savedAvatar } from '../avatar.mjs';
+import { tr } from '../tr.mjs';
 
 const calm = matchMedia('(prefers-reduced-motion: reduce)');
 export const pause = (ms) => new Promise((r) => setTimeout(r, calm.matches ? 0 : ms));
@@ -55,12 +56,12 @@ function draw(root, name, phase, line) {
   root.innerHTML = `
     <div class="lab-stage">
       <figure class="pod pod-you">
-        <div class="pod-glass">${avatarSvg(cfg, { label: `${name}'s avatar` })}<i class="scan"></i></div>
+        <div class="pod-glass">${avatarSvg(cfg, { label: name === 'you' ? tr('Your avatar') : tr('{name}’s avatar', { name }) })}<i class="scan"></i></div>
         <figcaption>You<b>${name === 'you' ? 'The original' : esc(name)}</b></figcaption>
       </figure>
       <div class="lab-mid" aria-hidden="true"><div class="lab-link">${[0, 1, 2, 3].map((i) => `<i style="--i:${i}"></i>`).join('')}</div><b class="lab-vs">VS</b></div>
       <figure class="pod pod-bot">
-        <div class="pod-glass"><div class="wire">${avatarSvg(cfg, { robot: true })}</div><div class="bot-fill">${avatarSvg(cfg, { robot: true, label: `${name}'s robot double` })}</div><i class="weld"></i></div>
+        <div class="pod-glass"><div class="wire">${avatarSvg(cfg, { robot: true })}</div><div class="bot-fill">${avatarSvg(cfg, { robot: true, label: name === 'you' ? tr('Your robot double') : tr('{name}’s robot double', { name }) })}</div><i class="weld"></i></div>
         <figcaption>Your double<b>${phase === 'idle' ? '???? Elo' : esc(model)}</b></figcaption>
       </figure>
     </div>
@@ -73,7 +74,7 @@ export function showLab(root, name) {
 
 export function openLab(root, name, specsRoot) {
   const model = modelOf(name);
-  draw(root, name, calm.matches ? 'live' : 'scan', `Scanning ${name}…`);
+  draw(root, name, calm.matches ? 'live' : 'scan', tr('Scanning {name}…', { name }));
   specsRoot.hidden = true;
   const log = root.querySelector('.lab-log');
   const started = Date.now();
@@ -85,11 +86,11 @@ export function openLab(root, name, specsRoot) {
       await pause(Math.max(0, SCAN_MS - (Date.now() - started)));
       if (!calm.matches) {
         root.dataset.phase = 'cast';
-        log.textContent = `Casting ${model} from ${profile.games} games…`;
+        log.textContent = tr('Casting {name} from {n} games…', { name: model, n: profile.games });
         await pause(CAST_MS);
       }
       root.dataset.phase = 'live';
-      log.textContent = `${model} is online.`;
+      log.textContent = tr('{name} is online.', { name: model });
       specsRoot.innerHTML = specs(profile, model);
       specsRoot.hidden = false;
       // The rating runs up as the robot reports it.

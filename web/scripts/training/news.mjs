@@ -4,6 +4,7 @@
 // until you dismiss it (or a newer game takes its place).
 import { latestUnseen } from './store.mjs';
 import { LABELS } from '../review/analysis.mjs';
+import { tr } from '../tr.mjs';
 
 const ACK = 'shohmot-train-dot';
 const DAY = 86400000;
@@ -32,15 +33,16 @@ export function newsCardHtml(accounts) {
   const counts = {};
   for (const it of nw.items) counts[it.label] = (counts[it.label] || 0) + 1;
   const name = (l, n) => { const one = LABELS[l].name.toLowerCase(); return `${n} ${n === 1 ? one : `${one}${l === 'miss' ? 'es' : 's'}`}`; };
-  const summary = ['blunder', 'mistake', 'miss'].filter((l) => counts[l]).map((l) => name(l, counts[l])).join(', ');
-  const head = g.r === 'loss' ? `You lost to ${g.o}. Here’s what to work on.` : `Your game vs ${g.o}: room to improve.`;
+  // Each count in its own element, so the Uzbek page translates them one by one.
+  const summary = ['blunder', 'mistake', 'miss'].filter((l) => counts[l]).map((l) => `<span>${esc(name(l, counts[l]))}</span>`).join(', ');
+  const head = tr(g.r === 'loss' ? 'You lost to {o}. Here’s what to work on.' : 'Your game vs {o}: room to improve.', { o: g.o });
   const list = nw.items.slice(0, 3).map((it) => {
     const no = `${Math.ceil(it.ply / 2)}${it.ply % 2 ? '.' : '…'}`;
     return `<li><b class="nw-move" data-l="${it.label}">${no} ${esc(it.san)}${LABELS[it.label].mark}</b> ${esc(it.why)} <span class="muted">Better was <b>${esc(it.bestSan)}</b>.</span></li>`;
   }).join('');
   const qs = new URLSearchParams({ p: nw.platform, u: g.u || '', id: nw.id, t: String(g.e), ply: String(nw.items[0].ply) });
   return `<div class="banner needs-work">
-    <div class="nw-body"><p><b>${esc(head)}</b> ${esc(summary)}${g.acc != null ? ` · accuracy ${Math.round(g.acc)}` : ''}.</p><ol class="nw-list">${list}</ol></div>
+    <div class="nw-body"><p><b>${esc(head)}</b> <span>${summary}</span>${g.acc != null ? ` · accuracy ${Math.round(g.acc)}` : ''}.</p><ol class="nw-list">${list}</ol></div>
     <div class="banner-actions">
       <a class="btn btn-solid" href="/train.html?game=${encodeURIComponent(nw.key)}" data-astro-prefetch="false">Train ${nw.items.length === 1 ? 'this position' : `these ${nw.items.length} positions`}</a>
       <a class="btn" href="/review.html?${esc(qs.toString())}" data-astro-prefetch="false">Full review</a>

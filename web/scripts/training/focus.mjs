@@ -11,6 +11,8 @@
 // It's read from storage on every call, not cached: the review page and the
 // Training page are often open in two tabs, and both write here.
 
+import { tr } from '../tr.mjs';
+
 const KEY = 'shohmot-focus:v1';
 const DAY = 86400000;
 const KEEP_DAYS = 90;
@@ -136,7 +138,7 @@ export function reviewUrl(g) {
 // "4 min", "1 h 12 min"; under a minute is "0 min" only once nothing else would show.
 export function minutes(sec) {
   const m = Math.floor(sec / 60);
-  return m >= 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m} min`;
+  return m >= 60 ? tr('{h} h {m} min', { h: Math.floor(m / 60), m: m % 60 }) : tr('{m} min', { m });
 }
 // The running clock: "04:12", "1:04:12".
 export function clock(sec) {

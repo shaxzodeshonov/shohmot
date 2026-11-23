@@ -3,6 +3,7 @@
 import { currentUser, freshUser, features, unlocked } from '../session.js';
 import { scan } from './scan.mjs';
 import { brilliants, checkedCount } from './store.mjs';
+import { tr } from '../tr.mjs';
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -64,10 +65,9 @@ function boardHtml(fen, uci, flip) {
 function render() {
   const accounts = (me && me.accounts) || [];
   const all = brilliants(accounts).filter((b) => b.end >= since);
-  const span = isPro(me) ? `the last ${WEEKS} weeks` : `the last ${FREE_DAYS} days`;
   $('#bz-title').textContent = all.length ? `${all.length} brilliant move${all.length === 1 ? '' : 's'}` : 'Your brilliant moves';
   $('#bz-sub').textContent = accounts.length
-    ? `In ${span}, on ${accounts.map((a) => `${a.username} (${SITE[a.platform]})`).join(', ')}.`
+    ? tr(isPro(me) ? 'In the last {n} weeks, on {list}.' : 'In the last {n} days, on {list}.', { n: isPro(me) ? WEEKS : FREE_DAYS, list: accounts.map((a) => `${a.username} (${SITE[a.platform]})`).join(', ') })
     : 'Add a Chess.com or Lichess account on the counter first.';
 
   // By week (Pro) or by day (free)
@@ -79,7 +79,7 @@ function render() {
   const counts = new Array(n).fill(0);
   for (const b of all) { const k = Math.round((bucket(b.end) - first) / unit); if (k >= 0 && k < n) counts[k]++; }
   const max = Math.max(1, ...counts);
-  const label = (i) => `${pro ? 'Week of ' : ''}${weekFmt.format(first + i * unit)}`;
+  const label = (i) => (pro ? tr('Week of {day}', { day: weekFmt.format(first + i * unit) }) : weekFmt.format(first + i * unit));
   $('#bz-weeks-h').textContent = pro ? 'By week' : 'By day';
   $('#bz-weeks').style.setProperty('--n', n);
   $('#bz-weeks').innerHTML = counts.map((c, i) => `<span class="bz-week" title="${esc(label(i))}: ${c}"><i style="height:${(c / max) * 100}%"></i><b>${c || ''}</b></span>`).join('');
@@ -107,7 +107,8 @@ function progress(p) {
   if (p.note && p.note !== 'Done.') parts.push(p.note);
   if (p.note === 'Done.') parts[0] = `All ${checkedCount(since).toLocaleString()} games checked`;
   if (p.errors.length) parts.push(`Skipped: ${p.errors.slice(-1)[0]}`);
-  $('#bz-status').textContent = parts.join(' · ');
+  // Each part in its own element, so the Uzbek page translates them one by one.
+  $('#bz-status').innerHTML = parts.map((x) => `<span>${esc(x)}</span>`).join(' · ');
 }
 
 function start() {

@@ -1,3 +1,6 @@
+/* Uzbek: the page waits (at most 2.5 s) until its words are in Uzbek (scripts/i18n.js). */
+:root[data-i18n="wait"] body { visibility: hidden; }
+
 :root {
   /* Tournament green: the green and buff of a club roll-up board. */
   --bg: #0d1712;

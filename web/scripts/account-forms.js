@@ -1,6 +1,7 @@
 // Forgot password, reset password and confirm email. Tokens come in the
 // link's #hash, which never reaches a server log or another site's Referer.
 import { api, remember } from './session.js';
+import { tr } from './tr.mjs';
 
 const form = document.querySelector('#acct-form');
 const status = document.querySelector('#auth-status');
@@ -33,7 +34,7 @@ if (mode === 'verify') {
     api('/api/account', { action: 'verify', token })
       .then(({ email }) => {
         title.textContent = 'Email confirmed';
-        say(`${email} is confirmed. Thanks!`, 'ok');
+        say(tr('{email} is confirmed. Thanks!', { email }), 'ok');
         document.querySelector('#verify-next').hidden = false;
       })
       .catch((err) => { title.textContent = 'That link didn’t work'; say(err.message); });

@@ -101,7 +101,7 @@ function show(i) {
   state = 'ask';
   $('#tr-count').textContent = `Position ${finished.size + i + 1} of ${finished.size + list.length}${focusGame && item.key.startsWith(`${focusGame}:`) ? ' · from the game you just played' : !focusGame && fromSession(item) ? ' · from a game you reviewed today' : ''}`;
   $('#tr-prompt').textContent = `Find the better move for ${side()}.`;
-  $('#tr-context').innerHTML = `In your game vs <b>${esc(item.opponent || 'your opponent')}</b>${item.speed ? ` (${esc(item.speed)})` : ''} on ${esc(dateFmt.format(item.end))}, you played <b class="nw-move" data-l="${item.label}">${moveNo(item.ply)} ${esc(item.san)}${LABELS[item.label].mark}</b> here. ${esc(item.why)}`;
+  $('#tr-context').innerHTML = `In your game vs <b>${esc(item.opponent || 'your opponent')}</b>${item.speed ? ` (<span>${esc(item.speed)}</span>)` : ''} on <span>${esc(dateFmt.format(item.end))}</span>, you played <b class="nw-move" data-l="${item.label}">${moveNo(item.ply)} ${esc(item.san)}${LABELS[item.label].mark}</b> here. <span>${esc(item.why)}</span>`;
   $('#tr-top').innerHTML = `<span class="pl-dot ${flipped ? 'w' : 'b'}"></span>${esc(flipped ? 'White' : 'Black')}`;
   $('#tr-bottom').innerHTML = `<span class="pl-dot ${flipped ? 'b' : 'w'}"></span>You (${side()} to move)`;
   const qs = new URLSearchParams({ p: item.platform, u: item.username || '', id: item.id, t: String(item.end), ply: String(item.ply) });
@@ -144,7 +144,7 @@ async function attempt(from, to) {
     last = { from: m.from, to: m.to, l: 'best' };
     const first = tries === 0;
     const other = uci !== item.best ? ` Stockfish’s first choice was ${esc(item.bestSan)}, but this is nearly as good.` : '';
-    const line = item.line ? ` <span class="muted">The line goes on ${esc(item.line)}.</span>` : '';
+    const line = item.line ? ` <span class="muted">The line goes on <span>${esc(item.line)}</span>.</span>` : '';
     const next = first ? (item.box + 1 >= LEARNED ? 'Learned: it won’t come back.' : `It comes back in ${['', 'a day', '3 days', 'a week', '3 weeks'][Math.min(4, item.box + 1)]}.`) : 'Right on the second try: it comes back soon for another go.';
     renderBoard();
     finish(first, `<p class="tr-ok"><b>${first ? 'Correct!' : 'That’s it.'}</b> ${esc(m.san)} is the move.${other}${line}</p><p class="muted small">${esc(next)}</p>`);
@@ -157,7 +157,7 @@ async function attempt(from, to) {
   if (tries >= 2) {
     arrow = { uci: item.best, cls: '' };
     renderBoard();
-    finish(false, `<p class="tr-bad"><b>Not quite.</b> The move was <b>${esc(item.bestSan)}</b> (the green arrow).${item.line ? ` <span class="muted">Then ${esc(item.line)}.</span>` : ''}</p><p class="muted small">It comes back in a few minutes for another go.</p>`);
+    finish(false, `<p class="tr-bad"><b>Not quite.</b> The move was <b>${esc(item.bestSan)}</b> (the green arrow).${item.line ? ` <span class="muted">Then <span>${esc(item.line)}</span>.</span>` : ''}</p><p class="muted small">It comes back in a few minutes for another go.</p>`);
     return;
   }
   state = 'wrong';
@@ -178,7 +178,7 @@ function hint() {
 function reveal() {
   arrow = { uci: item.best, cls: '' };
   renderBoard();
-  finish(false, `<p class="tr-bad"><b>The move was ${esc(item.bestSan)}</b> (the green arrow).${item.line ? ` <span class="muted">Then ${esc(item.line)}.</span>` : ''}</p><p class="muted small">It comes back in a few minutes for another go.</p>`);
+  finish(false, `<p class="tr-bad"><b>The move was ${esc(item.bestSan)}</b> (the green arrow).${item.line ? ` <span class="muted">Then <span>${esc(item.line)}</span>.</span>` : ''}</p><p class="muted small">It comes back in a few minutes for another go.</p>`);
 }
 
 function renderEmpty() {
@@ -228,7 +228,7 @@ function renderWork() {
     'Missed a chance': 'After your opponent’s move, ask what it left undefended.',
     'Let the position slip': 'These are slower mistakes: compare a couple of candidate moves before you play.',
   }[top[0]];
-  $('#tr-work').innerHTML = `<p class="tr-tip"><b>Most often: ${esc(top[0].toLowerCase())}</b> (${top[1]} of ${s.total}). ${esc(tip)}</p><div class="tr-work-grid">${bars('By kind', kinds)}${bars('By phase', phases)}</div>`;
+  $('#tr-work').innerHTML = `<p class="tr-tip"><b>Most often: ${esc(top[0].toLowerCase())}</b> (${top[1]} of ${s.total}). <span>${esc(tip)}</span></p><div class="tr-work-grid">${bars('By kind', kinds)}${bars('By phase', phases)}</div>`;
 }
 
 // ---------- today: the coach's session, the clock, yesterday and today ----------
@@ -280,7 +280,8 @@ $('#tr-old-go').addEventListener('click', () => {
     onGame: (_, __, out) => { added += out.items.length; list = upNext(); renderStats(); renderWork(); renderToday(); if (!item) show(0); },
     onProgress: (p) => {
       $('#tr-old-bar').style.width = `${p.total ? (p.done / p.total) * 100 : 2}%`;
-      $('#tr-old-status').textContent = `${p.done} of ${p.total} losses checked · ${added} new positions${p.note && p.note !== 'Done.' ? ` · ${p.note}` : ''}`;
+      // Each part in its own element, so the Uzbek page translates them one by one.
+      $('#tr-old-status').innerHTML = [`${p.done} of ${p.total} losses checked`, `${added} new positions`, p.note && p.note !== 'Done.' ? p.note : ''].filter(Boolean).map((x) => `<span>${esc(x)}</span>`).join(' · ');
     },
     onDone: (p) => {
       oldJob = null;

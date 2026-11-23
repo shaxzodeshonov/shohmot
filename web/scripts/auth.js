@@ -2,6 +2,7 @@
 // HttpOnly session cookie, then go on to the page the visitor came for.
 import { remember, signedIn } from './session.js';
 import { track } from './track.js';
+import { tr } from './tr.mjs';
 
 (() => {
   'use strict';
@@ -83,7 +84,7 @@ import { track } from './track.js';
       }
       remember(body.user, body.features);
       if (mode === 'login') track('login');
-      say(mode === 'register' ? `Welcome, ${body.user.name}!` : 'Signed in.', 'ok');
+      say(mode === 'register' ? tr('Welcome, {name}!', { name: body.user.name }) : 'Signed in.', 'ok');
       location.replace(nextPage());
     } catch {
       say('Can’t reach Shohmot right now. Check your connection.');

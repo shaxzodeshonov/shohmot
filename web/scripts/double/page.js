@@ -13,6 +13,7 @@ import { slidePieces } from '../review/slide.mjs';
 import { boardFx, checkOf } from '../review/fx.mjs';
 import { avatarSvg } from '../avatar.mjs';
 import { openLab, showLab, faceOf } from './lab.mjs';
+import { tr } from '../tr.mjs';
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -66,12 +67,12 @@ async function build(platform, username, say) {
   const key = `shohmot-double:${platform}:${username.toLowerCase()}`;
   const cached = store.get(key);
   if (cached && Date.now() - cached.builtAt < CACHE_MS) return cached;
-  say(`Loading ${username}’s games from ${SITE[platform]}…`);
+  say(tr('Loading {user}’s games from {site}…', { user: username, site: SITE[platform] }));
   const [games, openings] = await Promise.all([
-    loadGames(platform, username, (n) => say(`Loading ${username}’s games from ${SITE[platform]}… ${n} so far`)),
+    loadGames(platform, username, (n) => say(tr('Loading {user}’s games from {site}… {n} so far', { user: username, site: SITE[platform], n }))),
     loadBook(),
   ]);
-  if (!games.length) throw new Error(`No recent standard games on ${username} (${SITE[platform]}). Play a few and try again.`);
+  if (!games.length) throw new Error(tr('No recent standard games on {user} ({site}). Play a few and try again.', { user: username, site: SITE[platform] }));
   say(`Learning from ${games.length} games…`);
   await new Promise((r) => setTimeout(r, 30));
   const p = buildProfile(games, { username, platform, openings });
@@ -165,7 +166,7 @@ function renderMoves() {
 }
 
 function names() {
-  const them = `${profile.displayName}’s double`;
+  const them = tr('{name}’s double', { name: profile.displayName });
   $('#py-top').innerHTML = `<span class="pl-dot ${me === 'w' ? 'b' : 'w'}"></span><span class="who-face">${avatarSvg(faceOf(profile.displayName), { robot: true })}</span>${esc(them)} <small>~${profile.rating}</small>`;
   $('#py-bottom').innerHTML = `<span class="pl-dot ${me}"></span><span class="who-face">${avatarSvg(faceOf(profile.displayName))}</span>You`;
 }

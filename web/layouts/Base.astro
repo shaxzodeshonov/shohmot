@@ -51,7 +51,8 @@ const canonical = `${SITE.url}${path === '/' ? '/' : path}`;
   <meta property="og:image" content={`${SITE.url}/og.png`}>
   <meta name="twitter:card" content="summary_large_image">
   <meta name="theme-color" content="#0d1712">
-  <script is:inline>try{var t=localStorage.getItem('shohmot-theme');if(t!=='light'&&t!=='dark')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';document.documentElement.dataset.theme=t;if(t==='light')document.querySelector('meta[name=theme-color]').content='#f3f0df'}catch(e){document.documentElement.dataset.theme='dark'}</script>
+  <script is:inline>try{var t=localStorage.getItem('shohmot-theme');if(t!=='light'&&t!=='dark')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';document.documentElement.dataset.theme=t;if(t==='light')document.querySelector('meta[name=theme-color]').content='#f3f0df'}catch(e){document.documentElement.dataset.theme='dark'}try{var l=localStorage.getItem('shohmot-lang');if(l!=='en'&&l!=='uz')l=/^uz\b/i.test(navigator.language||'')?'uz':'en';var h=document.documentElement;h.lang=l;if(l==='uz'){h.dataset.i18n='wait';setTimeout(function(){delete h.dataset.i18n},2500)}}catch(e){}</script>
+  <script>import '../scripts/i18n.js';</script>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
   <link rel="manifest" href="/manifest.webmanifest">

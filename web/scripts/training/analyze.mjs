@@ -5,6 +5,7 @@
 //   training/store.mjs  your mistakes, misses and blunders, to train on
 //   brilliants/store.mjs  your brilliant moves
 // A full review of a game later replaces both with its deeper answer.
+import { tr } from '../tr.mjs';
 import { EnginePool } from '../review/engine.mjs';
 import { labelGame, buildFromSan, whiteWin } from '../review/label.mjs';
 import { gameAccuracy, ACCURACY } from '../review/analysis.mjs';
@@ -81,7 +82,7 @@ export function analyzeMany({ accounts, since, until = Date.now(), pick = () => 
     for (const a of accounts) {
       for (const w of windows(a.platform, since, until)) {
         if (stopped) return;
-        p.note = `Loading games on ${a.username}…`;
+        p.note = tr('Loading games on {user}…', { user: a.username });
         onProgress({ ...p });
         let games;
         try { games = await fetchWindow(a, w, shouldStop); } catch (err) { p.note = err.message; continue; }
@@ -90,7 +91,7 @@ export function analyzeMany({ accounts, since, until = Date.now(), pick = () => 
         p.total += todo.length;
         for (const g of todo) {
           if (stopped) return;
-          p.note = `Checking your game vs ${g.opponent}…`;
+          p.note = tr('Checking your game vs {o}…', { o: g.opponent });
           p.current = { platform: a.platform, id: g.id };
           onProgress({ ...p });
           const out = await analyzeGame(a.platform, a.username, g, { engine, workers, shouldStop });

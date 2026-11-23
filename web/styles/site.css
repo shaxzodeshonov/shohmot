@@ -313,6 +313,8 @@ html { scroll-behavior: smooth; }
 .fine a { color: var(--muted); }
 
 .foot-theme { display: inline-flex; align-items: center; gap: 0.5rem; }
+.foot-lang select { font: inherit; color: var(--muted); background: transparent; border: 1px solid var(--line); border-radius: 6px; padding: 0.2rem 0.4rem; }
+.foot-lang select:hover { color: var(--text); }
 /* light theme */
 :root[data-theme="light"] .heat i[data-l="1"] { background: #c9deb0; }
 :root[data-theme="light"] .heat i[data-l="2"] { background: #8fbd62; }

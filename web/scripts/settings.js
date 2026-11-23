@@ -2,6 +2,7 @@
 // coach, signing out and the account's data.
 import { currentUser, freshUser, remember, features, api, signOut, forget, unlocked } from './session.js';
 import { avatarDesigner } from './avatar-designer.mjs';
+import { tr } from './tr.mjs';
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -36,7 +37,7 @@ function render(user) {
   let line = 'Counter, reviews, the analysis board, loss-streak warnings and the weekly email.';
   if (isPro(user)) {
     line = user.planRenews
-      ? `${user.planCancels ? 'Ends' : 'Renews'} on ${dateFmt.format(user.planRenews)}.`
+      ? tr(user.planCancels ? 'Ends on {day}.' : 'Renews on {day}.', { day: dateFmt.format(user.planRenews) })
       : user.admin ? 'Included because you’re an admin.' : 'Included with your account.';
   }
   $('#plan-line').textContent = line;
@@ -86,7 +87,7 @@ async function renderCoach() {
     box.innerHTML = parts.join('');
     const leave = $('#coach-leave');
     if (leave) leave.addEventListener('click', async () => {
-      if (!confirm(`Leave ${out.coach.name}? They won’t see your games any more.`)) return;
+      if (!confirm(tr('Leave {name}? They won’t see your games any more.', { name: out.coach.name }))) return;
       try { await api('/api/coach', { action: 'leave' }); toast('You left your coach.'); renderCoach(); freshUser(); } catch (err) { toast(err.message); }
     });
   } catch (err) {
