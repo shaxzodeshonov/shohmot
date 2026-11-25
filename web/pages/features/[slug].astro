@@ -11,7 +11,7 @@ export function getStaticPaths() {
 interface Props { f: Feature; next: Feature }
 const { f, next } = Astro.props;
 ---
-<SitePage title={`${f.name} · Shohmot`} description={f.short} current={f.slug}>
+<SitePage title={f.seoTitle ?? `${f.name} · Shohmot`} description={f.short} current={f.slug}>
   <section class="feature-hero" aria-labelledby="page-title">
     <span class="eyebrow">{f.eyebrow}</span>
     <h1 id="page-title"><Title text={f.title} /></h1>

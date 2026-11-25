@@ -10,8 +10,8 @@ import { play, soundOf, isMuted, setMuted } from './sound.mjs';
 import { cloudEvals } from './cloud.mjs';
 import { newTree, play as playOn, toPgn } from './tree.mjs';
 import { LABELS, BAD, ACCURACY, winPercent, moveAccuracy, gameAccuracy, classify, gameRating, phases } from './analysis.mjs';
-import { labelGame, explain } from './label.mjs';
-import { coachFor, summaryFor, setMood, createVoice } from './coach.mjs';
+import { labelGame, explain, playUci } from './label.mjs';
+import { coachFor, summaryFor, resultFor, setMood, createVoice } from './coach.mjs';
 import { createFil } from './fil-chat.mjs';
 import { createLipSync } from './lipsync.mjs';
 import { wireEyes } from './eyes.mjs';
@@ -147,13 +147,7 @@ function applyBook(openings) {
 }
 
 // ---------- chess helpers ----------
-function playUci(chess, uci) {
-  try {
-    return chess.move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] });
-  } catch {
-    return null;
-  }
-}
+// playUci (label.mjs) plays one engine move, castling in either notation.
 
 function sanLine(fen, pv, max = 6) {
   const chess = new Chess(fen);
@@ -316,9 +310,7 @@ function finish(depth) {
     const h = game.headers;
     saveReviewed(PLATFORM, GAME_ID, { end: Number(params.get('t')) || Date.now(), username: USERNAME, opponent: game.me === 'w' ? h.Black : h.White, found });
     // And its mistakes become training positions.
-    const r = h.Result;
-    const result = r === '1/2-1/2' ? 'draw' : (r === '1-0') === (game.me === 'w') ? 'win' : r === '*' ? null : 'loss';
-    saveReviewedMistakes(PLATFORM, GAME_ID, mistakesOf(game, results, review, { end: Number(params.get('t')) || Date.now(), username: USERNAME, opponent: game.me === 'w' ? h.Black : h.White, result }));
+    saveReviewedMistakes(PLATFORM, GAME_ID, mistakesOf(game, results, review, { end: Number(params.get('t')) || Date.now(), username: USERNAME, opponent: game.me === 'w' ? h.Black : h.White, result: gameResult() }));
   }
   $('#progress').hidden = true;
   const again = $('#progress').dataset.depth != null;
@@ -622,8 +614,8 @@ function renderNote() {
     return;
   }
   if (ply === 0) {
-    el.innerHTML = `<p class="note-h">Starting position</p><p class="muted">${game.opening ? `${esc(game.opening.name)}${game.opening.eco ? ` (${esc(game.opening.eco)})` : ''}. ` : ''}Use ← → to step through the game.</p>`;
-    if (!review) return coach('thinking', 'Give me a moment: I’m going through your game with Stockfish, move by move.');
+    el.innerHTML = `<p class="note-h">Starting position</p>${game.opening ? `<p class="muted">${esc(game.opening.name)}</p>` : ''}`;
+    if (!review) return coach('thinking', 'Give me a minute. I’m going through every move.');
     const s = gameSummary();
     return coach(s.mood, s.tip, s.tip);
   }
@@ -664,9 +656,12 @@ function renderNote() {
   el.innerHTML = `<p class="note-h" data-l="${l}">${badge(l)}<span>${head}</span><small class="ev">${evalText(ply)}</small></p>${said.length ? `<p>${said.join(' ')}</p>` : ''}${best}`;
   // Fischer: a face for the move, and the lesson in it.
   const kind = BAD.has(l) && lines && lines[0] ? explain(game, results, l, i).kind : null;
-  const c = coachFor({ label: l, kind, mine: m.color === game.me, ply });
+  // On the last move Fischer says how the game ended (and Share appears, mstrip()).
+  const c = (ply === game.fens.length - 1 && resultFor(gameResult())) || coachFor({ label: l, kind, mine: m.color === game.me, ply, san: m.san });
   const bestSan = best ? (sanLine(game.fens[i], lines[0].pv)[0] || info.best) : '';
-  const spoken = `${head.replace(/<[^>]+>/g, '')}. ${said.join(' ')} ${bestSan ? `Best was ${bestSan}.` : ''} ${c.tip}`;
+  // Aloud, Fischer says his own line, not the note on the screen: and for a bad
+  // move of yours, the move he'd have played.
+  const spoken = `${c.tip}${bestSan && BAD.has(l) && m.color === game.me ? ` The move was ${bestSan}.` : ''}`;
   coach(c.mood, c.tip, spoken);
 }
 
@@ -709,7 +704,9 @@ function showViseme(v) {
   if (!c.hasAttribute('data-frames')) return;
   if (lip.playing) showFrame(FRAME_FOR[v] || 'rest'); else idleFrame();
 }
-// The portrait's own eyelids (eyes.mjs); with drawn frames, a blink frame instead.
+// The portrait's own eyelids (eyes.mjs). They fit the talking frames too (only the
+// lower face changes), so Fischer blinks while he talks; a drawn blink frame, if
+// there ever is one, takes over between lines.
 let eyes = { blink() {} };
 function wireBlink() {
   const c = $('#coach');
@@ -736,6 +733,19 @@ function coach(mood, tip, spoken = '') {
   t.hidden = !tip;
   // While Fischer talks through the game, it speaks its own words, not each move's note.
   if (spoken && !(fil && fil.talking)) voice.say(spoken);
+}
+
+// How the game ended for you: 'win', 'loss', 'draw', or null (unfinished or
+// unknown). From the PGN's Result, or, when that's missing or "*" (a pasted
+// game), from the final position: checkmate, or a drawn position.
+function gameResult() {
+  const r = game.headers.Result;
+  if (r === '1/2-1/2') return 'draw';
+  if (r === '1-0' || r === '0-1') return (r === '1-0') === (game.me === 'w') ? 'win' : 'loss';
+  const end = new Chess(game.fens[game.fens.length - 1]);
+  if (end.isCheckmate()) return end.turn() === game.me ? 'loss' : 'win';
+  if (end.isDraw()) return 'draw';
+  return null;
 }
 
 function gameSummary() {
@@ -893,7 +903,8 @@ function renderStrip() {
   for (const b of document.querySelectorAll('#mstrip [data-go="next"], #actbar [data-go="next"]')) b.disabled = atEnd;
   $('#act-show').setAttribute('aria-pressed', String(engineOn));
   $('#act-best').disabled = !bestMoveHere();
-  $('#coach-share').hidden = !review;
+  // Share comes at the end of the game, beside Fischer's "You won." / "You lost.".
+  $('#coach-share').hidden = !review || !!vply || !atEnd;
 }
 
 // What the Best button plays: in place of a game move that wasn't the best,
@@ -1198,6 +1209,8 @@ async function main() {
     $('#paste-text').focus();
     return;
   }
+  // The page's own heading is for search engines; a game link shows this until the game is in.
+  $('#title').textContent = 'Loading the game…';
   const savedDepth = store.get('shohmot-review-depth');
   if (savedDepth && $('#depth').querySelector(`option[value="${savedDepth}"]`)) $('#depth').value = String(savedDepth);
   $('#depth').addEventListener('change', () => store.set('shohmot-review-depth', Number($('#depth').value)));

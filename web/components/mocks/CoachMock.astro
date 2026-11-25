@@ -1,0 +1,19 @@
+---
+import Screen from './Screen.astro';
+// Fischer's note on a move, then the coach's view of their students' week.
+const students = [
+  { name: 'Aziz', games: 23, lost: 9, k: '#8fbf5a', change: '+38' },
+  { name: 'Malika', games: 14, lost: 8, k: '#dc4f42', change: '−21' },
+  { name: 'Timur', games: 9, lost: 3, k: '#8fbf5a', change: '+12' },
+];
+---
+<Screen label="Chess coach: Fischer explains a move, and a coach sees each student's week">
+  <div class="tm-card">
+    <p class="tm-h">Fischer, your coach</p>
+    <p class="tm-row"><span class="tag" style="--k:#dc4f42">??</span><span><b>17… Qd7</b> walks into a mate in 3. <b>Kg8</b> kept the king safe.</span></p>
+  </div>
+  <p class="mock-sub">Your students this week</p>
+  <div class="moves">
+    {students.map((s) => <p style={`--k:${s.k}`}><b>{s.name}</b> {s.games} games · {s.lost} lost<span>{s.change}</span></p>)}
+  </div>
+</Screen>

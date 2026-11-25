@@ -5,8 +5,9 @@ import Arrow from '../components/Arrow.astro';
 import PieceCount from '../components/PieceCount.astro';
 import FeatureActions from '../components/FeatureActions.astro';
 import { FEATURES, plain } from '../data/features';
+const words = ['No', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten'];
 ---
-<SitePage signedInTo="/app.html" title="Shohmot · Learn from every chess game you play" description="Free for Chess.com and Lichess players: today’s games counted, every game checked for mistakes, your mistakes turned into training, your brilliant moves found, and free Stockfish game reviews in your browser.">
+<SitePage signedInTo="/app.html" title="Shohmot · Free chess game review, chess coach and brilliant move counter" description="Free for Chess.com and Lichess players: a free chess game review with Stockfish in your browser, a chess coach that explains every move, a brilliant move counter, today’s games counted, and your mistakes turned into training.">
   <section class="landing-hero" aria-labelledby="hero-title">
     <div class="hero-copy">
       <h1 id="hero-title">Play there. <em>Improve here.</em></h1>
@@ -23,7 +24,7 @@ import { FEATURES, plain } from '../data/features';
 
   <div id="features" class="features-intro reveal">
     <h2>Play, see what went wrong, train it.</h2>
-    <p>Seven tools, one free account. Five of them you can try right now, without an account. Everything runs in your browser, and none of it needs a Chess.com or Lichess login.</p>
+    <p>{words[FEATURES.length]} tools, one free account. {words[FEATURES.filter((f) => !f.account).length]} of them you can try right now, without an account. Everything runs in your browser, and none of it needs a Chess.com or Lichess login.</p>
   </div>
 
   {FEATURES.map((f, i) => (
@@ -44,7 +45,7 @@ import { FEATURES, plain } from '../data/features';
       <!-- The picture opens the feature too (a shortcut for the mouse; the button above is the way in for everyone). -->
       <div class="feature-visual reveal">
         <a class="feature-visual-link" href={f.account ? `/signup.html?next=${encodeURIComponent(f.open[1])}` : f.open[1]}
-          data-href-in={f.account ? f.open[1] : undefined} data-review-picker={f.slug === 'review' ? 'user' : undefined}
+          data-href-in={f.account ? f.open[1] : undefined} data-review-picker={f.open[1] === '/review.html' ? 'user' : undefined}
           data-astro-prefetch="false" tabindex="-1" aria-hidden="true"><Mock slug={f.slug} seed={11} /></a>
       </div>
     </section>

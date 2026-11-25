@@ -63,7 +63,7 @@ export function createFil(hooks) {
     log.innerHTML = '';
     history = [];
     mode = null;
-    bubble('fil', 'I’m Fischer. I’m going through your game with Stockfish now, every move. When it’s done, I’ll show you where you won it and where you threw it away.');
+    bubble('fil', 'Fischer. Give me a minute. I’m going through every move. Then I show you where you won it and where you threw it away.');
     start.hidden = true;
     chips.hidden = true;
     form.hidden = true;
@@ -76,8 +76,8 @@ export function createFil(hooks) {
     // "I'm going through this game now" is out of date: the chat starts fresh.
     log.innerHTML = '';
     // The numbers are in Fischer's note at the top; here, just what's next.
-    if (aiOn && store.get(OK) === '1') { bubble('fil', 'Done. My verdict is up top, next to my face. Now we go through it.'); return startAi(); }
-    bubble('fil', 'Done. My verdict is up top, next to my face. Ready to go through the moments that decided it?');
+    if (aiOn && store.get(OK) === '1') { bubble('fil', 'Done. Verdict’s up top. Now we go through it.'); return startAi(); }
+    bubble('fil', 'Done. Verdict’s up top. Want to see where this game was decided?');
     start.hidden = false;
     $('#fil-ai-note').hidden = !aiOn;
     $('#fil-go').hidden = !aiOn;
@@ -168,8 +168,8 @@ export function createFil(hooks) {
     start.hidden = true;
     tour = hooks.moments();
     at = -1;
-    if (!tour.length) { bubble('fil', 'Nothing to go through: every move held up. That’s how it’s done. Step through with the arrow keys.'); return; }
-    bubble('fil', `${tour.length === 1 ? 'One moment' : `${tour.length} moments`} decided this game. My notes on each are at the top, next to my face.`);
+    if (!tour.length) { bubble('fil', 'Nothing to go through. Every move held. That’s chess.'); return; }
+    bubble('fil', `${tour.length === 1 ? 'One moment' : `${tour.length} moments`} decided this game. Here’s the first.`);
     stepTour(1);
   }
   function stepTour(d) {

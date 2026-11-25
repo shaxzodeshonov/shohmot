@@ -6,15 +6,24 @@ import '../styles/review.css';
 import ReviewPicker from '../components/ReviewPicker.astro';
 import filPortrait from '../assets/fil.webp';
 
-// Fischer's drawn frames, if they're in web/assets/fischer/ (made by
-// scripts/fischer-frames.mjs): fischer-rest, -blink, -talk-1…5, and the moods.
-// With rest and at least one talk frame, the face is the frames; otherwise the
-// portrait with a drawn mouth.
+// Fischer's frames, if they're in web/assets/fischer/: fischer-rest, -talk-1…5
+// (and optionally -blink and the moods). scripts/fischer-mouth-frames.mjs makes
+// them from the portrait, with the talking frames as patches of the mouth and
+// chin laid over rest (where: frames.json); scripts/fischer-frames.mjs takes
+// whole drawn frames instead. With rest and at least one talk frame, the face is
+// the frames; otherwise the portrait with a drawn mouth.
 const found = import.meta.glob('../assets/fischer/fischer-*.webp', { eager: true });
-const frames = Object.entries(found).map(([file, mod]) => ({ name: file.replace(/^.*fischer-|\.webp$/g, ''), src: mod.default.src }));
+const layout = Object.values(import.meta.glob('../assets/fischer/frames.json', { eager: true, import: 'default' }))[0];
+const pct = (v) => `${((v / layout.size) * 100).toFixed(3)}%`;
+const patchStyle = layout && `left:${pct(layout.patch.x)};top:${pct(layout.patch.y)};width:${pct(layout.patch.w)};height:${pct(layout.patch.h)}`;
+const frames = Object.entries(found).map(([file, mod]) => {
+  const name = file.replace(/^.*fischer-|\.webp$/g, '');
+  const patch = !!layout && name.startsWith('talk-');
+  return { name, src: mod.default.src, patch, w: patch ? layout.patch.w : 256, h: patch ? layout.patch.h : 256 };
+});
 const useFrames = frames.some((f) => f.name === 'rest') && frames.some((f) => f.name.startsWith('talk-'));
 ---
-<Base title="Free chess game review · Shohmot" description="Paste a Lichess link or any PGN for a free Stockfish 19 game review: accuracy, every move labelled Brilliant to Blunder, the best moves and the evaluation graph. No account needed." bodyClass="rv-page">
+<Base title="Review a chess game free · Shohmot" description="Find your Chess.com or Lichess games by username, or paste a Lichess link or any PGN, for a free Stockfish 19 game review: accuracy, every move labelled Brilliant to Blunder, the best moves and the evaluation graph. No account needed." bodyClass="rv-page">
 
   <header class="bar rv-bar">
     <a class="wordmark" href="/">
@@ -102,7 +111,7 @@ const useFrames = frames.some((f) => f.name === 'rest') && frames.some((f) => f.
         <p class="rv-session-row"><span id="rv-session-say" aria-live="polite"></span><a class="btn" id="rv-session-next" href="/train.html" data-astro-prefetch="false">Skip this game</a></p>
       </div>
       <header class="panel-head">
-        <h1 class="rv-title" id="title">Loading the game…</h1>
+        <h1 class="rv-title" id="title">Free chess game review</h1>
         <p class="rv-meta" id="meta"></p>
         <p class="rv-error" id="error" role="alert" hidden></p>
         <div class="rv-share" id="share-row" hidden>
@@ -146,15 +155,13 @@ const useFrames = frames.some((f) => f.name === 'rest') && frames.some((f) => f.
         <section class="coach" id="coach" data-mood="thinking" data-frames={useFrames ? '' : undefined} aria-label="Coach">
           <!-- Fischer's portrait, with eyelids that blink and a mouth that moves while Fischer talks. -->
           <div class="coach-face" aria-hidden="true">
-            {useFrames ? (
-              <div class="fil-head">
-                {frames.map((f) => <img class:list={['fil-frame', { on: f.name === 'rest' }]} data-f={f.name} src={f.src} alt="" width="256" height="256" decoding="async">)}
-              </div>
-            ) : (
-              <div class="fil-head">
-                <img src={filPortrait.src} alt="" width="256" height="256" decoding="async">
+            <div class="fil-head"><div class="fil-sway">
+                {useFrames
+                  ? frames.map((f) => <img class:list={['fil-frame', { on: f.name === 'rest' }]} data-f={f.name} data-patch={f.patch ? '' : undefined} style={f.patch ? patchStyle : undefined} src={f.src} alt="" width={f.w} height={f.h} decoding="async">)
+                  : <img src={filPortrait.src} alt="" width="256" height="256" decoding="async">}
                 <!-- The eyelids (review/eyes.mjs), in the portrait's own pixels: each lid's
-                     skin and its lash line, drawn only while Fischer blinks. -->
+                     skin and its lash line, drawn only while Fischer blinks. The talking
+                     frames only change the lower face, so the same lids fit them all. -->
                 <svg class="fil-eyes" id="fil-eyes" viewBox="0 0 256 256">
                   <defs>
                     <linearGradient id="fil-lid-l" gradientUnits="userSpaceOnUse" x1="0" y1="107" x2="0" y2="125"><stop offset="0" stop-color="#e2a590"/><stop offset="1" stop-color="#f1bb9d"/></linearGradient>
@@ -163,8 +170,9 @@ const useFrames = frames.some((f) => f.name === 'rest') && frames.some((f) => f.
                   <g data-eye="l"><path class="fil-lidskin" fill="url(#fil-lid-l)"/><path class="fil-lash"/></g>
                   <g data-eye="r"><path class="fil-lidskin" fill="url(#fil-lid-r)"/><path class="fil-lash"/></g>
                 </svg>
-                <!-- Drawn in the original image's pixel coordinates: skin over the
-                     drawn lips, then a mouth whose lower half opens while Fischer talks. -->
+                <!-- Without talking frames: drawn in the original image's pixel coordinates,
+                     skin over the drawn lips, then a mouth whose lower half opens while Fischer talks. -->
+                {!useFrames && (
                 <svg class="fil-mouth" viewBox="628 356 136 64">
                   <defs>
                     <filter id="fil-soft" x="-20%" y="-50%" width="140%" height="200%"><feGaussianBlur stdDeviation="2.4"/></filter>
@@ -185,8 +193,8 @@ const useFrames = frames.some((f) => f.name === 'rest') && frames.some((f) => f.
                     <path class="fil-upper" d="M-53 1 Q-27 -8 0 -4 Q27 -9 53 -1 Q26 5 0 4 Q-26 5 -53 1Z"/>
                   </g></g>
                 </svg>
-              </div>
-            )}
+                )}
+            </div></div>
             <span class="fil-dots"><i></i><i></i><i></i></span>
           </div>
           <div class="coach-bubble">
